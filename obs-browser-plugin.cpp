@@ -22,6 +22,7 @@
 #include <util/util.hpp>
 #include <util/dstr.hpp>
 #include <obs-module.h>
+#include <obs-frontend-api.h>
 #include <thread>
 #include <mutex>
 
@@ -39,6 +40,10 @@ using namespace std;
 using namespace json11;
 
 static thread manager_thread;
+
+#include "streamelements/StreamElementsBrowserWidget.hpp"
+#include <QMainWindow>
+#include <QDockWidget>
 
 /* ========================================================================= */
 
@@ -345,10 +350,35 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void *)
 
 bool obs_module_load(void)
 {
+	CefEnableHighDPISupport();
+
 	manager_thread = thread(BrowserManagerThread);
 
 	RegisterBrowserSource();
 	obs_frontend_add_event_callback(handle_obs_frontend_event, nullptr);
+
+	// Enable CEF high DPI support
+
+	// Browser dialog setup
+	obs_frontend_push_ui_translation(obs_module_get_string);
+
+	QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
+
+	QDockWidget* dock =
+		new QDockWidget("Hello World!", obs_main_window);
+
+	dock->setAllowedAreas(Qt::TopDockWidgetArea);
+
+	StreamElementsBrowserWidget* widget =
+		new StreamElementsBrowserWidget(dock);
+
+	dock->setWidget(widget);
+
+	obs_main_window->addDockWidget(Qt::TopDockWidgetArea, dock);
+
+	obs_frontend_pop_ui_translation();
+
+
 	return true;
 }
 

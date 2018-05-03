@@ -1,5 +1,5 @@
 #include "StreamElementsBrowserWidget.hpp"
-
+#include "StreamElementsCefClient.hpp"
 #include <functional>
 
 /* ========================================================================= */
@@ -43,24 +43,20 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent):
 
 StreamElementsBrowserWidget::~StreamElementsBrowserWidget()
 {
-	if (m_cef_browser.get() != NULL) {
-		//CefUIThreadExecute([this]() {
-		//	m_cef_browser->GetHost()->WasHidden(true);
-		//	m_cef_browser->GetHost()->CloseBrowser(true);
-		//}, false);
-	}
+	DestroyBrowser();
 }
 
+#ifdef ___NO_SUCH_THING___
 void StreamElementsBrowserWidget::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
 	// Must be executed on the UI thread.
-	CEF_REQUIRE_UI_THREAD();
+	//CEF_REQUIRE_UI_THREAD();
 	
-	if (!m_cef_browser.get()) {
+	//if (!m_cef_browser.get()) {
 		// Keep a reference to the main browser.
-		m_cef_browser = browser;
+		//m_cef_browser = browser;
 		//m_BrowserId = browser->GetIdentifier();
-	}
+	//}
 
 	// Keep track of how many browsers currently exist.
 	//m_BrowserCount++;
@@ -69,7 +65,7 @@ void StreamElementsBrowserWidget::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 bool StreamElementsBrowserWidget::DoClose(CefRefPtr<CefBrowser> browser)
 {
 	// Must be executed on the UI thread.
-	CEF_REQUIRE_UI_THREAD();
+	//CEF_REQUIRE_UI_THREAD();
 
 	// Closing the main window requires special handling. See the DoClose()
 	// documentation in the CEF header for a detailed description of this
@@ -90,7 +86,7 @@ bool StreamElementsBrowserWidget::DoClose(CefRefPtr<CefBrowser> browser)
 void StreamElementsBrowserWidget::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
 	// Must be executed on the UI thread.
-	CEF_REQUIRE_UI_THREAD();
+	//CEF_REQUIRE_UI_THREAD();
 
 	//if (m_BrowserId == browser->GetIdentifier()) {
 	//	// Free the browser pointer so that the browser can be destroyed.
@@ -102,42 +98,57 @@ void StreamElementsBrowserWidget::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 	//	CefQuitMessageLoop();
 	//}
 }
+#endif
 
-void StreamElementsBrowserWidget::CefUIThreadInitBrowser()
+void StreamElementsBrowserWidget::InitBrowserAsync()
 {
-	StreamElementsBrowserWidget* self = this;
+	// Make sure InitBrowserAsyncInternal() runs in Qt UI thread
+	QMetaObject::invokeMethod(this, "InitBrowserAsyncInternal");
+}
 
-	CefString url = "http://www.google.com/";
+void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
+{
+	if (!!m_cef_browser.get())
+		return;
 
-	// Client area rectangle
-	RECT clientRect;
+	m_window_handle = (cef_window_handle_t)winId();
 
-	clientRect.left = 0;
-	clientRect.top = 0;
-	clientRect.right = self->width();
-	clientRect.bottom = self->height();
+	CefUIThreadExecute([this]() {
+		StreamElementsBrowserWidget* self = this;
 
-	// CEF window attributes
-	CefWindowInfo windowInfo;
-	windowInfo.width = clientRect.right - clientRect.left;
-	windowInfo.height = clientRect.bottom - clientRect.top;
-	windowInfo.windowless_rendering_enabled = false;
-	windowInfo.SetAsChild(self->m_window_handle, clientRect);
-	//windowInfo.SetAsPopup(0, CefString("Window Name"));
+		CefString url = "http://www.google.com/";
 
-	CefBrowserSettings cefBrowserSettings;
+		// Client area rectangle
+		RECT clientRect;
 
-	cefBrowserSettings.Reset();
-	cefBrowserSettings.javascript_close_windows = STATE_DISABLED;
-	cefBrowserSettings.local_storage = STATE_DISABLED;
-	cefBrowserSettings.windowless_frame_rate = 30;
+		clientRect.left = 0;
+		clientRect.top = 0;
+		clientRect.right = self->width();
+		clientRect.bottom = self->height();
 
-	CefBrowserHost::CreateBrowserSync(
-		windowInfo,
-		self,
-		url,
-		cefBrowserSettings,
-		nullptr);
+		// CEF window attributes
+		CefWindowInfo windowInfo;
+		windowInfo.width = clientRect.right - clientRect.left;
+		windowInfo.height = clientRect.bottom - clientRect.top;
+		windowInfo.windowless_rendering_enabled = false;
+		windowInfo.SetAsChild(self->m_window_handle, clientRect);
+		//windowInfo.SetAsPopup(0, CefString("Window Name"));
+
+		CefBrowserSettings cefBrowserSettings;
+
+		cefBrowserSettings.Reset();
+		cefBrowserSettings.javascript_close_windows = STATE_DISABLED;
+		cefBrowserSettings.local_storage = STATE_DISABLED;
+		cefBrowserSettings.windowless_frame_rate = 30;
+
+		m_cef_browser =
+			CefBrowserHost::CreateBrowserSync(
+				windowInfo,
+				new StreamElementsCefClient(),
+				url,
+				cefBrowserSettings,
+				nullptr);
+	}, true);
 }
 
 void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func, bool async)
@@ -146,8 +157,8 @@ void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func,
 		os_event_t *finishedEvent;
 		os_event_init(&finishedEvent, OS_EVENT_TYPE_AUTO);
 		bool success = QueueCEFTask([&]() {
-			if (!!m_cef_browser)
-				func();
+			func();
+
 			os_event_signal(finishedEvent);
 		});
 		if (success)
@@ -156,8 +167,7 @@ void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func,
 	}
 	else {
 		QueueCEFTask([this, func]() {
-			if (!!m_cef_browser)
-				func();
+			func();
 		});
 	}
 }

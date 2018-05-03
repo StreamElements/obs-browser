@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QHideEvent>
 
 #include <util/platform.h>
 #include <util/threading.h>
@@ -20,31 +21,14 @@
 #include "StreamElementsAsyncTaskQueue.hpp"
 
 class StreamElementsBrowserWidget:
-	public QWidget,
-	public CefClient,
-	public CefLifeSpanHandler
+	public QWidget
 
 {
 	Q_OBJECT
 
-private:
-	// Default browser handle when browser is not yet initialized
-	static const int BROWSER_HANDLE_NONE = -1;
-
 public:
 	StreamElementsBrowserWidget(QWidget* parent);
 	~StreamElementsBrowserWidget();
-
-public:
-	// CefClient methods.
-	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE {
-		return this;
-	}
-
-	// CefLifeSpanHandler methods.
-	void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-	bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
-	void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
 
 private:
 	///
@@ -52,8 +36,11 @@ private:
 	//
 	// Create browser or navigate back to home page (obs-browser-wcui-browser-dialog.html)
 	//
-	void CefUIThreadInitBrowser();
+	void InitBrowserAsync();
 	void CefUIThreadExecute(std::function<void()> func, bool async);
+
+private slots:
+	void InitBrowserAsyncInternal();
 
 private:
 	StreamElementsAsyncTaskQueue m_task_queue;
@@ -65,37 +52,22 @@ protected:
 	{
 		QWidget::showEvent(showEvent);
 
-		/*
-		if (m_cef_browser.get() == NULL) {
-			m_window_handle = (cef_window_handle_t)winId();
-
-			CefPostTask(TID_UI, base::Bind(&StreamElementsBrowserWidget::CefUIThreadInitBrowser, this));
-		} else {
-			m_cef_browser->GetHost()->WasHidden(false);
-		}
-		*/
+		InitBrowserAsync();
 	}
 
 	virtual void hideEvent(QHideEvent *hideEvent) override
 	{
-		/*
-		if (m_cef_browser.get() != NULL) {
-			m_cef_browser->GetHost()->WasHidden(true);
-			m_cef_browser->GetHost()->CloseBrowser(true);
-
-			//CefUIThreadExecute([this]() {
-			//	m_cef_browser->GetHost()->WasHidden(true);
-			//}, false);
-
-			m_cef_browser = NULL;
-		}
-		*/
-
 		QWidget::hideEvent(hideEvent);
 	}
 
 private:
-
+	void DestroyBrowser()
+	{
+		if (m_cef_browser.get() != NULL) {
+			m_cef_browser->GetHost()->CloseBrowser(true);
+			m_cef_browser = NULL;
+		}
+	}
 
 
 
@@ -103,6 +75,6 @@ private:
 
 
 public:
-	IMPLEMENT_REFCOUNTING(StreamElementsBrowserWidget)
+//	IMPLEMENT_REFCOUNTING(StreamElementsBrowserWidget)
 };
 

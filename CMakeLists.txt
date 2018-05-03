@@ -1,14 +1,26 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(obs-browser)
 
+set(CMAKE_PREFIX_PATH "${QTDIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 
 include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/UI/obs-frontend-api")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/deps")
 
 find_package(CEF QUIET)
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Widgets REQUIRED)
+
+include_directories(SYSTEM
+	${Qt5Core_INCLUDES}
+	${Qt5Widgets_INCLUDES}
+)
+
+#qt5_wrap_ui(NetworkDialog "networkdialog.ui")
 
 if(NOT CEF_FOUND)
 	message(STATUS "CEF Not found -- obs-browser plugin disabled.")
@@ -29,6 +41,9 @@ include_directories("${CEF_ROOT_DIR}")
 set(obs-browser_LIBRARIES
 	libobs
 	obs-frontend-api
+	Qt5::Core
+	Qt5::Widgets
+	w32-pthreads
 	)
 
 list(APPEND obs-browser_LIBRARIES
@@ -64,6 +79,9 @@ set(obs-browser_SOURCES
 	deps/json11/json11.cpp
 	deps/base64/base64.cpp
 	deps/wide-string.cpp
+	streamelements/StreamElementsAsyncTaskQueue.cpp
+	streamelements/StreamElementsCefClient.cpp
+	streamelements/StreamElementsBrowserWidget.cpp
 	)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
@@ -75,6 +93,9 @@ set(obs-browser_HEADERS
 	deps/base64/base64.hpp
 	deps/wide-string.hpp
 	cef-headers.hpp
+	streamelements/StreamElementsAsyncTaskQueue.hpp
+	streamelements/StreamElementsCefClient.hpp
+	streamelements/StreamElementsBrowserWidget.hpp
 	)
 
 add_library(obs-browser MODULE
