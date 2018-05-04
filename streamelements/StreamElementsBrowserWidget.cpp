@@ -2,15 +2,6 @@
 #include "StreamElementsCefClient.hpp"
 #include <functional>
 
-/* ========================================================================= */
-
-#define CEF_REQUIRE_UI_THREAD()       DCHECK(CefCurrentlyOn(TID_UI));
-#define CEF_REQUIRE_IO_THREAD()       DCHECK(CefCurrentlyOn(TID_IO));
-#define CEF_REQUIRE_FILE_THREAD()     DCHECK(CefCurrentlyOn(TID_FILE));
-#define CEF_REQUIRE_RENDERER_THREAD() DCHECK(CefCurrentlyOn(TID_RENDERER));
-
-/* ========================================================================= */
-
 static class BrowserTask : public CefTask {
 public:
 	std::function<void()> task;
@@ -36,8 +27,14 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent):
 	setAttribute(Qt::WA_NativeWindow);
 
 	// This influences docking widget width/height
-	setMinimumWidth(400);
-	setMinimumHeight(200);
+	//setMinimumWidth(400);
+	//setMinimumHeight(200);
+
+	QSizePolicy policy;
+	policy.setHorizontalPolicy(QSizePolicy::Expanding);
+	policy.setVerticalPolicy(QSizePolicy::Expanding);
+	setSizePolicy(policy);
+	//, QSizePolicy::ExpandFlag
 }
 
 
@@ -139,7 +136,6 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		cefBrowserSettings.Reset();
 		cefBrowserSettings.javascript_close_windows = STATE_DISABLED;
 		cefBrowserSettings.local_storage = STATE_DISABLED;
-		cefBrowserSettings.windowless_frame_rate = 30;
 
 		m_cef_browser =
 			CefBrowserHost::CreateBrowserSync(
@@ -148,6 +144,8 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 				url,
 				cefBrowserSettings,
 				nullptr);
+
+		UpdateBrowserSize();
 	}, true);
 }
 

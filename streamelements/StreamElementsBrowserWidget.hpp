@@ -20,6 +20,8 @@
 
 #include "StreamElementsAsyncTaskQueue.hpp"
 
+#include <QtWidgets>
+
 class StreamElementsBrowserWidget:
 	public QWidget
 
@@ -60,7 +62,23 @@ protected:
 		QWidget::hideEvent(hideEvent);
 	}
 
+	virtual void resizeEvent(QResizeEvent* event) override
+	{
+		QWidget::resizeEvent(event);
+
+		UpdateBrowserSize();
+	}
+
 private:
+	void UpdateBrowserSize()
+	{
+		if (!!m_cef_browser.get()) {
+			HWND hWnd = m_cef_browser->GetHost()->GetWindowHandle();
+
+			SetWindowPos(hWnd, HWND_TOP, 0, 0, width(), height(), SWP_DRAWFRAME | SWP_SHOWWINDOW);
+		}
+	}
+
 	void DestroyBrowser()
 	{
 		if (m_cef_browser.get() != NULL) {

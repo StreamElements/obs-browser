@@ -44,6 +44,8 @@ static thread manager_thread;
 #include "streamelements/StreamElementsBrowserWidget.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
+#include <QGridLayout>
+#include <QPushButton>
 
 /* ========================================================================= */
 

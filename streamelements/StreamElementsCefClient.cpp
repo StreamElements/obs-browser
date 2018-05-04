@@ -5,6 +5,15 @@
 
 using namespace json11;
 
+/* ========================================================================= */
+
+#define CEF_REQUIRE_UI_THREAD()       DCHECK(CefCurrentlyOn(TID_UI));
+#define CEF_REQUIRE_IO_THREAD()       DCHECK(CefCurrentlyOn(TID_IO));
+#define CEF_REQUIRE_FILE_THREAD()     DCHECK(CefCurrentlyOn(TID_FILE));
+#define CEF_REQUIRE_RENDERER_THREAD() DCHECK(CefCurrentlyOn(TID_RENDERER));
+
+/* ========================================================================= */
+
 bool StreamElementsCefClient::OnProcessMessageReceived(
 	CefRefPtr<CefBrowser> browser,
 	CefProcessId,
