@@ -370,6 +370,11 @@ bool obs_module_load(void)
 		new QDockWidget("Hello World!", obs_main_window);
 
 	dock->setAllowedAreas(Qt::TopDockWidgetArea);
+	dock->setFeatures(
+		QDockWidget::DockWidgetFloatable |
+		// QDockWidget::DockWidgetClosable
+		QDockWidget::DockWidgetMovable
+	);
 
 	StreamElementsBrowserWidget* widget =
 		new StreamElementsBrowserWidget(dock);
@@ -377,6 +382,9 @@ bool obs_module_load(void)
 	dock->setWidget(widget);
 
 	obs_main_window->addDockWidget(Qt::TopDockWidgetArea, dock);
+
+	// Will crash on exit
+	// obs_main_window->setCentralWidget(widget);
 
 	obs_frontend_pop_ui_translation();
 
