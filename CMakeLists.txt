@@ -79,6 +79,7 @@ set(obs-browser_SOURCES
 	deps/json11/json11.cpp
 	deps/base64/base64.cpp
 	deps/wide-string.cpp
+	streamelements/Version.cpp
 	streamelements/StreamElementsAsyncTaskQueue.cpp
 	streamelements/StreamElementsCefClient.cpp
 	streamelements/StreamElementsBrowserWidget.cpp
