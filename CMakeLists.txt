@@ -83,6 +83,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsAsyncTaskQueue.cpp
 	streamelements/StreamElementsCefClient.cpp
 	streamelements/StreamElementsBrowserWidget.cpp
+	streamelements/StreamElementsBandwidthTestClient.cpp
 	)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
@@ -94,9 +95,11 @@ set(obs-browser_HEADERS
 	deps/base64/base64.hpp
 	deps/wide-string.hpp
 	cef-headers.hpp
+	streamelements/StreamElementsUtils.hpp
 	streamelements/StreamElementsAsyncTaskQueue.hpp
 	streamelements/StreamElementsCefClient.hpp
 	streamelements/StreamElementsBrowserWidget.hpp
+	streamelements/StreamElementsBandwidthTestClient.hpp
 	)
 
 add_library(obs-browser MODULE

@@ -41,7 +41,9 @@ using namespace json11;
 
 static thread manager_thread;
 
+#include "streamelements/StreamElementsUtils.hpp"
 #include "streamelements/StreamElementsBrowserWidget.hpp"
+#include "streamelements/StreamElementsBandwidthTestClient.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -352,14 +354,13 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void *)
 
 bool obs_module_load(void)
 {
+	// Enable CEF high DPI support
 	CefEnableHighDPISupport();
 
 	manager_thread = thread(BrowserManagerThread);
 
 	RegisterBrowserSource();
 	obs_frontend_add_event_callback(handle_obs_frontend_event, nullptr);
-
-	// Enable CEF high DPI support
 
 	// Browser dialog setup
 	obs_frontend_push_ui_translation(obs_module_get_string);
@@ -388,6 +389,39 @@ bool obs_module_load(void)
 
 	obs_frontend_pop_ui_translation();
 
+
+	thread asyncThread = thread([]() {
+		os_sleep_ms(1000);
+
+		QtPostTask([]() -> void {
+			// Add button in controls dock
+			QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
+
+			QDockWidget* controlsDock = (QDockWidget*)obs_main_window->findChild<QDockWidget*>("controlsDock");
+			//QPushButton* streamButton = (QPushButton*)controlsDock->findChild<QPushButton*>("streamButton");
+			QVBoxLayout* buttonsVLayout = (QVBoxLayout*)controlsDock->findChild<QVBoxLayout*>("buttonsVLayout");
+
+			QPushButton* newButton = new QPushButton(QString("Hello World"));
+			buttonsVLayout->addWidget(newButton);
+		});
+
+		// Test bandwidth
+		StreamElementsBandwidthTestClient* bwClient =
+			new StreamElementsBandwidthTestClient();
+
+		int result =
+			bwClient->TestServerBitsPerSecond(
+				"rtmp://live-fra.twitch.tv/app",
+				"live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest",
+				10000 * 1000,
+				NULL,
+				3);
+
+		char buf[512];
+		sprintf(buf, "Bits per second: %d", result);
+		::MessageBoxA(0, buf, buf, 0);
+	});
+	asyncThread.detach();
 
 	return true;
 }
