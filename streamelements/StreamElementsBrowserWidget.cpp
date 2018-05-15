@@ -113,7 +113,7 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 	CefUIThreadExecute([this]() {
 		StreamElementsBrowserWidget* self = this;
 
-		CefString url = "http://www.google.com/";
+		CefString url = "http://streamelements.local/index.html";
 
 		// Client area rectangle
 		RECT clientRect;

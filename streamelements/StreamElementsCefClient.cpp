@@ -2,6 +2,7 @@
 #include "base64/base64.hpp"
 #include "json11/json11.hpp"
 #include <obs-frontend-api.h>
+#include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
 using namespace json11;
 
@@ -33,7 +34,48 @@ bool StreamElementsCefClient::OnProcessMessageReceived(
 		};
 
 	}
+	else if (name == "CefRenderProcessHandler::OnContextCreated") {
+		// Context created, request creation of window.host object
+		// with API methods
+		CefRefPtr<CefValue> root = CefValue::Create();
+
+		CefRefPtr<CefDictionaryValue> rootDictionary = CefDictionaryValue::Create();
+		root->SetDictionary(rootDictionary);
+
+		auto addFunction = [&](
+			const char* functionName,
+			const char* messageName,
+			const int numInputArgs)
+		{
+			CefRefPtr<CefDictionaryValue> function = CefDictionaryValue::Create();
+
+			function->SetString("message", messageName);
+			function->SetInt("numInputArgs", numInputArgs);
+
+			rootDictionary->SetDictionary(functionName, function);
+		};
+
+		// Add function definitions
+		addFunction("getWidgets", "StreamElementsCefClient::GetWidgets", 0);
+		addFunction("addWidget", "StreamElementsCefClient::AddWidget", 0);
+		addFunction("removeAllWidgets", "StreamElementsCefClient::RemoveAllWidgets", 0);
+		addFunction("removeWidgetById", "StreamElementsCefClient::RemoveWidgetById", 0);
+
+		// Convert data to JSON
+		CefString jsonString =
+			CefWriteJSON(root, JSON_WRITER_DEFAULT);
+
+		// Send request to renderer process
+		CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("CefRenderProcessHandler::BindJavaScriptFunctions");
+		msg->GetArgumentList()->SetString(0, "host");
+		msg->GetArgumentList()->SetString(1, jsonString);
+		browser->SendProcessMessage(PID_RENDERER, msg);
+
+		return true;
+	}
 	else {
+		// ::MessageBoxA(0, name.c_str(), name.c_str(), 0);
+
 		return false;
 	}
 
