@@ -66,7 +66,13 @@ StreamElementsAsyncTaskQueue::StreamElementsAsyncTaskQueue(const char* const lab
 						task.task_proc(task.args);
 					}
 
+					// Lock queue access mutex
+					pthread_mutex_lock(&self->m_dispatchLock);
+
 					self->m_asyncBusy = false;
+
+					// Unlock queue access mutex
+					pthread_mutex_unlock(&self->m_dispatchLock);
 				}
 			}
 		}

@@ -1,5 +1,7 @@
 #include "StreamElementsBandwidthTestClient.hpp"
 
+#include <thread>
+
 StreamElementsBandwidthTestClient::StreamElementsBandwidthTestClient() :
 	m_taskQueue("StreamElementsBandwidthTestClient task queue")
 {
@@ -19,7 +21,7 @@ StreamElementsBandwidthTestClient::~StreamElementsBandwidthTestClient()
 	os_event_destroy(m_event_state_changed);
 }
 
-StreamElementsBandwidthTestClient::Result& StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
+StreamElementsBandwidthTestClient::Result StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 	const char* serverUrl,
 	const char* streamKey,
 	const int maxBitrateBitsPerSecond,
@@ -182,6 +184,10 @@ StreamElementsBandwidthTestClient::Result& StreamElementsBandwidthTestClient::Te
 	if (!result.success)
 	{
 		obs_output_force_stop(output);
+
+		if (m_state == Cancelled) {
+			result.cancelled = true;
+		}
 	}
 
 	signal_handler_disconnect(output_signal_handler, "start", on_started, this);
@@ -262,4 +268,61 @@ void StreamElementsBandwidthTestClient::CancelAll()
 	if (m_taskQueue.IsBusy()) {
 		os_event_wait(m_event_async_done);
 	}
+}
+
+void StreamElementsBandwidthTestClient::TestMultipleServersBitsPerSecondAsync(
+	std::vector<Server> servers,
+	const int maxBitrateBitsPerSecond,
+	const char* const bindToIP,
+	const int durationSeconds,
+	const TestMultipleServersBitsPerSecondAsyncCallback callback,
+	void* const data)
+{
+	struct local_context {
+		StreamElementsBandwidthTestClient* self;
+		TestMultipleServersBitsPerSecondAsyncCallback callback;
+		void* data;
+		std::vector<Server> servers;
+		std::vector<Result> results;
+
+		int maxBitrateBitsPerSecond;
+		std::string bindToIP;
+		int durationSeconds;
+	};
+
+	local_context* context = new local_context();
+
+	context->self = this;
+	context->callback = callback;
+	context->data = data;
+	context->servers = servers;
+
+	if (bindToIP) {
+		context->bindToIP = bindToIP;
+	}
+
+	context->maxBitrateBitsPerSecond = maxBitrateBitsPerSecond;
+	context->durationSeconds = durationSeconds;
+
+	std::thread worker = std::thread([=]() {
+		for (int i = 0; i < context->servers.size(); ++i) {
+			Result testResult = TestServerBitsPerSecond(
+				context->servers[i].url.c_str(),
+				context->servers[i].streamKey.c_str(),
+				context->maxBitrateBitsPerSecond,
+				context->bindToIP.empty() ? nullptr : context->bindToIP.c_str(),
+				context->durationSeconds);
+
+			if (testResult.cancelled)
+				break;
+
+			context->results.emplace_back(testResult);
+		}
+
+		context->callback(&context->results, context->data);
+
+		delete context;
+	});
+
+	worker.detach();
 }

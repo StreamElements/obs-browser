@@ -87,5 +87,16 @@ public:
 	///
 	// Is busy?
 	//
-	bool IsBusy() { return m_asyncBusy; }
+	bool IsBusy()
+	{
+		// Lock queue access mutex
+		pthread_mutex_lock(&m_dispatchLock);
+
+		bool result = m_asyncBusy;
+
+		// Unlock queue access mutex
+		pthread_mutex_unlock(&m_dispatchLock);
+
+		return result;
+	}
 };

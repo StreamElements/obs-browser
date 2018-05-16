@@ -84,6 +84,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsCefClient.cpp
 	streamelements/StreamElementsBrowserWidget.cpp
 	streamelements/StreamElementsBandwidthTestClient.cpp
+	streamelements/StreamElementsObsBandwidthTestClient.cpp
 	)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
@@ -100,6 +101,7 @@ set(obs-browser_HEADERS
 	streamelements/StreamElementsCefClient.hpp
 	streamelements/StreamElementsBrowserWidget.hpp
 	streamelements/StreamElementsBandwidthTestClient.hpp
+	streamelements/StreamElementsObsBandwidthTestClient.hpp
 	)
 
 add_library(obs-browser MODULE

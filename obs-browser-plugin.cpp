@@ -43,7 +43,7 @@ static thread manager_thread;
 
 #include "streamelements/StreamElementsUtils.hpp"
 #include "streamelements/StreamElementsBrowserWidget.hpp"
-#include "streamelements/StreamElementsBandwidthTestClient.hpp"
+#include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -352,7 +352,7 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void *)
 	}
 }
 
-static StreamElementsBandwidthTestClient* s_bwClient;
+static StreamElementsObsBandwidthTestClient* s_bwClient;
 
 bool obs_module_load(void)
 {
@@ -404,43 +404,38 @@ bool obs_module_load(void)
 		buttonsVLayout->addWidget(newButton);
 	});
 
-	s_bwClient = new StreamElementsBandwidthTestClient();
+	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
 	QtPostTask([]() -> void {
+		std::vector<StreamElementsBandwidthTestClient::Server> servers;
+
+		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-fra.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
+		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-ams.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
+		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
+
 		// Test bandwidth
-		s_bwClient->TestServerBitsPerSecondAsync(
-			"rtmp://live-fra.twitch.tv/app",
-			"live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest",
+		s_bwClient->TestMultipleServersBitsPerSecondAsync(
+			servers,
 			10000 * 1000,
 			NULL,
-			120,
-			[](StreamElementsBandwidthTestClient::Result* result, void* data)
+			3,
+			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
 			{
 				char buf[512];
 
-				sprintf(buf, "Success: %s | Bits per second: %d | Connect time %lu ms",
-					result->success ? "true" : "false",
-					result->bitsPerSecond,
-					result->connectTimeMilliseconds);
+				for (size_t i = 0; i < results->size(); ++i) {
+					StreamElementsBandwidthTestClient::Result result = (*results)[i];
 
-				::MessageBoxA(0, buf, buf, 0);
+					sprintf(buf, "Server: %s | Success: %s | Bits per second: %d | Connect time %lu ms",
+						result.serverUrl.c_str(),
+						result.success ? "true" : "false",
+						result.bitsPerSecond,
+						result.connectTimeMilliseconds);
+
+					::MessageBoxA(0, buf, buf, 0);
+				}
 			},
 			nullptr);
-
-		obs_frontend_event_cb exit_frontend_event_handler = [](enum obs_frontend_event event, void *data)
-		{
-			if (event == OBS_FRONTEND_EVENT_EXIT)
-			{
-				delete s_bwClient;
-
-				s_bwClient = nullptr;
-
-				obs_frontend_remove_event_callback((obs_frontend_event_cb)data, data);
-			}
-		};
-
-		obs_frontend_add_event_callback(exit_frontend_event_handler, (void*)exit_frontend_event_handler);
-
 	});
 
 	return true;
@@ -448,6 +443,8 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	delete s_bwClient;
+
 	if (manager_thread.joinable()) {
 		while (!QueueCEFTask([] () {CefQuitMessageLoop();}))
 			os_sleep_ms(5);

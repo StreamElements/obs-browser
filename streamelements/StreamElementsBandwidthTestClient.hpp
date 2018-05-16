@@ -12,14 +12,35 @@
 class StreamElementsBandwidthTestClient
 {
 public:
+	class Server
+	{
+	public:
+		std::string url;
+		std::string streamKey;
+
+		Server() { }
+		Server(const char* const url, const char* const streamKey): url(url), streamKey(streamKey) { }
+		Server(Server& other) : url(other.url), streamKey(other.streamKey) { }
+	};
+
 	class Result
 	{
 	public:
 		bool success = false;
+		bool cancelled = false;
 		std::string serverUrl;
 		std::string streamKey;
 		uint64_t bitsPerSecond = 0L;
 		uint64_t connectTimeMilliseconds = 0L;
+
+		Result() { }
+		Result(Result& other):
+			success(other.success),
+			cancelled(other.cancelled),
+			serverUrl(other.serverUrl),
+			streamKey(other.streamKey),
+			bitsPerSecond(other.bitsPerSecond),
+			connectTimeMilliseconds(other.connectTimeMilliseconds) { }
 	};
 
 private:
@@ -49,6 +70,7 @@ private:
 
 public:
 	typedef void(*TestServerBitsPerSecondAsyncCallback)(Result*, void*);
+	typedef void(*TestMultipleServersBitsPerSecondAsyncCallback)(std::vector<Result>*, void*);
 
 	StreamElementsBandwidthTestClient();
 	virtual ~StreamElementsBandwidthTestClient();
@@ -62,10 +84,18 @@ public:
 		const TestServerBitsPerSecondAsyncCallback callback,
 		void* const data);
 
+	void TestMultipleServersBitsPerSecondAsync(
+		std::vector<Server> servers,
+		const int maxBitrateBitsPerSecond,
+		const char* const bindToIP,
+		const int durationSeconds,
+		const TestMultipleServersBitsPerSecondAsyncCallback callback,
+		void* const data);
+
 	void CancelAll();
 
 private:
-	Result & TestServerBitsPerSecond(
+	Result TestServerBitsPerSecond(
 		const char* serverUrl,
 		const char* streamKey,
 		const int maxBitrateBitsPerSecond,
