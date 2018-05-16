@@ -1,64 +1,38 @@
 #include "StreamElementsBandwidthTestClient.hpp"
-#include <util/platform.h>
-#include <util/threading.h>
 
-StreamElementsBandwidthTestClient::StreamElementsBandwidthTestClient()
+StreamElementsBandwidthTestClient::StreamElementsBandwidthTestClient() :
+	m_taskQueue("StreamElementsBandwidthTestClient task queue")
 {
+	os_event_init(&m_event_state_changed, OS_EVENT_TYPE_AUTO);
+	os_event_init(&m_event_async_done, OS_EVENT_TYPE_MANUAL);
+
+	// Initially done
+	os_event_signal(m_event_async_done);
 }
 
 
 StreamElementsBandwidthTestClient::~StreamElementsBandwidthTestClient()
 {
+	CancelAll();
+
+	os_event_destroy(m_event_async_done);
+	os_event_destroy(m_event_state_changed);
 }
 
-uint64_t StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
+StreamElementsBandwidthTestClient::Result& StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 	const char* serverUrl,
 	const char* streamKey,
 	const int maxBitrateBitsPerSecond,
 	const char* bindToIP,
 	const int durationSeconds)
 {
-	uint64_t resultBitsPerSecond = 0L;
+	StreamElementsBandwidthTestClient::Result result;
 
-	enum state_enum {
-		Starting = 0,
-		Running = 1,
-		Stopped = 2
-	};
+	result.serverUrl = serverUrl;
+	result.streamKey = streamKey;
 
-	struct local_context
-	{
-	public:
-		os_event_t* event_state_changed;
-		state_enum state = Starting;
-
-		local_context()
-		{
-			os_event_init(&event_state_changed, OS_EVENT_TYPE_AUTO);
-		}
-
-		~local_context()
-		{
-			os_event_destroy(event_state_changed);
-		}
-
-		void wait_state_changed()
-		{
-			os_event_wait(event_state_changed);
-		}
-
-		void wait_state_changed(unsigned long milliseconds)
-		{
-			os_event_timedwait(event_state_changed, milliseconds);
-		}
-
-		void signal_state_changed()
-		{
-			os_event_signal(event_state_changed);
-		}
-	};
-
-	local_context context;
+	m_state = Running;
+	os_event_reset(m_event_state_changed);
 
 	obs_encoder_t* vencoder = obs_video_encoder_create("obs_x264", "test_x264", nullptr, nullptr);
 	obs_encoder_t* aencoder = obs_audio_encoder_create("ffmpeg_aac", "test_aac", nullptr, 0, nullptr);
@@ -122,39 +96,35 @@ uint64_t StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 
 	auto on_started = [](void* data, calldata_t*)
 	{
-		local_context* context = (local_context*)data;
+		StreamElementsBandwidthTestClient* self = (StreamElementsBandwidthTestClient*)data;
 
-		context->state = Running;
-		context->signal_state_changed();
+		self->set_state(Running);
 	};
 
 	auto on_stopped = [](void* data, calldata_t*)
 	{
-		local_context* context = (local_context*)data;
+		StreamElementsBandwidthTestClient* self = (StreamElementsBandwidthTestClient*)data;
 
-		context->state = Stopped;
-		context->signal_state_changed();
+		self->set_state(Stopped);
 	};
 
 	signal_handler *output_signal_handler = obs_output_get_signal_handler(output);
-	signal_handler_connect(output_signal_handler, "start", on_started, &context);
-	signal_handler_connect(output_signal_handler, "stop", on_stopped, &context);
+	signal_handler_connect(output_signal_handler, "start", on_started, this);
+	signal_handler_connect(output_signal_handler, "stop", on_stopped, this);
 
 	// Start testing
 
-	bool success = false;
-
 	if (obs_output_start(output))
 	{
-		context.wait_state_changed();
+		wait_state_changed();
 
-		if (context.state != Stopped)
+		if (m_state == Running)
 		{
 			// ignore first WARMUP_DURATION_MS due to possible buffering skewing
 			// the result
-			context.wait_state_changed(WARMUP_DURATION_MS);
+			wait_state_changed(WARMUP_DURATION_MS);
 
-			if (context.state == Running)
+			if (m_state == Running)
 			{
 				// Test bandwidth
 
@@ -162,15 +132,15 @@ uint64_t StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 				uint64_t start_bytes = obs_output_get_total_bytes(output);
 				uint64_t start_time_ns = os_gettime_ns();
 
-				context.wait_state_changed((unsigned long)durationSeconds * 1000L);
+				wait_state_changed((unsigned long)durationSeconds * 1000L);
 
-				if (context.state == Running)
+				if (m_state == Running)
 				{
 					// Still running
 					obs_output_stop(output);
 
 					// Wait for stopped
-					context.wait_state_changed();
+					wait_state_changed();
 
 					// Get end metrics
 					uint64_t end_bytes = obs_output_get_total_bytes(output);
@@ -183,38 +153,39 @@ uint64_t StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 					uint64_t total_bits = total_bytes * 8L;
 					uint64_t total_time_seconds = total_time_ns / 1000000000L;
 
-					resultBitsPerSecond = total_bits / total_time_seconds;
+					result.connectTimeMilliseconds = obs_output_get_connect_time_ms(output);
+					result.bitsPerSecond = total_bits / total_time_seconds;
 
 					if (obs_output_get_frames_dropped(output))
 					{
 						// Frames were dropped, use 70% of available bandwidth
-						resultBitsPerSecond =
-							resultBitsPerSecond * 70L / 100L;
+						result.bitsPerSecond =
+							result.bitsPerSecond * 70L / 100L;
 					}
 					else
 					{
 						// No frames were dropped, use 100% of available bandwidth
-						resultBitsPerSecond =
-							resultBitsPerSecond * 100L / 100L;
+						result.bitsPerSecond =
+							result.bitsPerSecond * 100L / 100L;
 					}
 
 					// Ceiling
-					if (resultBitsPerSecond > maxBitrateBitsPerSecond)
-						resultBitsPerSecond = maxBitrateBitsPerSecond;
+					if (result.bitsPerSecond > maxBitrateBitsPerSecond)
+						result.bitsPerSecond = maxBitrateBitsPerSecond;
 
-					success = true;
+					result.success = true;
 				}
 			}
 		}
 	}
 
-	if (!success)
+	if (!result.success)
 	{
 		obs_output_force_stop(output);
 	}
 
-	signal_handler_disconnect(output_signal_handler, "start", on_started, &context);
-	signal_handler_disconnect(output_signal_handler, "stop", on_started, &context);
+	signal_handler_disconnect(output_signal_handler, "start", on_started, this);
+	signal_handler_disconnect(output_signal_handler, "stop", on_started, this);
 
 	obs_output_release(output);
 	obs_service_release(service);
@@ -226,5 +197,69 @@ uint64_t StreamElementsBandwidthTestClient::TestServerBitsPerSecond(
 	obs_data_release(vencoder_settings);
 	obs_data_release(aencoder_settings);
 
-	return resultBitsPerSecond;
+	return result;
+}
+
+void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
+	const char* const serverUrl,
+	const char* const streamKey,
+	const int maxBitrateBitsPerSecond,
+	const char* const bindToIP,
+	const int durationSeconds,
+	const TestServerBitsPerSecondAsyncCallback callback,
+	void* const data)
+{
+	// Not done
+	os_event_reset(m_event_async_done);
+
+	struct local_context {
+		StreamElementsBandwidthTestClient* self;
+		std::string serverUrl;
+		std::string streamKey;
+		int maxBitrateBitsPerSecond;
+		std::string bindToIP;
+		int durationSeconds;
+		TestServerBitsPerSecondAsyncCallback callback;
+		void* data;
+	};
+
+	local_context* context = new local_context();
+
+	context->self = this;
+	context->serverUrl = serverUrl;
+	context->streamKey = streamKey;
+	context->maxBitrateBitsPerSecond = maxBitrateBitsPerSecond;
+
+	if (bindToIP)
+		context->bindToIP = bindToIP;
+
+	context->durationSeconds = durationSeconds;
+	context->callback = callback;
+	context->data = data;
+
+	m_taskQueue.Enqueue([](void* data) {
+		local_context* context = (local_context*)data;
+
+		Result result = context->self->TestServerBitsPerSecond(
+			context->serverUrl.c_str(),
+			context->streamKey.c_str(),
+			context->maxBitrateBitsPerSecond,
+			context->bindToIP.empty() ? nullptr : context->bindToIP.c_str(),
+			context->durationSeconds);
+
+		context->callback(&result, context->data);
+
+		os_event_signal(context->self->m_event_async_done);
+	}, context);
+}
+
+void StreamElementsBandwidthTestClient::CancelAll()
+{
+	m_taskQueue.RemoveAll();
+
+	set_state(Cancelled);
+
+	if (m_taskQueue.IsBusy()) {
+		os_event_wait(m_event_async_done);
+	}
 }

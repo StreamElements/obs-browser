@@ -54,11 +54,17 @@ private:
 	// The worker thread will be running while the value of this variable is true
 	bool m_continue_running;
 
+	// Thread label
+	std::string m_label;
+
+	// Is currently busy?
+	bool m_asyncBusy = false;
+
 public:
 	///
 	// Class constructor
 	//
-	StreamElementsAsyncTaskQueue();
+	StreamElementsAsyncTaskQueue(const char* const label = nullptr);
 
 	///
 	// Class destructor
@@ -72,4 +78,14 @@ public:
 	// @param args		Task argument
 	//
 	void Enqueue(void(*task_proc)(void*), void* args);
+
+	///
+	// Remove all pending tasks
+	//
+	void RemoveAll();
+
+	///
+	// Is busy?
+	//
+	bool IsBusy() { return m_asyncBusy; }
 };

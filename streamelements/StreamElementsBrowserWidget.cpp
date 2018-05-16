@@ -21,7 +21,8 @@ static bool QueueCEFTask(std::function<void()> task)
 
 StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent):
 	QWidget(parent),
-	m_window_handle(0)
+	m_window_handle(0),
+	m_task_queue("StreamElementsBrowserWidget task queue")
 {
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);

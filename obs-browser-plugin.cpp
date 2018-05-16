@@ -352,6 +352,8 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void *)
 	}
 }
 
+static StreamElementsBandwidthTestClient* s_bwClient;
+
 bool obs_module_load(void)
 {
 	// Enable CEF high DPI support
@@ -390,38 +392,56 @@ bool obs_module_load(void)
 	obs_frontend_pop_ui_translation();
 
 
-	thread asyncThread = thread([]() {
-		os_sleep_ms(1000);
+	QtPostTask([]() -> void {
+		// Add button in controls dock
+		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
 
-		QtPostTask([]() -> void {
-			// Add button in controls dock
-			QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
+		QDockWidget* controlsDock = (QDockWidget*)obs_main_window->findChild<QDockWidget*>("controlsDock");
+		//QPushButton* streamButton = (QPushButton*)controlsDock->findChild<QPushButton*>("streamButton");
+		QVBoxLayout* buttonsVLayout = (QVBoxLayout*)controlsDock->findChild<QVBoxLayout*>("buttonsVLayout");
 
-			QDockWidget* controlsDock = (QDockWidget*)obs_main_window->findChild<QDockWidget*>("controlsDock");
-			//QPushButton* streamButton = (QPushButton*)controlsDock->findChild<QPushButton*>("streamButton");
-			QVBoxLayout* buttonsVLayout = (QVBoxLayout*)controlsDock->findChild<QVBoxLayout*>("buttonsVLayout");
-
-			QPushButton* newButton = new QPushButton(QString("Hello World"));
-			buttonsVLayout->addWidget(newButton);
-		});
-
-		// Test bandwidth
-		StreamElementsBandwidthTestClient* bwClient =
-			new StreamElementsBandwidthTestClient();
-
-		int result =
-			bwClient->TestServerBitsPerSecond(
-				"rtmp://live-fra.twitch.tv/app",
-				"live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest",
-				10000 * 1000,
-				NULL,
-				3);
-
-		char buf[512];
-		sprintf(buf, "Bits per second: %d", result);
-		::MessageBoxA(0, buf, buf, 0);
+		QPushButton* newButton = new QPushButton(QString("Hello World"));
+		buttonsVLayout->addWidget(newButton);
 	});
-	asyncThread.detach();
+
+	s_bwClient = new StreamElementsBandwidthTestClient();
+
+	QtPostTask([]() -> void {
+		// Test bandwidth
+		s_bwClient->TestServerBitsPerSecondAsync(
+			"rtmp://live-fra.twitch.tv/app",
+			"live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest",
+			10000 * 1000,
+			NULL,
+			120,
+			[](StreamElementsBandwidthTestClient::Result* result, void* data)
+			{
+				char buf[512];
+
+				sprintf(buf, "Success: %s | Bits per second: %d | Connect time %lu ms",
+					result->success ? "true" : "false",
+					result->bitsPerSecond,
+					result->connectTimeMilliseconds);
+
+				::MessageBoxA(0, buf, buf, 0);
+			},
+			nullptr);
+
+		obs_frontend_event_cb exit_frontend_event_handler = [](enum obs_frontend_event event, void *data)
+		{
+			if (event == OBS_FRONTEND_EVENT_EXIT)
+			{
+				delete s_bwClient;
+
+				s_bwClient = nullptr;
+
+				obs_frontend_remove_event_callback((obs_frontend_event_cb)data, data);
+			}
+		};
+
+		obs_frontend_add_event_callback(exit_frontend_event_handler, (void*)exit_frontend_event_handler);
+
+	});
 
 	return true;
 }
