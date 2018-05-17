@@ -1,14 +1,16 @@
 #pragma once
 
 #include "StreamElementsBandwidthTestClient.hpp"
+#include "StreamElementsObsAppMonitor.hpp"
 
 class StreamElementsObsBandwidthTestClient :
-	public StreamElementsBandwidthTestClient
+	public StreamElementsBandwidthTestClient,
+	public StreamElementsObsAppMonitor
 {
 public:
 	StreamElementsObsBandwidthTestClient();
 	virtual ~StreamElementsObsBandwidthTestClient();
 
-private:
-	static void obs_frontend_event_handler(enum obs_frontend_event event, void *data);
+protected:
+	virtual void OnObsExit() override;
 };

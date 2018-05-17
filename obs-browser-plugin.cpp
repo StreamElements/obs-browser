@@ -44,6 +44,7 @@ static thread manager_thread;
 #include "streamelements/StreamElementsUtils.hpp"
 #include "streamelements/StreamElementsBrowserWidget.hpp"
 #include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
+#include "streamelements/StreamElementsCentralWidgetManager.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -391,7 +392,6 @@ bool obs_module_load(void)
 
 	obs_frontend_pop_ui_translation();
 
-
 	QtPostTask([]() -> void {
 		// Add button in controls dock
 		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
@@ -413,6 +413,32 @@ bool obs_module_load(void)
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-ams.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 
+		struct local_context {
+			StreamElementsCentralWidgetManager* centralWidgetManager;
+
+			local_context() {
+				centralWidgetManager =
+					new StreamElementsCentralWidgetManager(
+					(QMainWindow*)obs_frontend_get_main_window());
+			}
+
+			~local_context() {
+				while (QWidget* popped = centralWidgetManager->Pop()) {
+					delete popped;
+				}
+
+				delete centralWidgetManager;
+			}
+		};
+
+		local_context* context = new local_context();
+
+		obs_frontend_push_ui_translation(obs_module_get_string);
+
+		context->centralWidgetManager->Push(new StreamElementsBrowserWidget(nullptr));
+
+		obs_frontend_pop_ui_translation();
+
 		// Test bandwidth
 		s_bwClient->TestMultipleServersBitsPerSecondAsync(
 			servers,
@@ -421,6 +447,8 @@ bool obs_module_load(void)
 			3,
 			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
 			{
+				local_context* context = (local_context*)data;
+
 				char buf[512];
 
 				for (size_t i = 0; i < results->size(); ++i) {
@@ -434,8 +462,10 @@ bool obs_module_load(void)
 
 					::MessageBoxA(0, buf, buf, 0);
 				}
+
+				delete context;
 			},
-			nullptr);
+			context);
 	});
 
 	return true;
