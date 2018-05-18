@@ -19,8 +19,9 @@ static bool QueueCEFTask(std::function<void()> task)
 
 /* ========================================================================= */
 
-StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent):
+StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const char* const url):
 	QWidget(parent),
+	m_url(url),
 	m_window_handle(0),
 	m_task_queue("StreamElementsBrowserWidget task queue")
 {
@@ -29,7 +30,8 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent):
 
 	// This influences docking widget width/height
 	//setMinimumWidth(400);
-	//setMinimumHeight(200);
+	setMinimumHeight(200);
+	//setFixedHeight(400);
 
 	QSizePolicy policy;
 	policy.setHorizontalPolicy(QSizePolicy::Expanding);
@@ -114,8 +116,6 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 	CefUIThreadExecute([this]() {
 		StreamElementsBrowserWidget* self = this;
 
-		CefString url = "http://streamelements.local/index.html";
-
 		// Client area rectangle
 		RECT clientRect;
 
@@ -142,7 +142,7 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 			CefBrowserHost::CreateBrowserSync(
 				windowInfo,
 				new StreamElementsCefClient(),
-				url,
+				m_url.c_str(),
 				cefBrowserSettings,
 				nullptr);
 

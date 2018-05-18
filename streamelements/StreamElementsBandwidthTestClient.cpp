@@ -181,10 +181,10 @@ StreamElementsBandwidthTestClient::Result StreamElementsBandwidthTestClient::Tes
 		}
 	}
 
+	obs_output_force_stop(output);
+
 	if (!result.success)
 	{
-		obs_output_force_stop(output);
-
 		if (m_state == Cancelled) {
 			result.cancelled = true;
 		}
@@ -246,6 +246,8 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 	m_taskQueue.Enqueue([](void* data) {
 		local_context* context = (local_context*)data;
 
+		context->self->m_async_busy = true;
+
 		Result result = context->self->TestServerBitsPerSecond(
 			context->serverUrl.c_str(),
 			context->streamKey.c_str(),
@@ -254,6 +256,8 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 			context->durationSeconds);
 
 		context->callback(&result, context->data);
+
+		context->self->m_async_busy = false;
 
 		os_event_signal(context->self->m_event_async_done);
 	}, context);
@@ -265,7 +269,7 @@ void StreamElementsBandwidthTestClient::CancelAll()
 
 	set_state(Cancelled);
 
-	if (m_taskQueue.IsBusy()) {
+	if (m_taskQueue.IsBusy() || m_async_busy) {
 		os_event_wait(m_event_async_done);
 	}
 }

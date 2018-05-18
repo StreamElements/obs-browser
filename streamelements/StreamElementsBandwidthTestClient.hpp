@@ -58,6 +58,7 @@ private:
 	os_event_t* m_event_state_changed;
 	os_event_t* m_event_async_done;
 	state_enum m_state = Stopped;
+	bool m_async_busy = false;
 
 private:
 	void wait_state_changed() { os_event_wait(m_event_state_changed); }

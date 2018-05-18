@@ -44,7 +44,7 @@ static thread manager_thread;
 #include "streamelements/StreamElementsUtils.hpp"
 #include "streamelements/StreamElementsBrowserWidget.hpp"
 #include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
-#include "streamelements/StreamElementsCentralWidgetManager.hpp"
+#include "streamelements/StreamElementsWidgetManager.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -381,7 +381,7 @@ bool obs_module_load(void)
 	);
 
 	StreamElementsBrowserWidget* widget =
-		new StreamElementsBrowserWidget(dock);
+		new StreamElementsBrowserWidget(dock, "http://streamelements.local/index.html");
 
 	dock->setWidget(widget);
 
@@ -414,16 +414,16 @@ bool obs_module_load(void)
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 
 		struct local_context {
-			StreamElementsCentralWidgetManager* centralWidgetManager;
+			StreamElementsWidgetManager* centralWidgetManager;
 
 			local_context() {
 				centralWidgetManager =
-					new StreamElementsCentralWidgetManager(
+					new StreamElementsWidgetManager(
 					(QMainWindow*)obs_frontend_get_main_window());
 			}
 
 			~local_context() {
-				while (QWidget* popped = centralWidgetManager->Pop()) {
+				while (QWidget* popped = centralWidgetManager->PopCentralWidget()) {
 					delete popped;
 				}
 
@@ -435,7 +435,8 @@ bool obs_module_load(void)
 
 		obs_frontend_push_ui_translation(obs_module_get_string);
 
-		context->centralWidgetManager->Push(new StreamElementsBrowserWidget(nullptr));
+		context->centralWidgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"));
+		context->centralWidgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com/"));
 
 		obs_frontend_pop_ui_translation();
 
@@ -448,6 +449,8 @@ bool obs_module_load(void)
 			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
 			{
 				local_context* context = (local_context*)data;
+
+				delete context->centralWidgetManager->PopCentralWidget();
 
 				char buf[512];
 

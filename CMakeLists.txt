@@ -85,7 +85,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsBrowserWidget.cpp
 	streamelements/StreamElementsBandwidthTestClient.cpp
 	streamelements/StreamElementsObsBandwidthTestClient.cpp
-	streamelements/StreamElementsCentralWidgetManager.cpp
+	streamelements/StreamElementsWidgetManager.cpp
 	streamelements/StreamElementsObsAppMonitor.cpp
 	)
 set(obs-browser_HEADERS
@@ -104,7 +104,7 @@ set(obs-browser_HEADERS
 	streamelements/StreamElementsBrowserWidget.hpp
 	streamelements/StreamElementsBandwidthTestClient.hpp
 	streamelements/StreamElementsObsBandwidthTestClient.hpp
-	streamelements/StreamElementsCentralWidgetManager.hpp
+	streamelements/StreamElementsWidgetManager.hpp
 	streamelements/StreamElementsObsAppMonitor.hpp
 	)
 

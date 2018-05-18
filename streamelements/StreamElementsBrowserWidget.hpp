@@ -28,8 +28,11 @@ class StreamElementsBrowserWidget:
 {
 	Q_OBJECT
 
+private:
+	std::string m_url;
+
 public:
-	StreamElementsBrowserWidget(QWidget* parent);
+	StreamElementsBrowserWidget(QWidget* parent, const char* const url);
 	~StreamElementsBrowserWidget();
 
 private:
