@@ -66,9 +66,6 @@ private:
 	void signal_state_changed() { os_event_signal(m_event_state_changed); }
 	void set_state(const state_enum new_state) { m_state = new_state; signal_state_changed(); }
 
-private:
-	StreamElementsAsyncTaskQueue m_taskQueue;
-
 public:
 	typedef void(*TestServerBitsPerSecondAsyncCallback)(Result*, void*);
 	typedef void(*TestMultipleServersBitsPerSecondAsyncCallback)(std::vector<Result>*, void*);

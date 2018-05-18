@@ -370,23 +370,6 @@ bool obs_module_load(void)
 
 	QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
 
-	QDockWidget* dock =
-		new QDockWidget("Hello World!", obs_main_window);
-
-	dock->setAllowedAreas(Qt::TopDockWidgetArea);
-	dock->setFeatures(
-		QDockWidget::DockWidgetFloatable |
-		// QDockWidget::DockWidgetClosable
-		QDockWidget::DockWidgetMovable
-	);
-
-	StreamElementsBrowserWidget* widget =
-		new StreamElementsBrowserWidget(dock, "http://streamelements.local/index.html");
-
-	dock->setWidget(widget);
-
-	obs_main_window->addDockWidget(Qt::TopDockWidgetArea, dock);
-
 	// Will crash on exit
 	// obs_main_window->setCentralWidget(widget);
 
@@ -414,20 +397,20 @@ bool obs_module_load(void)
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 
 		struct local_context {
-			StreamElementsWidgetManager* centralWidgetManager;
+			StreamElementsWidgetManager* widgetManager;
 
 			local_context() {
-				centralWidgetManager =
+				widgetManager =
 					new StreamElementsWidgetManager(
 					(QMainWindow*)obs_frontend_get_main_window());
 			}
 
 			~local_context() {
-				while (QWidget* popped = centralWidgetManager->PopCentralWidget()) {
+				while (QWidget* popped = widgetManager->PopCentralWidget()) {
 					delete popped;
 				}
 
-				delete centralWidgetManager;
+				delete widgetManager;
 			}
 		};
 
@@ -435,8 +418,35 @@ bool obs_module_load(void)
 
 		obs_frontend_push_ui_translation(obs_module_get_string);
 
-		context->centralWidgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"));
-		context->centralWidgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com/"));
+		// context->widgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"));
+		context->widgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com/"));
+
+
+		context->widgetManager->AddDockWidget(
+			"test1",
+			"Dynamic Widget 1",
+			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			Qt::LeftDockWidgetArea);
+
+		context->widgetManager->AddDockWidget(
+			"test2",
+			"Dynamic Widget 2",
+			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			Qt::RightDockWidgetArea);
+
+		context->widgetManager->AddDockWidget(
+			"test3",
+			"Dynamic Widget 3",
+			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			Qt::TopDockWidgetArea);
+
+		context->widgetManager->AddDockWidget(
+			"test4",
+			"Dynamic Widget 4",
+			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			Qt::TopDockWidgetArea);
+
+		context->widgetManager->RemoveDockWidget("test4");
 
 		obs_frontend_pop_ui_translation();
 
@@ -450,7 +460,7 @@ bool obs_module_load(void)
 			{
 				local_context* context = (local_context*)data;
 
-				delete context->centralWidgetManager->PopCentralWidget();
+				delete context->widgetManager->PopCentralWidget();
 
 				char buf[512];
 

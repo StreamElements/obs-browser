@@ -29,13 +29,12 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const 
 	setAttribute(Qt::WA_NativeWindow);
 
 	// This influences docking widget width/height
-	//setMinimumWidth(400);
+	setMinimumWidth(200);
 	setMinimumHeight(200);
-	//setFixedHeight(400);
 
 	QSizePolicy policy;
-	policy.setHorizontalPolicy(QSizePolicy::Expanding);
-	policy.setVerticalPolicy(QSizePolicy::Expanding);
+	policy.setHorizontalPolicy(QSizePolicy::Preferred);
+	policy.setVerticalPolicy(QSizePolicy::Preferred);
 	setSizePolicy(policy);
 	//, QSizePolicy::ExpandFlag
 }

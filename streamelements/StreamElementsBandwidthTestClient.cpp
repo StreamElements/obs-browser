@@ -2,8 +2,8 @@
 
 #include <thread>
 
-StreamElementsBandwidthTestClient::StreamElementsBandwidthTestClient() :
-	m_taskQueue("StreamElementsBandwidthTestClient task queue")
+StreamElementsBandwidthTestClient::StreamElementsBandwidthTestClient()
+	//: m_taskQueue("StreamElementsBandwidthTestClient task queue")
 {
 	os_event_init(&m_event_state_changed, OS_EVENT_TYPE_AUTO);
 	os_event_init(&m_event_async_done, OS_EVENT_TYPE_MANUAL);
@@ -181,22 +181,39 @@ StreamElementsBandwidthTestClient::Result StreamElementsBandwidthTestClient::Tes
 		}
 	}
 
-	obs_output_force_stop(output);
-
 	if (!result.success)
 	{
 		if (m_state == Cancelled) {
 			result.cancelled = true;
+
+			obs_output_force_stop(output);
+
+			wait_state_changed();
 		}
 	}
 
 	signal_handler_disconnect(output_signal_handler, "start", on_started, this);
-	signal_handler_disconnect(output_signal_handler, "stop", on_started, this);
+	signal_handler_disconnect(output_signal_handler, "stop", on_stopped, this);
 
-	obs_output_release(output);
-	obs_service_release(service);
-	obs_encoder_release(vencoder);
-	obs_encoder_release(aencoder);
+	///
+	// This part is copied as-is with minor modifications from
+	// obs/window-basic-auto-config-test.cpp method
+	// void AutoConfigTestPage::TestBandwidthThread()
+	//
+	// In that method, release calls are not made for reason which
+	// is yet to be investigated.
+	//
+	// It has been impirically determined, that if release calls
+	// *are* made, OBS will occasionally crash on shutdown.
+	//
+	// When those calls are commented out, the crash does not occur,
+	// therefor we'll keep them commented out until the reason for
+	// the subsequent crash is determined.
+	//
+	//obs_output_release(output);
+	//obs_service_release(service);
+	//obs_encoder_release(vencoder);
+	//obs_encoder_release(aencoder);
 
 	obs_data_release(output_settings);
 	obs_data_release(service_settings);
@@ -215,6 +232,13 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 	const TestServerBitsPerSecondAsyncCallback callback,
 	void* const data)
 {
+	assert(!m_async_busy);
+	assert(serverUrl);
+	assert(streamKey);
+	assert(maxBitrateBitsPerSecond > 0);
+	assert(durationSeconds > 0);
+	assert(callback);
+
 	// Not done
 	os_event_reset(m_event_async_done);
 
@@ -243,11 +267,9 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 	context->callback = callback;
 	context->data = data;
 
-	m_taskQueue.Enqueue([](void* data) {
-		local_context* context = (local_context*)data;
+	context->self->m_async_busy = true;
 
-		context->self->m_async_busy = true;
-
+	std::thread thread([=]() {
 		Result result = context->self->TestServerBitsPerSecond(
 			context->serverUrl.c_str(),
 			context->streamKey.c_str(),
@@ -260,16 +282,17 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 		context->self->m_async_busy = false;
 
 		os_event_signal(context->self->m_event_async_done);
-	}, context);
+
+		delete context;
+	});
+	thread.detach();
 }
 
 void StreamElementsBandwidthTestClient::CancelAll()
 {
-	m_taskQueue.RemoveAll();
-
 	set_state(Cancelled);
 
-	if (m_taskQueue.IsBusy() || m_async_busy) {
+	if (m_async_busy) {
 		os_event_wait(m_event_async_done);
 	}
 }
@@ -308,6 +331,8 @@ void StreamElementsBandwidthTestClient::TestMultipleServersBitsPerSecondAsync(
 	context->maxBitrateBitsPerSecond = maxBitrateBitsPerSecond;
 	context->durationSeconds = durationSeconds;
 
+	context->self->m_async_busy = true;
+
 	std::thread worker = std::thread([=]() {
 		for (int i = 0; i < context->servers.size(); ++i) {
 			Result testResult = TestServerBitsPerSecond(
@@ -324,6 +349,8 @@ void StreamElementsBandwidthTestClient::TestMultipleServersBitsPerSecondAsync(
 		}
 
 		context->callback(&context->results, context->data);
+
+		context->self->m_async_busy = false;
 
 		delete context;
 	});
