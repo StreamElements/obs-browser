@@ -49,6 +49,8 @@ static thread manager_thread;
 #include <QDockWidget>
 #include <QGridLayout>
 #include <QPushButton>
+#include <QLabel>
+#include <QIcon>
 
 /* ========================================================================= */
 
@@ -368,16 +370,22 @@ bool obs_module_load(void)
 	// Browser dialog setup
 	obs_frontend_push_ui_translation(obs_module_get_string);
 
-	QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
-
-	// Will crash on exit
-	// obs_main_window->setCentralWidget(widget);
-
 	obs_frontend_pop_ui_translation();
 
 	QtPostTask([]() -> void {
 		// Add button in controls dock
 		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
+
+		// Non-permanent msgs will be covered by showMessage()
+		// obs_main_window->statusBar()->addWidget(new QLabel(QString("Hello World Non-Permanent")));
+		QLabel* imageLabel = new QLabel();
+		imageLabel->setPixmap(QPixmap(QString(":/images/logo.png")));
+		imageLabel->setScaledContents(true);
+		imageLabel->setFixedSize(26, 30);
+		obs_main_window->statusBar()->addPermanentWidget(imageLabel);
+
+		obs_main_window->statusBar()->addPermanentWidget(new QLabel(QString("Hello World, StreamElements!")));
+		obs_main_window->statusBar()->showMessage(QString("Temporary message"), 10000);
 
 		QDockWidget* controlsDock = (QDockWidget*)obs_main_window->findChild<QDockWidget*>("controlsDock");
 		//QPushButton* streamButton = (QPushButton*)controlsDock->findChild<QPushButton*>("streamButton");

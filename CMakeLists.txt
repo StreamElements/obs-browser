@@ -21,6 +21,7 @@ include_directories(SYSTEM
 )
 
 #qt5_wrap_ui(NetworkDialog "networkdialog.ui")
+qt5_add_resources(obs-browser-streamelements_QRC_SOURCES "streamelements/streamelements.qrc")
 
 if(NOT CEF_FOUND)
 	message(STATUS "CEF Not found -- obs-browser plugin disabled.")
@@ -111,6 +112,7 @@ set(obs-browser_HEADERS
 add_library(obs-browser MODULE
 	${obs-browser_SOURCES}
 	${obs-browser_HEADERS}
+	${obs-browser-streamelements_QRC_SOURCES}
 	)
 
 target_link_libraries(obs-browser
