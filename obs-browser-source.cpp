@@ -56,6 +56,10 @@ BrowserSource::~BrowserSource()
 
 void BrowserSource::ExecuteOnBrowser(std::function<void()> func, bool async)
 {
+	if (!cefBrowser) {
+		return;
+	}
+
 	if (!async) {
 		os_event_t *finishedEvent;
 		os_event_init(&finishedEvent, OS_EVENT_TYPE_AUTO);
@@ -381,7 +385,7 @@ void BrowserSource::Render()
 #endif
 }
 
-static void ExecuteOnAllBrowsers(function<void(BrowserSource*)> func)
+static void ExecuteOnAllBrowsers(function<void(BrowserSource*)> func, bool async = false)
 {
 	lock_guard<mutex> lock(browser_list_mutex);
 
@@ -389,21 +393,40 @@ static void ExecuteOnAllBrowsers(function<void(BrowserSource*)> func)
 	while (bs) {
 		BrowserSource *bsw =
 			reinterpret_cast<BrowserSource *>(bs);
-		bsw->ExecuteOnBrowser([&] () {func(bsw);});
+		bsw->ExecuteOnBrowser([=] () {func(bsw);}, async);
 		bs = bs->next;
 	}
 }
 
 void DispatchJSEvent(const char *eventName, const char *jsonString)
 {
-	ExecuteOnAllBrowsers([&] (BrowserSource *bsw)
+	struct local_context {
+		std::string eventName;
+		char* jsonString = nullptr;
+
+		~local_context()
+		{
+			if (jsonString) delete jsonString;
+		}
+	};
+
+	local_context* context = new local_context();
+
+	context->eventName = eventName;
+
+	if (jsonString)
+		context->jsonString = strdup(jsonString);
+
+	ExecuteOnAllBrowsers([context] (BrowserSource *bsw)
 	{
 		CefRefPtr<CefProcessMessage> msg =
 			CefProcessMessage::Create("DispatchJSEvent");
 		CefRefPtr<CefListValue> args = msg->GetArgumentList();
 
-		args->SetString(0, eventName);
-		args->SetString(1, jsonString);
+		args->SetString(0, context->eventName);
+		args->SetString(1, context->jsonString);
 		bsw->cefBrowser->SendProcessMessage(PID_RENDERER, msg);
-	});
+
+		delete context;
+	}, true);
 }

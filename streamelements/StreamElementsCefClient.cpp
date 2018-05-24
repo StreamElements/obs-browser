@@ -15,6 +15,23 @@ using namespace json11;
 
 /* ========================================================================= */
 
+void StreamElementsCefClient::OnLoadEnd(
+	CefRefPtr<CefBrowser> browser,
+	CefRefPtr<CefFrame> frame,
+	int httpStatusCode)
+{
+	if (m_executeJavaScriptCodeOnLoad.empty() || !frame->IsMain()) {
+		return;
+	}
+
+	frame->ExecuteJavaScript(
+		CefString(m_executeJavaScriptCodeOnLoad),
+		frame->GetURL(),
+		0);
+}
+
+/* ========================================================================= */
+
 bool StreamElementsCefClient::OnProcessMessageReceived(
 	CefRefPtr<CefBrowser> browser,
 	CefProcessId,

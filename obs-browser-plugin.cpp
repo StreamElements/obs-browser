@@ -44,7 +44,7 @@ static thread manager_thread;
 #include "streamelements/StreamElementsUtils.hpp"
 #include "streamelements/StreamElementsBrowserWidget.hpp"
 #include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
-#include "streamelements/StreamElementsWidgetManager.hpp"
+#include "streamelements/StreamElementsBrowserWidgetManager.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -152,6 +152,8 @@ static obs_properties_t *browser_source_get_properties(void *data)
 	return props;
 }
 
+static os_event_t* s_BrowserManagerThreadInitializedEvent = nullptr;
+
 static void BrowserManagerThread(void)
 {
 	string path = obs_get_module_binary_path(obs_current_module());
@@ -193,6 +195,9 @@ static void BrowserManagerThread(void)
 	CefInitialize(args, settings, app, nullptr);
 	CefRegisterSchemeHandlerFactory("http", "absolute",
 			new BrowserSchemeHandlerFactory());
+
+	os_event_signal(s_BrowserManagerThreadInitializedEvent);
+
 	CefRunMessageLoop();
 	CefShutdown();
 }
@@ -362,7 +367,11 @@ bool obs_module_load(void)
 	// Enable CEF high DPI support
 	CefEnableHighDPISupport();
 
+	os_event_init(&s_BrowserManagerThreadInitializedEvent, OS_EVENT_TYPE_AUTO);
 	manager_thread = thread(BrowserManagerThread);
+	os_event_wait(s_BrowserManagerThreadInitializedEvent);
+	os_event_destroy(s_BrowserManagerThreadInitializedEvent);
+	s_BrowserManagerThreadInitializedEvent = nullptr;
 
 	RegisterBrowserSource();
 	obs_frontend_add_event_callback(handle_obs_frontend_event, nullptr);
@@ -405,18 +414,17 @@ bool obs_module_load(void)
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 
 		struct local_context {
-			StreamElementsWidgetManager* widgetManager;
+			StreamElementsBrowserWidgetManager* widgetManager;
 
 			local_context() {
 				widgetManager =
-					new StreamElementsWidgetManager(
+					new StreamElementsBrowserWidgetManager(
 					(QMainWindow*)obs_frontend_get_main_window());
 			}
 
 			~local_context() {
-				while (QWidget* popped = widgetManager->PopCentralWidget()) {
-					delete popped;
-				}
+				while (widgetManager->PopCentralBrowserWidget())
+				{ }
 
 				delete widgetManager;
 			}
@@ -426,35 +434,36 @@ bool obs_module_load(void)
 
 		obs_frontend_push_ui_translation(obs_module_get_string);
 
-		// context->widgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"));
-		context->widgetManager->PushCentralWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com/"));
+		context->widgetManager->PushCentralBrowserWidget("http://www.google.com/", nullptr);
 
 
-		context->widgetManager->AddDockWidget(
+		context->widgetManager->AddDockBrowserWidget(
 			"test1",
 			"Dynamic Widget 1",
-			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			"http://streamelements.local/index.html",
+			"alert(window.location.href);",
 			Qt::LeftDockWidgetArea);
 
-		context->widgetManager->AddDockWidget(
+		context->widgetManager->AddDockBrowserWidget(
 			"test2",
 			"Dynamic Widget 2",
-			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			"http://streamelements.local/index.html",
+			nullptr,
 			Qt::RightDockWidgetArea);
 
-		context->widgetManager->AddDockWidget(
+		context->widgetManager->AddDockBrowserWidget(
 			"test3",
 			"Dynamic Widget 3",
-			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			"http://streamelements.local/index.html",
+			nullptr,
 			Qt::TopDockWidgetArea);
 
-		context->widgetManager->AddDockWidget(
+		context->widgetManager->AddDockBrowserWidget(
 			"test4",
 			"Dynamic Widget 4",
-			new StreamElementsBrowserWidget(nullptr, "http://streamelements.local/index.html"),
+			"http://streamelements.local/index.html",
+			nullptr,
 			Qt::TopDockWidgetArea);
-
-		context->widgetManager->RemoveDockWidget("test4");
 
 		obs_frontend_pop_ui_translation();
 
@@ -468,7 +477,7 @@ bool obs_module_load(void)
 			{
 				local_context* context = (local_context*)data;
 
-				delete context->widgetManager->PopCentralWidget();
+				context->widgetManager->PopCentralBrowserWidget();
 
 				char buf[512];
 
@@ -494,6 +503,8 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	obs_frontend_remove_event_callback(handle_obs_frontend_event, nullptr);
+
 	delete s_bwClient;
 
 	if (manager_thread.joinable()) {

@@ -73,6 +73,27 @@ bool StreamElementsWidgetManager::AddDockWidget(
 	m_parent->addDockWidget(area, dock);
 
 	m_dockWidgets[id] = dock;
+	m_dockWidgetAreas[id] = area;
+
+	/*
+	QObject::connect(dock, &QDockWidget::dockLocationChanged, [id, dock, this](Qt::DockWidgetArea area) {
+		if (!m_dockWidgets.count(id)) {
+			return;
+		}
+
+		m_dockWidgetAreas[id] = area;
+	});
+	*/
+
+	/*
+	QObject::connect(dock, &QDockWidget::close, [id, dock, this](Qt::DockWidgetArea area) {
+		if (!m_dockWidgets.count(id)) {
+			return;
+		}
+
+		RemoveDockWidget(id);
+	});
+	*/
 
 	return true;
 }
@@ -87,6 +108,7 @@ bool StreamElementsWidgetManager::RemoveDockWidget(const char* const id)
 
 	QDockWidget* dock = m_dockWidgets[id];
 	m_dockWidgets.erase(id);
+	m_dockWidgetAreas.erase(id);
 
 	m_parent->removeDockWidget(dock);
 
@@ -111,8 +133,34 @@ QDockWidget* StreamElementsWidgetManager::GetDockWidget(const char* const id)
 	assert(id);
 
 	if (!m_dockWidgets.count(id)) {
-		return false;
+		return nullptr;
 	}
 
 	return m_dockWidgets[id];
+}
+
+StreamElementsWidgetManager::DockWidgetInfo* StreamElementsWidgetManager::GetDockWidgetInfo(const char* const id)
+{
+	assert(id);
+
+	QDockWidget* dockWidget = GetDockWidget(id);
+
+	if (!dockWidget) {
+		return nullptr;
+	}
+
+	StreamElementsWidgetManager::DockWidgetInfo* result = new StreamElementsWidgetManager::DockWidgetInfo();
+
+	result->m_widget = dockWidget->widget();
+
+	result->m_id = id;
+	result->m_title = dockWidget->windowTitle().toStdString();
+
+	if (dockWidget->isFloating()) {
+		result->m_dockingArea = "floating";
+	} else {
+		result->m_dockingArea = m_dockWidgetAreas[id];
+	}
+
+	return result;
 }

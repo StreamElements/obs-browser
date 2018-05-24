@@ -19,11 +19,12 @@ static bool QueueCEFTask(std::function<void()> task)
 
 /* ========================================================================= */
 
-StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const char* const url):
+StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad):
 	QWidget(parent),
 	m_url(url),
 	m_window_handle(0),
-	m_task_queue("StreamElementsBrowserWidget task queue")
+	m_task_queue("StreamElementsBrowserWidget task queue"),
+	m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad == nullptr ? "" : executeJavaScriptCodeOnLoad)
 {
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);
@@ -140,7 +141,7 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		m_cef_browser =
 			CefBrowserHost::CreateBrowserSync(
 				windowInfo,
-				new StreamElementsCefClient(),
+				new StreamElementsCefClient(m_executeJavaScriptCodeOnLoad),
 				m_url.c_str(),
 				cefBrowserSettings,
 				nullptr);
@@ -168,4 +169,18 @@ void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func,
 			func();
 		});
 	}
+}
+
+std::string& StreamElementsBrowserWidget::GetCurrentUrl()
+{
+	return m_cef_browser->GetMainFrame()->GetURL().ToString();
+}
+
+
+std::string& StreamElementsBrowserWidget::GetExecuteJavaScriptCodeOnLoad()
+{
+	CefRefPtr<StreamElementsCefClient> client =
+		static_cast<StreamElementsCefClient*>(m_cef_browser->GetHost()->GetClient().get());
+
+	return client->GetExecuteJavaScriptCodeOnLoad();
 }

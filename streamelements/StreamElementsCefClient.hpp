@@ -5,10 +5,12 @@
 class StreamElementsCefClient :
 	public CefClient,
 	public CefLifeSpanHandler,
-	public CefContextMenuHandler
+	public CefContextMenuHandler,
+	public CefLoadHandler
 {
 public:
-	StreamElementsCefClient()
+	StreamElementsCefClient(std::string& executeJavaScriptCodeOnLoad) :
+		m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad)
 	{
 	}
 
@@ -19,6 +21,7 @@ public:
 	/* CefClient */
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 	virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
+	virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
 
 	virtual bool OnProcessMessageReceived(
 		CefRefPtr<CefBrowser> browser,
@@ -53,6 +56,21 @@ public:
 		// Remove all context menu contributions
 		model->Clear();
 	}
+
+	/* CefLoadHandler */
+	virtual void OnLoadEnd(
+		CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefFrame> frame,
+		int httpStatusCode);
+
+public:
+	std::string& GetExecuteJavaScriptCodeOnLoad()
+	{
+		return m_executeJavaScriptCodeOnLoad;
+	}
+
+private:
+	std::string m_executeJavaScriptCodeOnLoad;
 
 public:
 	IMPLEMENT_REFCOUNTING(StreamElementsCefClient)

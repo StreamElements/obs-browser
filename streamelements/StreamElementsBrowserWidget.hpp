@@ -30,10 +30,15 @@ class StreamElementsBrowserWidget:
 
 private:
 	std::string m_url;
+	std::string m_executeJavaScriptCodeOnLoad;
 
 public:
-	StreamElementsBrowserWidget(QWidget* parent, const char* const url);
+	StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad);
 	~StreamElementsBrowserWidget();
+
+public:
+	std::string& GetCurrentUrl();
+	std::string& GetExecuteJavaScriptCodeOnLoad();
 
 private:
 	///

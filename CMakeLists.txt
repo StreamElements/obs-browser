@@ -84,6 +84,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsAsyncTaskQueue.cpp
 	streamelements/StreamElementsCefClient.cpp
 	streamelements/StreamElementsBrowserWidget.cpp
+	streamelements/StreamElementsBrowserWidgetManager.cpp
 	streamelements/StreamElementsBandwidthTestClient.cpp
 	streamelements/StreamElementsObsBandwidthTestClient.cpp
 	streamelements/StreamElementsWidgetManager.cpp
@@ -103,6 +104,7 @@ set(obs-browser_HEADERS
 	streamelements/StreamElementsAsyncTaskQueue.hpp
 	streamelements/StreamElementsCefClient.hpp
 	streamelements/StreamElementsBrowserWidget.hpp
+	streamelements/StreamElementsBrowserWidgetManager.hpp
 	streamelements/StreamElementsBandwidthTestClient.hpp
 	streamelements/StreamElementsObsBandwidthTestClient.hpp
 	streamelements/StreamElementsWidgetManager.hpp
