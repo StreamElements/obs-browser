@@ -478,10 +478,6 @@ bool obs_module_load(void)
 		context->widgetManager->DeserializeDockingWidgets(state);
 
 
-
-
-
-
 		// Test bandwidth
 		s_bwClient->TestMultipleServersBitsPerSecondAsync(
 			servers,

@@ -63,6 +63,10 @@ public:
 
 	DockBrowserWidgetInfo* GetDockBrowserWidgetInfo(const char* const id);
 
+	QDockWidget* GetDockWidget(const char* const id) {
+		return StreamElementsWidgetManager::GetDockWidget(id);
+	}
+
 	virtual void SerializeDockingWidgets(std::string& output) override;
 	virtual void DeserializeDockingWidgets(std::string& input) override;
 

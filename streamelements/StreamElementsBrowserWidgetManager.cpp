@@ -143,6 +143,11 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 				std::string dockingAreaString = "floating";
 				std::string executeJavaScriptOnLoad;
 				bool visible;
+				QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+				int requestWidth = 200;
+				int requestHeight = 200;
+
+				QRect rec = QApplication::desktop()->screenGeometry();
 
 				title = widgetDictionary->GetString("title");
 				url = widgetDictionary->GetString("url");
@@ -163,23 +168,102 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 
 				if (dockingAreaString == "left") {
 					dockingArea = Qt::LeftDockWidgetArea;
+					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+					requestHeight = rec.height() / 2;
 				}
 				else if (dockingAreaString == "right") {
 					dockingArea = Qt::RightDockWidgetArea;
+					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+					requestHeight = rec.height() / 2;
 				}
 				else if (dockingAreaString == "top") {
 					dockingArea = Qt::TopDockWidgetArea;
+					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+					requestWidth = rec.width() / 2;
 				}
 				else if (dockingAreaString == "bottom") {
 					dockingArea = Qt::BottomDockWidgetArea;
+					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+					requestWidth = rec.width() / 2;
 				}
 
-				AddDockBrowserWidget(
+				if (widgetDictionary->HasKey("minWidth")) {
+					requestWidth = widgetDictionary->GetInt("minWidth");
+					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+				}
+
+				if (widgetDictionary->HasKey("preferWidth")) {
+					requestWidth = widgetDictionary->GetInt("preferWidth");
+					sizePolicy.setHorizontalPolicy(QSizePolicy::Preferred);
+				}
+
+				if (widgetDictionary->HasKey("maxWidth")) {
+					requestWidth = widgetDictionary->GetInt("maxWidth");
+					sizePolicy.setHorizontalPolicy(QSizePolicy::Maximum);
+				}
+
+				if (widgetDictionary->HasKey("minHeight")) {
+					requestHeight = widgetDictionary->GetInt("minHeight");
+					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+				}
+
+				if (widgetDictionary->HasKey("preferHeight")) {
+					requestHeight = widgetDictionary->GetInt("preferHeight");
+					sizePolicy.setVerticalPolicy(QSizePolicy::Preferred);
+				}
+
+				if (widgetDictionary->HasKey("maxHeight")) {
+					requestHeight = widgetDictionary->GetInt("maxHeight");
+					sizePolicy.setVerticalPolicy(QSizePolicy::Maximum);
+				}
+
+				if (AddDockBrowserWidget(
 					id.ToString().c_str(),
 					title.c_str(),
 					url.c_str(),
 					executeJavaScriptOnLoad.c_str(),
-					dockingArea);
+					dockingArea)) {
+					QWidget* widget = GetDockWidget(id.ToString().c_str());
+
+					widget->setMinimumWidth(requestWidth);
+					widget->setMinimumHeight(requestHeight);
+
+					sizePolicy.setHorizontalStretch(requestWidth);
+					sizePolicy.setVerticalStretch(requestHeight);
+
+					widget->setSizePolicy(sizePolicy);
+
+					switch (sizePolicy.verticalPolicy())
+					{
+					case QSizePolicy::Minimum:
+					case QSizePolicy::MinimumExpanding:
+					case QSizePolicy::Expanding:
+						widget->setMinimumHeight(requestHeight);
+						break;
+					case QSizePolicy::Preferred:
+						widget->setMinimumHeight(requestHeight);
+						widget->setMaximumHeight(requestHeight);
+						break;
+					case QSizePolicy::Maximum:
+						widget->setMaximumHeight(requestHeight);
+						break;
+					}
+
+					switch (sizePolicy.horizontalPolicy())
+					{
+					case QSizePolicy::Minimum:
+					case QSizePolicy::MinimumExpanding:
+						widget->setMinimumWidth(requestWidth);
+						break;
+					case QSizePolicy::Preferred:
+						widget->setMinimumWidth(requestWidth);
+						widget->setMaximumWidth(requestWidth);
+						break;
+					case QSizePolicy::Maximum:
+						widget->setMaximumWidth(requestWidth);
+						break;
+					}
+				}
 			}
 		}
 	}
