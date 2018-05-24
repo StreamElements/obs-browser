@@ -59,9 +59,12 @@ public:
 
 	virtual bool RemoveDockWidget(const char* const id) override;
 
-	std::vector<std::string>& GetDockBrowserWidgetIdentifiers();
+	void GetDockBrowserWidgetIdentifiers(std::vector<std::string>& result);
 
 	DockBrowserWidgetInfo* GetDockBrowserWidgetInfo(const char* const id);
+
+	virtual void SerializeDockingWidgets(std::string& output) override;
+	virtual void DeserializeDockingWidgets(std::string& input) override;
 
 private:
 	std::map<std::string, StreamElementsBrowserWidget*> m_browserWidgets;

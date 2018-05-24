@@ -105,15 +105,11 @@ bool StreamElementsWidgetManager::RemoveDockWidget(const char* const id)
 	return true;
 }
 
-std::vector<std::string>& StreamElementsWidgetManager::GetDockWidgetIdentifiers()
+void StreamElementsWidgetManager::GetDockWidgetIdentifiers(std::vector<std::string>& result)
 {
-	std::vector<std::string> result;
-
 	for (auto imap : m_dockWidgets) {
-		result.push_back(imap.first);
+		result.emplace_back(imap.first);
 	}
-
-	return result;
 }
 
 QDockWidget* StreamElementsWidgetManager::GetDockWidget(const char* const id)

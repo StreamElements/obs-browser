@@ -436,7 +436,7 @@ bool obs_module_load(void)
 
 		context->widgetManager->PushCentralBrowserWidget("http://www.google.com/", nullptr);
 
-
+		/*
 		context->widgetManager->AddDockBrowserWidget(
 			"test1",
 			"Dynamic Widget 1",
@@ -465,7 +465,22 @@ bool obs_module_load(void)
 			nullptr,
 			Qt::TopDockWidgetArea);
 
+		std::string dockingWidgetsState;
+		context->widgetManager->SerializeDockingWidgets(dockingWidgetsState);
+		::MessageBoxA(0, dockingWidgetsState.c_str(), "dockingWidgetsState", 0);
+		*/
 		obs_frontend_pop_ui_translation();
+
+
+
+
+		std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
+		context->widgetManager->DeserializeDockingWidgets(state);
+
+
+
+
+
 
 		// Test bandwidth
 		s_bwClient->TestMultipleServersBitsPerSecondAsync(

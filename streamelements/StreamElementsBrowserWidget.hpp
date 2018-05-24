@@ -37,8 +37,8 @@ public:
 	~StreamElementsBrowserWidget();
 
 public:
-	std::string& GetCurrentUrl();
-	std::string& GetExecuteJavaScriptCodeOnLoad();
+	std::string GetCurrentUrl();
+	std::string GetExecuteJavaScriptCodeOnLoad();
 
 private:
 	///

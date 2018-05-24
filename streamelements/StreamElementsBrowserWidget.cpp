@@ -171,14 +171,22 @@ void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func,
 	}
 }
 
-std::string& StreamElementsBrowserWidget::GetCurrentUrl()
+std::string StreamElementsBrowserWidget::GetCurrentUrl()
 {
+	if (!m_cef_browser) {
+		return std::string();
+	}
+
 	return m_cef_browser->GetMainFrame()->GetURL().ToString();
 }
 
 
-std::string& StreamElementsBrowserWidget::GetExecuteJavaScriptCodeOnLoad()
+std::string StreamElementsBrowserWidget::GetExecuteJavaScriptCodeOnLoad()
 {
+	if (!m_cef_browser) {
+		return std::string();
+	}
+
 	CefRefPtr<StreamElementsCefClient> client =
 		static_cast<StreamElementsCefClient*>(m_cef_browser->GetHost()->GetClient().get());
 

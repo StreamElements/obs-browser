@@ -17,7 +17,7 @@ public:
 	public:
 		std::string m_id;
 		std::string m_title;
-		std::string m_visible;
+		bool m_visible;
 		std::string m_dockingArea;
 
 	private:
@@ -50,11 +50,14 @@ public:
 
 	virtual bool RemoveDockWidget(const char* const id);
 
-	std::vector<std::string>& GetDockWidgetIdentifiers();
+	void GetDockWidgetIdentifiers(std::vector<std::string>& result);
 
 	QDockWidget* GetDockWidget(const char* const id);
 
 	DockWidgetInfo* GetDockWidgetInfo(const char* const id);
+
+	virtual void SerializeDockingWidgets(std::string& output) = 0;
+	virtual void DeserializeDockingWidgets(std::string& input) = 0;
 
 private:
 	QMainWindow * m_parent;
