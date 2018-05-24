@@ -228,9 +228,6 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 					widget->setMinimumWidth(requestWidth);
 					widget->setMinimumHeight(requestHeight);
 
-					sizePolicy.setHorizontalStretch(requestWidth);
-					sizePolicy.setVerticalStretch(requestHeight);
-
 					widget->setSizePolicy(sizePolicy);
 
 					switch (sizePolicy.verticalPolicy())
