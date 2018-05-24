@@ -17,6 +17,7 @@ public:
 	public:
 		std::string m_id;
 		std::string m_title;
+		std::string m_visible;
 		std::string m_dockingArea;
 
 	private:

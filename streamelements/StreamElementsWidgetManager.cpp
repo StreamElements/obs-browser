@@ -75,7 +75,6 @@ bool StreamElementsWidgetManager::AddDockWidget(
 	m_dockWidgets[id] = dock;
 	m_dockWidgetAreas[id] = area;
 
-	/*
 	QObject::connect(dock, &QDockWidget::dockLocationChanged, [id, dock, this](Qt::DockWidgetArea area) {
 		if (!m_dockWidgets.count(id)) {
 			return;
@@ -83,17 +82,6 @@ bool StreamElementsWidgetManager::AddDockWidget(
 
 		m_dockWidgetAreas[id] = area;
 	});
-	*/
-
-	/*
-	QObject::connect(dock, &QDockWidget::close, [id, dock, this](Qt::DockWidgetArea area) {
-		if (!m_dockWidgets.count(id)) {
-			return;
-		}
-
-		RemoveDockWidget(id);
-	});
-	*/
 
 	return true;
 }
@@ -155,11 +143,30 @@ StreamElementsWidgetManager::DockWidgetInfo* StreamElementsWidgetManager::GetDoc
 
 	result->m_id = id;
 	result->m_title = dockWidget->windowTitle().toStdString();
+	result->m_visible = dockWidget->isVisible();
 
 	if (dockWidget->isFloating()) {
 		result->m_dockingArea = "floating";
 	} else {
-		result->m_dockingArea = m_dockWidgetAreas[id];
+		switch (m_dockWidgetAreas[id])
+		{
+		case Qt::LeftDockWidgetArea:
+			result->m_dockingArea = "left";
+			break;
+		case Qt::RightDockWidgetArea:
+			result->m_dockingArea = "right";
+			break;
+		case Qt::TopDockWidgetArea:
+			result->m_dockingArea = "top";
+			break;
+		case Qt::BottomDockWidgetArea:
+			result->m_dockingArea = "bottom";
+			break;
+		//case Qt::NoDockWidgetArea:
+		default:
+			result->m_dockingArea = "floating";
+			break;
+		}
 	}
 
 	return result;
