@@ -439,10 +439,20 @@ bool obs_module_load(void)
 			}
 
 			~local_context() {
-				while (widgetManager->PopCentralBrowserWidget())
-				{ }
+				QtPostTask([](void* data) {
+					StreamElementsBrowserWidgetManager* widgetManager =
+						(StreamElementsBrowserWidgetManager*)data;
 
-				delete widgetManager;
+					while (widgetManager->PopCentralBrowserWidget())
+					{ }
+
+					if (true) {
+						std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
+						widgetManager->DeserializeDockingWidgets(state);
+					}
+
+					// delete widgetManager;
+				}, widgetManager);
 			}
 		};
 
@@ -466,7 +476,9 @@ bool obs_module_load(void)
 			"http://streamelements.local/index.html",
 			nullptr,
 			Qt::RightDockWidgetArea);
+		*/
 
+		/*
 		context->widgetManager->AddDockBrowserWidget(
 			"test3",
 			"Dynamic Widget 3",
@@ -492,7 +504,6 @@ bool obs_module_load(void)
 			context->widgetManager->DeserializeDockingWidgets(state);
 		}
 
-
 		// Test bandwidth
 		s_bwClient->TestMultipleServersBitsPerSecondAsync(
 			servers,
@@ -502,8 +513,6 @@ bool obs_module_load(void)
 			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
 			{
 				local_context* context = (local_context*)data;
-
-				context->widgetManager->PopCentralBrowserWidget();
 
 				char buf[512];
 
