@@ -1,7 +1,10 @@
 #include "StreamElementsWidgetManager.hpp"
+#include "StreamElementsUtils.hpp"
 
 #include <cassert>
 #include <mutex>
+
+#include <QApplication>
 
 StreamElementsWidgetManager::StreamElementsWidgetManager(QMainWindow* parent) :
 	m_parent(parent)
@@ -13,34 +16,59 @@ StreamElementsWidgetManager::~StreamElementsWidgetManager()
 {
 }
 
-#include <windows.h>
-
+//
+// The QApplication::processEvents() and QtPostTask() black magic
+// below is a very unpleasant hack to ensure that the central
+// widget remains the same size as the previously visible central
+// widget.
+//
+// This is done by first measuring the size() of the current
+// central widget, then removing the current central widget and
+// replacing it with a new one, setting the new widget MINIMUM
+// size to the previously visible central widget width & height
+// and submitting a task to the Qt message queue for later
+// execution to reset the new central widget minimum size on the
+// following iteration of the Qt message queue processing loop.
+//
 void StreamElementsWidgetManager::PushCentralWidget(QWidget* widget)
 {
-	QWidget* prevWidget = m_parent->takeCentralWidget();
+	QApplication::processEvents();
+	QSize prevSize = mainWindow()->centralWidget()->size();
 
-	prevWidget->setVisible(false);
+	widget->setMinimumSize(prevSize);
+
+	QWidget* prevWidget = m_parent->takeCentralWidget();
 
 	m_centralWidgetStack.push(prevWidget);
 
 	m_parent->setCentralWidget(widget);
 
-	char buf[512];
-	//sprintf(buf, "%d x %d", prevWidget->width(), prevWidget->height());
-	sprintf(buf, "%d x %d", widget->sizeHint().width(), widget->sizeHint().height());
-	//::MessageBoxA(0, buf, "size", 0);
+	QtPostTask([](void* data) {
+		QWidget* widget = static_cast<QWidget*>(data);
+
+		widget->setMinimumSize(0, 0);
+	}, mainWindow()->centralWidget());
 }
 
 QWidget* StreamElementsWidgetManager::PopCentralWidget()
 {
 	if (m_centralWidgetStack.size()) {
+		QApplication::processEvents();
+		QSize currSize = mainWindow()->centralWidget()->size();
+
 		QWidget* currWidget = m_parent->takeCentralWidget();
-		currWidget->setVisible(false);
 
 		m_parent->setCentralWidget(m_centralWidgetStack.top());
-		m_centralWidgetStack.top()->setVisible(true);
 
 		m_centralWidgetStack.pop();
+
+		mainWindow()->centralWidget()->setMinimumSize(currSize);
+
+		QtPostTask([](void* data) {
+			QWidget* widget = static_cast<QWidget*>(data);
+
+			widget->setMinimumSize(0, 0);
+		}, mainWindow()->centralWidget());
 
 		return currWidget;
 	}

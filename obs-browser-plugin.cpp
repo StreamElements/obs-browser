@@ -404,7 +404,8 @@ bool obs_module_load(void)
 		buttonsVLayout->addWidget(newButton);
 
 		if (true) {
-			Qt::ToolBarArea area = Qt::BottomToolBarArea;
+			//Qt::ToolBarArea area = Qt::BottomToolBarArea;
+			Qt::ToolBarArea area = Qt::TopToolBarArea;
 
 			// Add toolbar w/ browser
 			QToolBar* toolBar = new QToolBar(obs_main_window);
@@ -422,14 +423,11 @@ bool obs_module_load(void)
 	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
 	QtPostTask([]() -> void {
-		return;
-
-
 		std::vector<StreamElementsBandwidthTestClient::Server> servers;
 
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-fra.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
-		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-ams.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
-		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
+		//servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-ams.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
+		//servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
 
 		struct local_context {
 			StreamElementsBrowserWidgetManager* widgetManager;
@@ -489,8 +487,6 @@ bool obs_module_load(void)
 		*/
 		obs_frontend_pop_ui_translation();
 
-
-
 		if (false) {
 			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
 			context->widgetManager->DeserializeDockingWidgets(state);
@@ -502,7 +498,7 @@ bool obs_module_load(void)
 			servers,
 			10000 * 1000,
 			NULL,
-			3,
+			1,
 			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
 			{
 				local_context* context = (local_context*)data;
