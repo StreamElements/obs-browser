@@ -14,3 +14,14 @@ inline static void QtPostTask(void (*func)()) {
 	});
 	QMetaObject::invokeMethod(t, "start", Qt::QueuedConnection, Q_ARG(int, 0));
 }
+
+inline static void QtPostTask(void(*func)(void*), void* const data) {
+	QTimer *t = new QTimer();
+	t->moveToThread(qApp->thread());
+	t->setSingleShot(true);
+	QObject::connect(t, &QTimer::timeout, [=]() {
+		func(data);
+		t->deleteLater();
+	});
+	QMetaObject::invokeMethod(t, "start", Qt::QueuedConnection, Q_ARG(int, 0));
+}

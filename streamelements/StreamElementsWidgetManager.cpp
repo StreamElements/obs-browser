@@ -13,6 +13,8 @@ StreamElementsWidgetManager::~StreamElementsWidgetManager()
 {
 }
 
+#include <windows.h>
+
 void StreamElementsWidgetManager::PushCentralWidget(QWidget* widget)
 {
 	QWidget* prevWidget = m_parent->takeCentralWidget();
@@ -22,6 +24,11 @@ void StreamElementsWidgetManager::PushCentralWidget(QWidget* widget)
 	m_centralWidgetStack.push(prevWidget);
 
 	m_parent->setCentralWidget(widget);
+
+	char buf[512];
+	//sprintf(buf, "%d x %d", prevWidget->width(), prevWidget->height());
+	sprintf(buf, "%d x %d", widget->sizeHint().width(), widget->sizeHint().height());
+	//::MessageBoxA(0, buf, "size", 0);
 }
 
 QWidget* StreamElementsWidgetManager::PopCentralWidget()

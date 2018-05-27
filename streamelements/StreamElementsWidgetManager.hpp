@@ -59,8 +59,11 @@ public:
 	virtual void SerializeDockingWidgets(std::string& output) = 0;
 	virtual void DeserializeDockingWidgets(std::string& input) = 0;
 
+protected:
+	QMainWindow* mainWindow() { return m_parent; }
+
 private:
-	QMainWindow * m_parent;
+	QMainWindow* m_parent;
 
 	std::stack<QWidget*> m_centralWidgetStack;
 

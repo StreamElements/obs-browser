@@ -32,9 +32,43 @@ private:
 	std::string m_url;
 	std::string m_executeJavaScriptCodeOnLoad;
 
+	QSize m_sizeHint;
+
 public:
 	StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad);
 	~StreamElementsBrowserWidget();
+
+	void setSizeHint(QSize& size)
+	{
+		m_sizeHint = size;
+	}
+
+	void setSizeHint(const int w, const int h)
+	{
+		m_sizeHint = QSize(w, h);
+	}
+
+	/*
+	virtual QSize sizeHint() const override
+	{
+		QSize size = QWidget::sizeHint();
+
+		if (size.isValid() && !size.isNull() && !size.isEmpty())
+			return size;
+		else
+			return m_sizeHint;
+	}
+
+	virtual QSize minimumSizeHint() const override
+	{
+		QSize size = QWidget::minimumSizeHint();
+
+		if (size.isValid() && !size.isNull() && !size.isEmpty())
+			return size;
+		else
+			return QSize(m_sizeHint.width(), m_sizeHint.height() / 2);
+	}
+	*/
 
 public:
 	std::string GetCurrentUrl();

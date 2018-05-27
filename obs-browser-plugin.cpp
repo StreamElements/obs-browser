@@ -402,11 +402,29 @@ bool obs_module_load(void)
 
 		QPushButton* newButton = new QPushButton(QString("Hello World"));
 		buttonsVLayout->addWidget(newButton);
+
+		if (true) {
+			Qt::ToolBarArea area = Qt::BottomToolBarArea;
+
+			// Add toolbar w/ browser
+			QToolBar* toolBar = new QToolBar(obs_main_window);
+			toolBar->setAutoFillBackground(true);
+			toolBar->setAllowedAreas(area);
+			toolBar->setFloatable(false);
+			toolBar->setMovable(false);
+			toolBar->setMinimumHeight(200);
+			toolBar->setLayout(new QVBoxLayout());
+			toolBar->addWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com", nullptr));
+			obs_main_window->addToolBar(area, toolBar);
+		}
 	});
 
 	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
 	QtPostTask([]() -> void {
+		return;
+
+
 		std::vector<StreamElementsBandwidthTestClient::Server> servers;
 
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-fra.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
@@ -473,9 +491,10 @@ bool obs_module_load(void)
 
 
 
-
-		std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
-		context->widgetManager->DeserializeDockingWidgets(state);
+		if (false) {
+			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
+			context->widgetManager->DeserializeDockingWidgets(state);
+		}
 
 
 		// Test bandwidth

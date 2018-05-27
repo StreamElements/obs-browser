@@ -4,11 +4,51 @@
 
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
+#include "StreamElementsUtils.hpp"
+
 void StreamElementsBrowserWidgetManager::PushCentralBrowserWidget(
 	const char* const url,
 	const char* const executeJavaScriptCodeOnLoad)
 {
-	PushCentralWidget(new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad));
+	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad);
+
+	QSize prevSize = mainWindow()->centralWidget()->sizeHint();
+
+	widget->setSizeHint(prevSize);
+	widget->updateGeometry();
+
+	PushCentralWidget(widget);
+
+	widget->setSizeHint(prevSize);
+	widget->updateGeometry();
+
+	mainWindow()->updateGeometry();
+
+	QtPostTask([](void* data) {
+		StreamElementsBrowserWidgetManager* self = (StreamElementsBrowserWidgetManager*)data;
+
+		self->mainWindow()->updateGeometry();
+	}, this);
+
+	/*
+	int height = prevSize.height();
+
+	if (mainWindow()->menuBar()) {
+		height -= mainWindow()->menuBar()->height();
+	}
+
+	widget->setSizeHint(prevSize);
+	widget->setMinimumHeight(height);
+	//widget->setMinimumWidth(prevSize.width());
+
+	PushCentralWidget(widget);
+
+	QtPostTask([](void* data) {
+		QWidget* widget = (QWidget*)data;
+
+		widget->setMinimumHeight(0);
+	}, widget);
+	*/
 }
 
 bool StreamElementsBrowserWidgetManager::PopCentralBrowserWidget()

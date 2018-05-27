@@ -19,6 +19,8 @@ static bool QueueCEFTask(std::function<void()> task)
 
 /* ========================================================================= */
 
+#include <QVBoxLayout>
+
 StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad):
 	QWidget(parent),
 	m_url(url),
@@ -30,14 +32,15 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const 
 	setAttribute(Qt::WA_NativeWindow);
 
 	// This influences docking widget width/height
-	setMinimumWidth(200);
-	setMinimumHeight(200);
+	//setMinimumWidth(200);
+	//setMinimumHeight(200);
+
+	setLayout(new QVBoxLayout());
 
 	QSizePolicy policy;
-	policy.setHorizontalPolicy(QSizePolicy::Preferred);
-	policy.setVerticalPolicy(QSizePolicy::Preferred);
+	policy.setHorizontalPolicy(QSizePolicy::MinimumExpanding);
+	policy.setVerticalPolicy(QSizePolicy::MinimumExpanding);
 	setSizePolicy(policy);
-	//, QSizePolicy::ExpandFlag
 }
 
 
