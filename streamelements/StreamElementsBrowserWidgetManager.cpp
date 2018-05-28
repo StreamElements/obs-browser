@@ -77,12 +77,10 @@ StreamElementsBrowserWidgetManager::DockBrowserWidgetInfo* StreamElementsBrowser
 	return result;
 }
 
-void StreamElementsBrowserWidgetManager::SerializeDockingWidgets(std::string& output)
+void StreamElementsBrowserWidgetManager::SerializeDockingWidgets(CefRefPtr<CefValue>& output)
 {
-	CefRefPtr<CefValue> root = CefValue::Create();
-
 	CefRefPtr<CefDictionaryValue> rootDictionary = CefDictionaryValue::Create();
-	root->SetDictionary(rootDictionary);
+	output->SetDictionary(rootDictionary);
 
 	std::vector<std::string> widgetIdentifiers;
 
@@ -103,29 +101,34 @@ void StreamElementsBrowserWidgetManager::SerializeDockingWidgets(std::string& ou
 			widgetDictionary->SetString("title", info->m_title);
 			widgetDictionary->SetString("executeJavaScriptOnLoad", info->m_executeJavaScriptOnLoad);
 			widgetDictionary->SetBool("visible", info->m_visible);
+
+			QWidget* widget = GetDockWidget(id.c_str());
+
+			QSize minSize = widget->minimumSize();
+			QSize size = widget->size();
+
+			widgetDictionary->SetInt("minWidth", minSize.width());
+			widgetDictionary->SetInt("minHeight", minSize.height());
+
+			widgetDictionary->SetInt("width", size.width());
+			widgetDictionary->SetInt("height", size.height());
+
+			widgetDictionary->SetInt("left", widget->pos().x());
+			widgetDictionary->SetInt("top", widget->pos().y());
 		}
 
 		rootDictionary->SetValue(id, widgetValue);
 	}
-
-	// Convert data to JSON
-	CefString jsonString =
-		CefWriteJSON(root, JSON_WRITER_DEFAULT);
-
-	output = jsonString.ToString();
 }
 
-void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& input)
+void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(CefRefPtr<CefValue>& input)
 {
-	CefRefPtr<CefValue> root =
-		CefParseJSON(CefString(input), JSON_PARSER_ALLOW_TRAILING_COMMAS);
-
-	if (!root.get()) {
+	if (!input.get()) {
 		return;
 	}
 
 	CefRefPtr<CefDictionaryValue> rootDictionary =
-		root->GetDictionary();
+		input->GetDictionary();
 
 	CefDictionaryValue::KeyList rootDictionaryKeys;
 
@@ -146,8 +149,12 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 				std::string executeJavaScriptOnLoad;
 				bool visible;
 				QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-				int requestWidth = 200;
-				int requestHeight = 200;
+				int requestWidth = 100;
+				int requestHeight = 100;
+				int minWidth = 0;
+				int minHeight = 0;
+				int left = -1;
+				int top = -1;
 
 				QRect rec = QApplication::desktop()->screenGeometry();
 
@@ -171,52 +178,42 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 				if (dockingAreaString == "left") {
 					dockingArea = Qt::LeftDockWidgetArea;
 					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
-					requestHeight = rec.height() / 2;
 				}
 				else if (dockingAreaString == "right") {
 					dockingArea = Qt::RightDockWidgetArea;
 					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
-					requestHeight = rec.height() / 2;
 				}
 				else if (dockingAreaString == "top") {
 					dockingArea = Qt::TopDockWidgetArea;
 					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-					requestWidth = rec.width() / 2;
 				}
 				else if (dockingAreaString == "bottom") {
 					dockingArea = Qt::BottomDockWidgetArea;
 					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-					requestWidth = rec.width() / 2;
 				}
 
 				if (widgetDictionary->HasKey("minWidth")) {
-					requestWidth = widgetDictionary->GetInt("minWidth");
-					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+					minWidth = widgetDictionary->GetInt("minWidth");
 				}
 
-				if (widgetDictionary->HasKey("preferWidth")) {
-					requestWidth = widgetDictionary->GetInt("preferWidth");
-					sizePolicy.setHorizontalPolicy(QSizePolicy::Preferred);
-				}
-
-				if (widgetDictionary->HasKey("maxWidth")) {
-					requestWidth = widgetDictionary->GetInt("maxWidth");
-					sizePolicy.setHorizontalPolicy(QSizePolicy::Maximum);
+				if (widgetDictionary->HasKey("width")) {
+					requestWidth = widgetDictionary->GetInt("width");
 				}
 
 				if (widgetDictionary->HasKey("minHeight")) {
-					requestHeight = widgetDictionary->GetInt("minHeight");
-					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+					minHeight = widgetDictionary->GetInt("minHeight");
 				}
 
-				if (widgetDictionary->HasKey("preferHeight")) {
-					requestHeight = widgetDictionary->GetInt("preferHeight");
-					sizePolicy.setVerticalPolicy(QSizePolicy::Preferred);
+				if (widgetDictionary->HasKey("height")) {
+					requestHeight = widgetDictionary->GetInt("height");
 				}
 
-				if (widgetDictionary->HasKey("maxHeight")) {
-					requestHeight = widgetDictionary->GetInt("maxHeight");
-					sizePolicy.setVerticalPolicy(QSizePolicy::Maximum);
+				if (widgetDictionary->HasKey("left")) {
+					left = widgetDictionary->GetInt("left");
+				}
+
+				if (widgetDictionary->HasKey("top")) {
+					top = widgetDictionary->GetInt("top");
 				}
 
 				if (AddDockBrowserWidget(
@@ -227,41 +224,22 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(std::string& 
 					dockingArea)) {
 					QWidget* widget = GetDockWidget(id.ToString().c_str());
 
-					widget->setMinimumWidth(requestWidth);
-					widget->setMinimumHeight(requestHeight);
+					//QSize savedMaxSize = widget->maximumSize();
 
 					widget->setSizePolicy(sizePolicy);
+					widget->setMinimumSize(requestWidth, requestHeight);
+					//widget->setMaximumSize(requestWidth, requestHeight);
 
-					switch (sizePolicy.verticalPolicy())
-					{
-					case QSizePolicy::Minimum:
-					case QSizePolicy::MinimumExpanding:
-					case QSizePolicy::Expanding:
-						widget->setMinimumHeight(requestHeight);
-						break;
-					case QSizePolicy::Preferred:
-						widget->setMinimumHeight(requestHeight);
-						widget->setMaximumHeight(requestHeight);
-						break;
-					case QSizePolicy::Maximum:
-						widget->setMaximumHeight(requestHeight);
-						break;
+					QApplication::sendPostedEvents();
+
+					widget->setMinimumSize(minWidth, minHeight);
+					//widget->setMaximumSize(savedMaxSize);
+
+					if (left >= 0 || top >= 0) {
+						widget->move(left, top);
 					}
 
-					switch (sizePolicy.horizontalPolicy())
-					{
-					case QSizePolicy::Minimum:
-					case QSizePolicy::MinimumExpanding:
-						widget->setMinimumWidth(requestWidth);
-						break;
-					case QSizePolicy::Preferred:
-						widget->setMinimumWidth(requestWidth);
-						widget->setMaximumWidth(requestWidth);
-						break;
-					case QSizePolicy::Maximum:
-						widget->setMaximumWidth(requestWidth);
-						break;
-					}
+					QApplication::sendPostedEvents();
 				}
 			}
 		}

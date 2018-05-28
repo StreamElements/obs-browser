@@ -6,6 +6,8 @@
 #include <stack>
 #include <map>
 
+#include "../cef-headers.hpp"
+
 #include "StreamElementsObsAppMonitor.hpp"
 
 class StreamElementsWidgetManager :
@@ -56,8 +58,11 @@ public:
 
 	DockWidgetInfo* GetDockWidgetInfo(const char* const id);
 
-	virtual void SerializeDockingWidgets(std::string& output) = 0;
-	virtual void DeserializeDockingWidgets(std::string& input) = 0;
+	virtual void SerializeDockingWidgets(CefRefPtr<CefValue>& output) = 0;
+	virtual void DeserializeDockingWidgets(CefRefPtr<CefValue>& input) = 0;
+
+	void SerializeDockingWidgets(std::string& output);
+	void DeserializeDockingWidgets(std::string& input);
 
 protected:
 	QMainWindow* mainWindow() { return m_parent; }
@@ -69,6 +74,13 @@ private:
 
 	std::map<std::string, QDockWidget*> m_dockWidgets;
 	std::map<std::string, Qt::DockWidgetArea> m_dockWidgetAreas;
+
+	std::map<std::string, QSize> m_dockWidgetSavedMinSize;
+
+protected:
+	void SaveDockWidgetsGeometry();
+	void RestoreDockWidgetsGeometry();
+
 
 protected:
 	virtual void OnObsExit();

@@ -446,11 +446,6 @@ bool obs_module_load(void)
 					while (widgetManager->PopCentralBrowserWidget())
 					{ }
 
-					if (true) {
-						std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
-						widgetManager->DeserializeDockingWidgets(state);
-					}
-
 					// delete widgetManager;
 				}, widgetManager);
 			}
@@ -499,9 +494,13 @@ bool obs_module_load(void)
 		*/
 		obs_frontend_pop_ui_translation();
 
-		if (false) {
-			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"}, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\"} }";
+		if (true) {
+			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\", \"width\": 200} }";
 			context->widgetManager->DeserializeDockingWidgets(state);
+
+			std::string dockingWidgetsState;
+			context->widgetManager->SerializeDockingWidgets(dockingWidgetsState);
+			::MessageBoxA(0, dockingWidgetsState.c_str(), "dockingWidgetsState", 0);
 		}
 
 		// Test bandwidth

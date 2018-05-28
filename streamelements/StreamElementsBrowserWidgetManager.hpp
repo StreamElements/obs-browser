@@ -67,8 +67,12 @@ public:
 		return StreamElementsWidgetManager::GetDockWidget(id);
 	}
 
-	virtual void SerializeDockingWidgets(std::string& output) override;
-	virtual void DeserializeDockingWidgets(std::string& input) override;
+	virtual void SerializeDockingWidgets(CefRefPtr<CefValue>& output) override;
+	virtual void DeserializeDockingWidgets(CefRefPtr<CefValue>& output) override;
+
+	void SerializeDockingWidgets(std::string& output) { StreamElementsWidgetManager::SerializeDockingWidgets(output); }
+	void DeserializeDockingWidgets(std::string& input) { StreamElementsWidgetManager::DeserializeDockingWidgets(input); }
+
 
 private:
 	std::map<std::string, StreamElementsBrowserWidget*> m_browserWidgets;

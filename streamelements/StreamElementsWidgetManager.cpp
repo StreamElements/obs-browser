@@ -52,6 +52,8 @@ void StreamElementsWidgetManager::PushCentralWidget(QWidget* widget)
 QWidget* StreamElementsWidgetManager::PopCentralWidget()
 {
 	if (m_centralWidgetStack.size()) {
+		SaveDockWidgetsGeometry();
+
 		QApplication::sendPostedEvents();
 		QSize currSize = mainWindow()->centralWidget()->size();
 
@@ -67,6 +69,8 @@ QWidget* StreamElementsWidgetManager::PopCentralWidget()
 		QApplication::sendPostedEvents();
 
 		mainWindow()->centralWidget()->setMinimumSize(0, 0);
+
+		RestoreDockWidgetsGeometry();
 
 		return currWidget;
 	}
@@ -199,4 +203,64 @@ StreamElementsWidgetManager::DockWidgetInfo* StreamElementsWidgetManager::GetDoc
 	}
 
 	return result;
+}
+
+void StreamElementsWidgetManager::SerializeDockingWidgets(std::string& output)
+{
+	CefRefPtr<CefValue> root = CefValue::Create();
+
+	SerializeDockingWidgets(root);
+
+	// Convert data to JSON
+	CefString jsonString =
+		CefWriteJSON(root, JSON_WRITER_DEFAULT);
+
+	output = jsonString.ToString();
+}
+
+void StreamElementsWidgetManager::DeserializeDockingWidgets(std::string& input)
+{
+	// Convert JSON string to CefValue
+	CefRefPtr<CefValue> root =
+		CefParseJSON(CefString(input), JSON_PARSER_ALLOW_TRAILING_COMMAS);
+
+	DeserializeDockingWidgets(root);
+}
+
+void StreamElementsWidgetManager::SaveDockWidgetsGeometry()
+{
+	m_dockWidgetSavedMinSize.clear();
+
+	QApplication::sendPostedEvents();
+
+	for (auto iter : m_dockWidgets) {
+		m_dockWidgetSavedMinSize[iter.first] = iter.second->size();
+	}
+}
+
+void StreamElementsWidgetManager::RestoreDockWidgetsGeometry()
+{
+	QApplication::sendPostedEvents();
+
+	std::map<std::string, QSize> maxSize;
+
+	for (auto iter : m_dockWidgetSavedMinSize) {
+		if (m_dockWidgets.count(iter.first)) {
+			maxSize[iter.first] = m_dockWidgets[iter.first]->maximumSize();
+
+			m_dockWidgets[iter.first]->setMinimumSize(iter.second);
+			m_dockWidgets[iter.first]->setMaximumSize(iter.second);
+		}
+	}
+
+	QApplication::sendPostedEvents();
+
+	for (auto iter : m_dockWidgetSavedMinSize) {
+		if (m_dockWidgets.count(iter.first)) {
+			m_dockWidgets[iter.first]->setMinimumSize(QSize(0, 0));
+			m_dockWidgets[iter.first]->setMaximumSize(maxSize[iter.first]);
+		}
+	}
+
+	QApplication::sendPostedEvents();
 }
