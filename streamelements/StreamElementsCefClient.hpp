@@ -2,6 +2,8 @@
 
 #include "cef-headers.hpp"
 
+#include "StreamElementsBrowserMessageHandler.hpp"
+
 class StreamElementsCefClient :
 	public CefClient,
 	public CefLifeSpanHandler,
@@ -9,8 +11,9 @@ class StreamElementsCefClient :
 	public CefLoadHandler
 {
 public:
-	StreamElementsCefClient(std::string& executeJavaScriptCodeOnLoad) :
-		m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad)
+	StreamElementsCefClient(std::string& executeJavaScriptCodeOnLoad, CefRefPtr<StreamElementsBrowserMessageHandler> messageHandler) :
+		m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad),
+		m_messageHandler(messageHandler)
 	{
 	}
 
@@ -71,6 +74,7 @@ public:
 
 private:
 	std::string m_executeJavaScriptCodeOnLoad;
+	CefRefPtr<StreamElementsBrowserMessageHandler> m_messageHandler;
 
 public:
 	IMPLEMENT_REFCOUNTING(StreamElementsCefClient)

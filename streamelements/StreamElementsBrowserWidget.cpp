@@ -1,5 +1,6 @@
 #include "StreamElementsBrowserWidget.hpp"
 #include "StreamElementsCefClient.hpp"
+#include "StreamElementsApiMessageHandler.hpp"
 #include <functional>
 
 static class BrowserTask : public CefTask {
@@ -144,7 +145,9 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		m_cef_browser =
 			CefBrowserHost::CreateBrowserSync(
 				windowInfo,
-				new StreamElementsCefClient(m_executeJavaScriptCodeOnLoad),
+				new StreamElementsCefClient(
+					m_executeJavaScriptCodeOnLoad,
+					new StreamElementsApiMessageHandler()),
 				m_url.c_str(),
 				cefBrowserSettings,
 				nullptr);

@@ -89,6 +89,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsObsBandwidthTestClient.cpp
 	streamelements/StreamElementsWidgetManager.cpp
 	streamelements/StreamElementsObsAppMonitor.cpp
+	streamelements/StreamElementsApiMessageHandler.cpp
 	)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
@@ -109,6 +110,8 @@ set(obs-browser_HEADERS
 	streamelements/StreamElementsObsBandwidthTestClient.hpp
 	streamelements/StreamElementsWidgetManager.hpp
 	streamelements/StreamElementsObsAppMonitor.hpp
+	streamelements/StreamElementsBrowserMessageHandler.hpp
+	streamelements/StreamElementsApiMessageHandler.hpp
 	)
 
 add_library(obs-browser MODULE

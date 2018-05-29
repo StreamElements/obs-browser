@@ -495,7 +495,7 @@ bool obs_module_load(void)
 		obs_frontend_pop_ui_translation();
 
 		if (true) {
-			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://www.google.com\", \"width\": 200} }";
+			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 200} }";
 			context->widgetManager->DeserializeDockingWidgets(state);
 
 			std::string dockingWidgetsState;

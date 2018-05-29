@@ -198,27 +198,81 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 		callbackMap.erase(callbackID);
 	}
-	else if (message->GetName() == "CefRenderProcessHandler::BindJavaScriptFunctions") {
+	else if (message->GetName() == "CefRenderProcessHandler::BindJavaScriptProperties") {
 		CefRefPtr<CefV8Context> context =
 			browser->GetMainFrame()->GetV8Context();
 
 		context->Enter();
 
-		auto exec = [&](const char* code)
-		{
-			CefRefPtr<CefV8Value> retval;
-			CefRefPtr<CefV8Exception> exception;
+		CefRefPtr<CefV8Value> globalObj = context->GetGlobal();
 
-			context->Eval(code, browser->GetMainFrame()->GetURL(),
-				0, retval, exception);
-		};
+		CefString containerName = args->GetValue(0)->GetString();
+		CefString root_json_string = args->GetValue(1)->GetString();
+		CefRefPtr<CefDictionaryValue> root =
+			CefParseJSON(root_json_string, JSON_PARSER_ALLOW_TRAILING_COMMAS)->GetDictionary();
 
-		auto alert = [&](const char* msg)
-		{
-			char buf[512];
-			sprintf(buf, "alert('%s');", msg);
-			exec(buf);
-		};
+		CefDictionaryValue::KeyList propsList;
+		if (root->GetKeys(propsList)) {
+			for (auto propName : propsList) {
+				// Get/create function container
+				CefRefPtr<CefV8Value> containerObj = nullptr;
+
+				if (!globalObj->HasValue(containerName)) {
+					containerObj = CefV8Value::CreateObject(0, 0);
+
+					globalObj->SetValue(containerName,
+						containerObj, V8_PROPERTY_ATTRIBUTE_NONE);
+				}
+				else {
+					containerObj = globalObj->GetValue(containerName);
+				}
+
+				std::string propFullName = "window.";
+				propFullName.append(containerName);
+				propFullName.append(".");
+				propFullName.append(propName);
+
+				CefRefPtr<CefV8Value> propValue;
+
+				switch (root->GetType(propName)) {
+				case VTYPE_NULL:
+					propValue = CefV8Value::CreateNull();
+					break;
+				case VTYPE_BOOL:
+					propValue = CefV8Value::CreateBool(root->GetBool(propName));
+					break;
+				case VTYPE_INT:
+					propValue = CefV8Value::CreateInt(root->GetInt(propName));
+					break;
+				case VTYPE_DOUBLE:
+					propValue = CefV8Value::CreateDouble(root->GetDouble(propName));
+					break;
+				case VTYPE_STRING:
+					propValue = CefV8Value::CreateString(root->GetString(propName));
+					break;
+				// case VTYPE_BINARY:
+				// case VTYPE_DICTIONARY:
+				// case VTYPE_LIST:
+				// case VTYPE_INVALID:
+				default:
+					propValue = CefV8Value::CreateUndefined();
+					break;
+				}
+
+				// Create function
+				containerObj->SetValue(propName,
+					propValue,
+					V8_PROPERTY_ATTRIBUTE_NONE);
+			}
+		}
+
+		context->Exit();
+	}
+	else if (message->GetName() == "CefRenderProcessHandler::BindJavaScriptFunctions") {
+		CefRefPtr<CefV8Context> context =
+			browser->GetMainFrame()->GetV8Context();
+
+		context->Enter();
 
 		CefRefPtr<CefV8Value> globalObj = context->GetGlobal();
 
@@ -236,8 +290,6 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 				auto messageName = function->GetString("message");
 
 				if (!messageName.empty()) {
-					auto numInputArgs = function->GetInt("numInputArgs");
-
 					// Get/create function container
 					CefRefPtr<CefV8Value> containerObj = nullptr;
 
@@ -267,7 +319,6 @@ bool BrowserApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 					item.message = messageName;
 					item.fullName = functionFullName;
-					item.numInputArgs = numInputArgs;
 
 					cefClientFunctions[functionFullName] = item;
 				}

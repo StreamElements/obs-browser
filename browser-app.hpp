@@ -41,7 +41,6 @@ private:
 	public:
 		std::string message;
 		std::string fullName;
-		int numInputArgs;
 	};
 
 	std::map<std::string, APIFunctionItem> cefClientFunctions;
