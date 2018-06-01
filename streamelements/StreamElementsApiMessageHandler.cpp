@@ -2,6 +2,11 @@
 
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
+#include "StreamElementsConfig.hpp"
+
+#include <QDesktopServices>
+#include <QUrl>
+
 /* Numeric value indicating the current major version of the API.
  * This value must be incremented each time a breaking change to
  * the API is introduced(change of existing API methods/properties
@@ -162,7 +167,49 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	//	result->SetBool(true);
 	//});
 
-	API_HANDLER_BEGIN("getWidgets");
-		result->SetInt(1234);
+	API_HANDLER_BEGIN("getStartupFlags");
+	{
+		result->SetInt(
+			(int)config_get_uint(
+				StreamElementsConfig::GetInstance()->GetConfig(),
+				"Startup",
+				"Flags"));
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("setStartupFlags");
+	{
+		config_set_uint(
+			StreamElementsConfig::GetInstance()->GetConfig(),
+			"Startup",
+			"Flags",
+			args->GetValue(0)->GetInt());
+
+		StreamElementsConfig::GetInstance()->SaveConfig();
+
+		result->SetInt(
+			(int)config_get_uint(
+				StreamElementsConfig::GetInstance()->GetConfig(),
+				"Startup",
+				"Flags"));
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("deleteAllCookies");
+	{
+		CefCookieManager::GetGlobalManager(NULL)->DeleteCookies(
+			CefString(""), // URL
+			CefString(""), // Cookie name
+			nullptr);      // On-complete callback
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("openDefaultBrowser");
+	{
+		CefString url = args->GetValue(0)->GetString();
+
+		QUrl navigate_url = QUrl(url.ToString().c_str(), QUrl::TolerantMode);
+		QDesktopServices::openUrl(navigate_url);
+	}
 	API_HANDLER_END();
 }

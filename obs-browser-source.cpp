@@ -128,25 +128,32 @@ bool BrowserSource::CreateBrowser()
 
 void BrowserSource::DestroyBrowser(bool async)
 {
-	ExecuteOnBrowser([this] ()
+	auto destroyFunc = [this]()
 	{
 		CefRefPtr<CefClient> client =
-				cefBrowser->GetHost()->GetClient();
+			cefBrowser->GetHost()->GetClient();
 		BrowserClient *bc =
-				reinterpret_cast<BrowserClient*>(client.get());
+			reinterpret_cast<BrowserClient*>(client.get());
 		if (bc) {
 			bc->bs = nullptr;
 		}
 
 		/*
-		 * This stops rendering
-		 * http://magpcss.org/ceforum/viewtopic.php?f=6&t=12079
-		 * https://bitbucket.org/chromiumembedded/cef/issues/1363/washidden-api-got-broken-on-branch-2062)
-		 */
+		* This stops rendering
+		* http://magpcss.org/ceforum/viewtopic.php?f=6&t=12079
+		* https://bitbucket.org/chromiumembedded/cef/issues/1363/washidden-api-got-broken-on-branch-2062)
+		*/
 		cefBrowser->GetHost()->WasHidden(true);
 		cefBrowser->GetHost()->CloseBrowser(true);
 		cefBrowser = nullptr;
-	}, async);
+	};
+
+	if (CefCurrentlyOn(TID_UI) && !async) {
+		destroyFunc();
+	}
+	else {
+		ExecuteOnBrowser(destroyFunc, async);
+	}
 }
 
 void BrowserSource::SendMouseClick(
