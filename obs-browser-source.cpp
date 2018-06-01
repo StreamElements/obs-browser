@@ -400,7 +400,8 @@ static void ExecuteOnAllBrowsers(function<void(BrowserSource*)> func, bool async
 
 void DispatchJSEvent(const char *eventName, const char *jsonString)
 {
-	struct local_context {
+	class local_context: public CefBaseRefCounted {
+	public:
 		std::string eventName;
 		char* jsonString = nullptr;
 
@@ -408,16 +409,20 @@ void DispatchJSEvent(const char *eventName, const char *jsonString)
 		{
 			if (jsonString) delete jsonString;
 		}
+
+		IMPLEMENT_REFCOUNTING(local_context)
 	};
 
-	local_context* context = new local_context();
+	CefRefPtr<local_context> context = new local_context();
+
+	context->AddRef();
 
 	context->eventName = eventName;
 
 	if (jsonString)
 		context->jsonString = strdup(jsonString);
 
-	ExecuteOnAllBrowsers([context] (BrowserSource *bsw)
+	auto func = [context](BrowserSource *bsw)
 	{
 		CefRefPtr<CefProcessMessage> msg =
 			CefProcessMessage::Create("DispatchJSEvent");
@@ -427,6 +432,20 @@ void DispatchJSEvent(const char *eventName, const char *jsonString)
 		args->SetString(1, context->jsonString);
 		bsw->cefBrowser->SendProcessMessage(PID_RENDERER, msg);
 
-		delete context;
-	}, true);
+		context->Release();
+	};
+
+	// Execute on all browsers
+	lock_guard<mutex> lock(browser_list_mutex);
+
+	BrowserSource *bs = first_browser;
+	while (bs) {
+		BrowserSource *bsw =
+			reinterpret_cast<BrowserSource *>(bs);
+		context->AddRef();
+		bsw->ExecuteOnBrowser([=]() {func(bsw); }, true);
+		bs = bs->next;
+	}
+
+	context->Release();
 }
