@@ -6,6 +6,16 @@
 
 #include "StreamElementsUtils.hpp"
 
+StreamElementsBrowserWidgetManager::StreamElementsBrowserWidgetManager(QMainWindow* parent) :
+	StreamElementsWidgetManager(parent),
+	m_notificationBarToolBar(nullptr)
+{
+}
+
+StreamElementsBrowserWidgetManager::~StreamElementsBrowserWidgetManager()
+{
+}
+
 void StreamElementsBrowserWidgetManager::PushCentralBrowserWidget(
 	const char* const url,
 	const char* const executeJavaScriptCodeOnLoad)
@@ -244,4 +254,98 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(CefRefPtr<Cef
 			}
 		}
 	}
+}
+
+void StreamElementsBrowserWidgetManager::ShowNotificationBar(
+	const char* const url,
+	const int height,
+	const char* const executeJavaScriptCodeOnLoad)
+{
+	HideNotificationBar();
+
+	m_notificationBarBrowserWidget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad);
+
+	const Qt::ToolBarArea NOTIFICATION_BAR_AREA = Qt::TopToolBarArea;
+
+	m_notificationBarToolBar = new QToolBar(mainWindow());
+	m_notificationBarToolBar->setAutoFillBackground(true);
+	m_notificationBarToolBar->setAllowedAreas(NOTIFICATION_BAR_AREA);
+	m_notificationBarToolBar->setFloatable(false);
+	m_notificationBarToolBar->setMovable(false);
+	m_notificationBarToolBar->setMinimumHeight(height);
+	m_notificationBarToolBar->setMaximumHeight(height);
+	m_notificationBarToolBar->setLayout(new QVBoxLayout());
+	m_notificationBarToolBar->addWidget(m_notificationBarBrowserWidget);
+	mainWindow()->addToolBar(NOTIFICATION_BAR_AREA, m_notificationBarToolBar);
+}
+
+void StreamElementsBrowserWidgetManager::HideNotificationBar()
+{
+	if (m_notificationBarToolBar) {
+		mainWindow()->removeToolBar(m_notificationBarToolBar);
+
+		m_notificationBarToolBar = nullptr;
+	}
+}
+
+void StreamElementsBrowserWidgetManager::SerializeNotificationBar(CefRefPtr<CefValue>& output)
+{
+	if (m_notificationBarToolBar) {
+		CefRefPtr<CefDictionaryValue> rootDictionary = CefDictionaryValue::Create();
+		output->SetDictionary(rootDictionary);
+
+		rootDictionary->SetString("url", m_notificationBarBrowserWidget->GetCurrentUrl());
+		rootDictionary->SetString("executeJavaScriptOnLoad", m_notificationBarBrowserWidget->GetExecuteJavaScriptCodeOnLoad());
+		rootDictionary->SetInt("height", m_notificationBarToolBar->size().height());		
+	}
+	else {
+		output->SetNull();
+	}
+}
+
+void StreamElementsBrowserWidgetManager::DeserializeNotificationBar(CefRefPtr<CefValue>& input)
+{
+	if (input->GetType() == VTYPE_DICTIONARY) {
+		CefRefPtr<CefDictionaryValue> rootDictionary = input->GetDictionary();
+
+		int height = 100;
+		std::string url = "about:blank";
+		std::string executeJavaScriptOnLoad = "";
+
+		if (rootDictionary->HasKey("height")) {
+			height = rootDictionary->GetInt("height");
+		}
+
+		if (rootDictionary->HasKey("url")) {
+			url = rootDictionary->GetString("url").ToString();
+		}
+
+		if (rootDictionary->HasKey("executeJavaScriptOnLoad")) {
+			executeJavaScriptOnLoad = rootDictionary->GetString("executeJavaScriptOnLoad").ToString();
+		}
+
+		ShowNotificationBar(url.c_str(), height, executeJavaScriptOnLoad.c_str());
+	}
+}
+
+void StreamElementsBrowserWidgetManager::SerializeNotificationBar(std::string& output)
+{
+	CefRefPtr<CefValue> root = CefValue::Create();
+
+	SerializeNotificationBar(root);
+
+	// Convert data to JSON
+	CefString jsonString =
+		CefWriteJSON(root, JSON_WRITER_DEFAULT);
+
+	output = jsonString.ToString();
+}
+
+void StreamElementsBrowserWidgetManager::DeserializeNotificationBar(std::string& input)
+{
+	// Convert JSON string to CefValue
+	CefRefPtr<CefValue> root =
+		CefParseJSON(CefString(input), JSON_PARSER_ALLOW_TRAILING_COMMAS);
+
+	DeserializeNotificationBar(root);
 }

@@ -31,14 +31,12 @@ public:
 	};
 
 public:
-	StreamElementsBrowserWidgetManager(QMainWindow* parent) :
-		StreamElementsWidgetManager(parent)
-	{
-	}
+	StreamElementsBrowserWidgetManager(QMainWindow* parent);
+	virtual ~StreamElementsBrowserWidgetManager();
 
-	virtual ~StreamElementsBrowserWidgetManager() { }
-
-	/* central widget */
+	/********************/
+	/* Central widget   */
+	/********************/
 
 	void PushCentralBrowserWidget(
 		const char* const url,
@@ -46,7 +44,9 @@ public:
 
 	bool PopCentralBrowserWidget();
 
-	/* dockable widgets */
+	/********************/
+	/* Dockable widgets */
+	/********************/
 
 	bool AddDockBrowserWidget(
 		const char* const id,
@@ -68,12 +68,31 @@ public:
 	}
 
 	virtual void SerializeDockingWidgets(CefRefPtr<CefValue>& output) override;
-	virtual void DeserializeDockingWidgets(CefRefPtr<CefValue>& output) override;
+	virtual void DeserializeDockingWidgets(CefRefPtr<CefValue>& input) override;
 
 	void SerializeDockingWidgets(std::string& output) { StreamElementsWidgetManager::SerializeDockingWidgets(output); }
 	void DeserializeDockingWidgets(std::string& input) { StreamElementsWidgetManager::DeserializeDockingWidgets(input); }
 
+	/********************/
+	/* Notification bar */
+	/********************/
+
+	void ShowNotificationBar(
+		const char* const url,
+		const int height,
+		const char* const executeJavaScriptCodeOnLoad);
+
+	void HideNotificationBar();
+
+	virtual void SerializeNotificationBar(CefRefPtr<CefValue>& output);
+	virtual void DeserializeNotificationBar(CefRefPtr<CefValue>& input);
+
+	void SerializeNotificationBar(std::string& output);
+	void DeserializeNotificationBar(std::string& input);
 
 private:
 	std::map<std::string, StreamElementsBrowserWidget*> m_browserWidgets;
+
+	QToolBar* m_notificationBarToolBar;
+	StreamElementsBrowserWidget* m_notificationBarBrowserWidget;
 };

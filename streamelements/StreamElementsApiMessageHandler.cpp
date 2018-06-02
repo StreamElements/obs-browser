@@ -3,6 +3,8 @@
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
 #include "StreamElementsConfig.hpp"
+#include "StreamElementsGlobalStateManager.hpp"
+#include "StreamElementsUtils.hpp"
 
 #include <QDesktopServices>
 #include <QUrl>
@@ -58,14 +60,51 @@ bool StreamElementsApiMessageHandler::OnProcessMessageReceived(
 			CefRefPtr<CefListValue> callArgs = CefListValue::Create();
 
 			for (int i = headerSize; i < args->GetSize() - 1; ++i) {
-				callArgs->SetValue(
-					callArgs->GetSize(),
+				CefRefPtr<CefValue> parsedValue =
 					CefParseJSON(
 						args->GetString(i),
-						JSON_PARSER_ALLOW_TRAILING_COMMAS));
+						JSON_PARSER_ALLOW_TRAILING_COMMAS);
+
+				callArgs->SetValue(
+					callArgs->GetSize(),
+					parsedValue);
 			}
 
-			m_apiCallHandlers[id](this, message, callArgs, result);
+			struct local_context {
+				os_event_t* event;
+				StreamElementsApiMessageHandler* self;
+				std::string id;
+				CefRefPtr<CefProcessMessage> message;
+				CefRefPtr<CefListValue> callArgs;
+				CefRefPtr<CefValue> result;
+			};
+
+			local_context* context = new local_context();
+
+			os_event_init(&context->event, OS_EVENT_TYPE_AUTO);
+			context->self = this;
+			context->id = id;
+			context->message = message;
+			context->callArgs = callArgs;
+			context->result = result;
+
+			QtPostTask([](void* data)
+			{
+				local_context* context = (local_context*)data;
+
+				context->self->m_apiCallHandlers[context->id](
+					context->self,
+					context->message,
+					context->callArgs,
+					context->result);
+
+				os_event_signal(context->event);
+			}, context);
+
+			os_event_wait(context->event);
+			os_event_destroy(context->event);
+
+			delete context;
 		}
 
 		// Invoke result callback
@@ -169,29 +208,15 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 	API_HANDLER_BEGIN("getStartupFlags");
 	{
-		result->SetInt(
-			(int)config_get_uint(
-				StreamElementsConfig::GetInstance()->GetConfig(),
-				"Startup",
-				"Flags"));
+		result->SetInt(StreamElementsConfig::GetInstance()->GetStartupFlags());
 	}
 	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("setStartupFlags");
 	{
-		config_set_uint(
-			StreamElementsConfig::GetInstance()->GetConfig(),
-			"Startup",
-			"Flags",
-			args->GetValue(0)->GetInt());
+		StreamElementsConfig::GetInstance()->SetStartupFlags(args->GetValue(0)->GetInt());
 
-		StreamElementsConfig::GetInstance()->SaveConfig();
-
-		result->SetInt(
-			(int)config_get_uint(
-				StreamElementsConfig::GetInstance()->GetConfig(),
-				"Startup",
-				"Flags"));
+		result->SetBool(true);
 	}
 	API_HANDLER_END();
 
@@ -201,6 +226,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 			CefString(""), // URL
 			CefString(""), // Cookie name
 			nullptr);      // On-complete callback
+
+		result->SetBool(true);
 	}
 	API_HANDLER_END();
 
@@ -210,6 +237,26 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 		QUrl navigate_url = QUrl(url.ToString().c_str(), QUrl::TolerantMode);
 		QDesktopServices::openUrl(navigate_url);
+
+		result->SetBool(true);
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("showNotificationBar");
+	{
+		CefRefPtr<CefValue> barInfo = args->GetValue(0);
+
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeNotificationBar(barInfo);
+
+		result->SetBool(true);
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("hideNotificationBar");
+	{
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->HideNotificationBar();
+
+		result->SetBool(true);
 	}
 	API_HANDLER_END();
 }

@@ -45,6 +45,7 @@ static thread manager_thread;
 #include "streamelements/StreamElementsBrowserWidget.hpp"
 #include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
 #include "streamelements/StreamElementsBrowserWidgetManager.hpp"
+#include "streamelements/StreamElementsGlobalStateManager.hpp"
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QGridLayout>
@@ -381,6 +382,8 @@ bool obs_module_load(void)
 
 	obs_frontend_pop_ui_translation();
 
+	StreamElementsGlobalStateManager::GetInstance()->Initialize((QMainWindow*)obs_frontend_get_main_window());
+
 	QtPostTask([]() -> void {
 		// Add button in controls dock
 		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
@@ -404,25 +407,14 @@ bool obs_module_load(void)
 		buttonsVLayout->addWidget(newButton);
 
 		if (true) {
-			//Qt::ToolBarArea area = Qt::BottomToolBarArea;
-			Qt::ToolBarArea area = Qt::TopToolBarArea;
-
-			// Add toolbar w/ browser
-			QToolBar* toolBar = new QToolBar(obs_main_window);
-			toolBar->setAutoFillBackground(true);
-			toolBar->setAllowedAreas(area);
-			toolBar->setFloatable(false);
-			toolBar->setMovable(false);
-			toolBar->setMinimumHeight(200);
-			toolBar->setLayout(new QVBoxLayout());
-			toolBar->addWidget(new StreamElementsBrowserWidget(nullptr, "http://www.google.com", nullptr));
-			obs_main_window->addToolBar(area, toolBar);
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->ShowNotificationBar("http://www.google.com/", 100, nullptr);
 		}
 	});
 
 	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
 	QtPostTask([]() -> void {
+		/*
 		std::vector<StreamElementsBandwidthTestClient::Server> servers;
 
 		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-fra.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
@@ -452,57 +444,26 @@ bool obs_module_load(void)
 		};
 
 		local_context* context = new local_context();
+		*/
 
 		obs_frontend_push_ui_translation(obs_module_get_string);
 
-		context->widgetManager->PushCentralBrowserWidget("http://www.google.com/", nullptr);
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget("http://www.google.com/", nullptr);
 
-		/*
-		context->widgetManager->AddDockBrowserWidget(
-			"test1",
-			"Dynamic Widget 1",
-			"http://streamelements.local/index.html",
-			"alert(window.location.href);",
-			Qt::LeftDockWidgetArea);
-
-		context->widgetManager->AddDockBrowserWidget(
-			"test2",
-			"Dynamic Widget 2",
-			"http://streamelements.local/index.html",
-			nullptr,
-			Qt::RightDockWidgetArea);
-		*/
-
-		/*
-		context->widgetManager->AddDockBrowserWidget(
-			"test3",
-			"Dynamic Widget 3",
-			"http://streamelements.local/index.html",
-			nullptr,
-			Qt::TopDockWidgetArea);
-
-		context->widgetManager->AddDockBrowserWidget(
-			"test4",
-			"Dynamic Widget 4",
-			"http://streamelements.local/index.html",
-			nullptr,
-			Qt::TopDockWidgetArea);
-
-		std::string dockingWidgetsState;
-		context->widgetManager->SerializeDockingWidgets(dockingWidgetsState);
-		::MessageBoxA(0, dockingWidgetsState.c_str(), "dockingWidgetsState", 0);
-		*/
 		obs_frontend_pop_ui_translation();
 
 		if (true) {
 			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 200} }";
-			context->widgetManager->DeserializeDockingWidgets(state);
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeDockingWidgets(state);
 
 			std::string dockingWidgetsState;
-			context->widgetManager->SerializeDockingWidgets(dockingWidgetsState);
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->SerializeDockingWidgets(dockingWidgetsState);
 			::MessageBoxA(0, dockingWidgetsState.c_str(), "dockingWidgetsState", 0);
 		}
 
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PopCentralBrowserWidget();
+
+		/*
 		// Test bandwidth
 		s_bwClient->TestMultipleServersBitsPerSecondAsync(
 			servers,
@@ -529,7 +490,7 @@ bool obs_module_load(void)
 
 				delete context;
 			},
-			context);
+			context);*/
 	});
 
 	return true;
@@ -540,6 +501,8 @@ void obs_module_unload(void)
 	obs_frontend_remove_event_callback(handle_obs_frontend_event, nullptr);
 
 	delete s_bwClient;
+
+	StreamElementsGlobalStateManager::GetInstance()->Shutdown();
 
 	if (manager_thread.joinable()) {
 		while (!QueueCEFTask([] () {CefQuitMessageLoop();}))

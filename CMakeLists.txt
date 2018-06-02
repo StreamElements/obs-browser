@@ -91,6 +91,7 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsObsAppMonitor.cpp
 	streamelements/StreamElementsApiMessageHandler.cpp
 	streamelements/StreamElementsConfig.cpp
+	streamelements/StreamElementsGlobalStateManager.cpp
 	)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
@@ -114,6 +115,7 @@ set(obs-browser_HEADERS
 	streamelements/StreamElementsBrowserMessageHandler.hpp
 	streamelements/StreamElementsApiMessageHandler.hpp
 	streamelements/StreamElementsConfig.hpp
+	streamelements/StreamElementsGlobalStateManager.hpp
 	)
 
 add_library(obs-browser MODULE
