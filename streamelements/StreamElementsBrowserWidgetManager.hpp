@@ -42,7 +42,7 @@ public:
 		const char* const url,
 		const char* const executeJavaScriptCodeOnLoad);
 
-	bool PopCentralBrowserWidget();
+	bool DestroyCurrentCentralBrowserWidget();
 
 	/********************/
 	/* Dockable widgets */

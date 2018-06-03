@@ -71,22 +71,38 @@ bool StreamElementsApiMessageHandler::OnProcessMessageReceived(
 			}
 
 			struct local_context {
-				os_event_t* event;
 				StreamElementsApiMessageHandler* self;
 				std::string id;
+				CefRefPtr<CefBrowser> browser;
 				CefRefPtr<CefProcessMessage> message;
 				CefRefPtr<CefListValue> callArgs;
 				CefRefPtr<CefValue> result;
+				void (*complete)(void*);
+				int cef_app_callback_id;
 			};
 
 			local_context* context = new local_context();
 
-			os_event_init(&context->event, OS_EVENT_TYPE_AUTO);
 			context->self = this;
 			context->id = id;
+			context->browser = browser;
 			context->message = message;
 			context->callArgs = callArgs;
 			context->result = result;
+			context->cef_app_callback_id = message->GetArgumentList()->GetInt(message->GetArgumentList()->GetSize() - 1);
+			context->complete = [] (void* data) {
+				local_context* context = (local_context*)data;
+
+				// Invoke result callback
+				CefRefPtr<CefProcessMessage> msg =
+					CefProcessMessage::Create("executeCallback");
+
+				CefRefPtr<CefListValue> callbackArgs = msg->GetArgumentList();
+				callbackArgs->SetInt(0, context->cef_app_callback_id);
+				callbackArgs->SetString(1, CefWriteJSON(context->result, JSON_WRITER_DEFAULT));
+
+				context->browser->SendProcessMessage(PID_RENDERER, msg);
+			};
 
 			QtPostTask([](void* data)
 			{
@@ -96,26 +112,13 @@ bool StreamElementsApiMessageHandler::OnProcessMessageReceived(
 					context->self,
 					context->message,
 					context->callArgs,
-					context->result);
+					context->result,
+					context->complete,
+					context);
 
-				os_event_signal(context->event);
+				delete context;
 			}, context);
-
-			os_event_wait(context->event);
-			os_event_destroy(context->event);
-
-			delete context;
 		}
-
-		// Invoke result callback
-		CefRefPtr<CefProcessMessage> msg =
-			CefProcessMessage::Create("executeCallback");
-
-		CefRefPtr<CefListValue> callbackArgs = msg->GetArgumentList();
-		callbackArgs->SetInt(0, message->GetArgumentList()->GetInt(message->GetArgumentList()->GetSize() - 1));
-		callbackArgs->SetString(1, CefWriteJSON(result, JSON_WRITER_DEFAULT));
-
-		browser->SendProcessMessage(PID_RENDERER, msg);
 
 		return true;
 	}
@@ -197,8 +200,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandler(std::string
 	m_apiCallHandlers[id] = handler;
 }
 
-#define API_HANDLER_BEGIN(name) RegisterIncomingApiCallHandler(name, [](StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result) {
-#define API_HANDLER_END() });
+#define API_HANDLER_BEGIN(name) RegisterIncomingApiCallHandler(name, [](StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result, void (*complete_callback)(void*), void* complete_context) {
+#define API_HANDLER_END() complete_callback(complete_context); });
 
 void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 {
@@ -255,6 +258,38 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	API_HANDLER_BEGIN("hideNotificationBar");
 	{
 		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->HideNotificationBar();
+
+		result->SetBool(true);
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("showCentralWidget");
+	{
+		CefRefPtr<CefDictionaryValue> rootDictionary = args->GetValue(0)->GetDictionary();
+
+		if (rootDictionary.get() && rootDictionary->HasKey("url")) {
+			// Remove all central widgets
+			while (StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget())
+			{ }
+
+			std::string executeJavaScriptCodeOnLoad;
+
+			if (rootDictionary->HasKey("executeJavaScriptCodeOnLoad")) {
+				executeJavaScriptCodeOnLoad = rootDictionary->GetString("executeJavaScriptCodeOnLoad").ToString();
+			}
+
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget(
+				rootDictionary->GetString("url").ToString().c_str(),
+				executeJavaScriptCodeOnLoad.c_str());
+
+			result->SetBool(true);
+		}
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("hideCentralWidget");
+	{
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget();
 
 		result->SetBool(true);
 	}

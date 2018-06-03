@@ -38,7 +38,7 @@ public:
 	/* central widget */
 
 	void PushCentralWidget(QWidget* widget);
-	QWidget* PopCentralWidget();
+	bool DestroyCurrentCentralWidget();
 
 	/* dockable widgets */
 

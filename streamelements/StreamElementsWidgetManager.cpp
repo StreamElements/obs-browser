@@ -49,15 +49,13 @@ void StreamElementsWidgetManager::PushCentralWidget(QWidget* widget)
 	widget->setMinimumSize(0, 0);
 }
 
-QWidget* StreamElementsWidgetManager::PopCentralWidget()
+bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 {
 	if (m_centralWidgetStack.size()) {
 		SaveDockWidgetsGeometry();
 
 		QApplication::sendPostedEvents();
 		QSize currSize = mainWindow()->centralWidget()->size();
-
-		QWidget* currWidget = m_parent->takeCentralWidget();
 
 		m_parent->setCentralWidget(m_centralWidgetStack.top());
 
@@ -71,8 +69,6 @@ QWidget* StreamElementsWidgetManager::PopCentralWidget()
 		mainWindow()->centralWidget()->setMinimumSize(0, 0);
 
 		RestoreDockWidgetsGeometry();
-
-		return currWidget;
 	}
 
 	return nullptr;
@@ -81,7 +77,7 @@ QWidget* StreamElementsWidgetManager::PopCentralWidget()
 void StreamElementsWidgetManager::OnObsExit()
 {
 	// Empty stack
-	while (PopCentralWidget()) {
+	while (DestroyCurrentCentralWidget()) {
 	}
 }
 

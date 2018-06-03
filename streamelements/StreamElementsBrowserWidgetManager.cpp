@@ -23,17 +23,9 @@ void StreamElementsBrowserWidgetManager::PushCentralBrowserWidget(
 	PushCentralWidget(new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad));
 }
 
-bool StreamElementsBrowserWidgetManager::PopCentralBrowserWidget()
+bool StreamElementsBrowserWidgetManager::DestroyCurrentCentralBrowserWidget()
 {
-	QWidget* result = PopCentralWidget();
-
-	if (result) {
-		delete result;
-
-		return true;
-	} else {
-		return false;
-	}
+	return DestroyCurrentCentralWidget();
 }
 
 bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(

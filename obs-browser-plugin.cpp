@@ -384,7 +384,7 @@ bool obs_module_load(void)
 
 	StreamElementsGlobalStateManager::GetInstance()->Initialize((QMainWindow*)obs_frontend_get_main_window());
 
-	QtPostTask([]() -> void {
+	QtPostTask([] (void*) -> void {
 		// Add button in controls dock
 		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
 
@@ -409,11 +409,11 @@ bool obs_module_load(void)
 		if (true) {
 			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->ShowNotificationBar("http://www.google.com/", 100, nullptr);
 		}
-	});
+	}, nullptr);
 
 	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
-	QtPostTask([]() -> void {
+	QtExecSync([] (void*) -> void {
 		/*
 		std::vector<StreamElementsBandwidthTestClient::Server> servers;
 
@@ -446,12 +446,13 @@ bool obs_module_load(void)
 		local_context* context = new local_context();
 		*/
 
-		obs_frontend_push_ui_translation(obs_module_get_string);
+		// obs_frontend_push_ui_translation(obs_module_get_string);
 
-		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget("http://www.google.com/", nullptr);
+		// StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget("http://streamelements.local/onboarding.html", nullptr);
 
-		obs_frontend_pop_ui_translation();
+		// obs_frontend_pop_ui_translation();
 
+		/*
 		if (true) {
 			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 200} }";
 			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeDockingWidgets(state);
@@ -462,6 +463,7 @@ bool obs_module_load(void)
 		}
 
 		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PopCentralBrowserWidget();
+		*/
 
 		/*
 		// Test bandwidth
@@ -491,7 +493,7 @@ bool obs_module_load(void)
 				delete context;
 			},
 			context);*/
-	});
+	}, nullptr);
 
 	return true;
 }
