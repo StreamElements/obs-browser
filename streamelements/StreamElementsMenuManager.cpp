@@ -41,7 +41,7 @@ void StreamElementsMenuManager::Update()
 			});
 	};
 
-	QAction* logout_action = new QAction("Log out");
+	QAction* logout_action = new QAction(obs_module_text("StreamElements.Menu.ResetState"));
 	m_menu->addAction(logout_action);
 	logout_action->connect(
 		logout_action,
