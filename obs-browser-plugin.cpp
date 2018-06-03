@@ -384,6 +384,7 @@ bool obs_module_load(void)
 
 	StreamElementsGlobalStateManager::GetInstance()->Initialize((QMainWindow*)obs_frontend_get_main_window());
 
+	/*
 	QtPostTask([] (void*) -> void {
 		// Add button in controls dock
 		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
@@ -410,7 +411,7 @@ bool obs_module_load(void)
 			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->ShowNotificationBar("http://www.google.com/", 100, nullptr);
 		}
 	}, nullptr);
-
+	*/
 	s_bwClient = new StreamElementsObsBandwidthTestClient();
 
 	QtExecSync([] (void*) -> void {

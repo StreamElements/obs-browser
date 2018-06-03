@@ -48,13 +48,13 @@ void StreamElementsMenuManager::Update()
 		&QAction::triggered,
 		[this]
 		{
-			StreamElementsGlobalStateManager::GetInstance()->Logout();
+			StreamElementsGlobalStateManager::GetInstance()->Reset();
 		});
 
 
-	addURL("  StreamElements", "http://www.streamelements.com/");
+	addURL("StreamElements", "http://www.streamelements.com/");
 	m_menu->addSeparator();
-	addURL("  Google", "http://www.google.com/");
+	addURL("Google", "http://www.google.com/");
 	m_menu->addSeparator();
-	addURL("  StreamElements", "http://www.streamelements.com/");
+	addURL("StreamElements", "http://www.streamelements.com/");
 }

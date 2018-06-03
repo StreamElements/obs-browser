@@ -44,7 +44,7 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 		if (StreamElementsConfig::GetInstance()->GetStartupFlags() | StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE) {
 			// On-boarding
 
-			context->self->Logout();
+			context->self->Reset();
 		}
 		else {
 			// Regular
@@ -71,7 +71,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 	m_initialized = false;
 }
 
-void StreamElementsGlobalStateManager::Logout()
+void StreamElementsGlobalStateManager::Reset()
 {
 	CefCookieManager::GetGlobalManager(NULL)->DeleteCookies(
 		CefString(""), // URL
@@ -81,5 +81,9 @@ void StreamElementsGlobalStateManager::Logout()
 	GetWidgetManager()->HideNotificationBar();
 	GetWidgetManager()->RemoveAllDockWidgets();
 	GetWidgetManager()->DestroyCurrentCentralBrowserWidget();
-	GetWidgetManager()->PushCentralBrowserWidget("http://streamelements.local/onboarding.html", nullptr);
+	GetWidgetManager()->PushCentralBrowserWidget(obs_module_text("StreamElementsOnBoardingURL"), nullptr);
+
+	StreamElementsConfig::GetInstance()->SetStartupFlags(StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE);
+
+	GetMenuManager()->Update();
 }

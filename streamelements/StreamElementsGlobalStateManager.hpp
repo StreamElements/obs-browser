@@ -17,7 +17,7 @@ public:
 	void Initialize(QMainWindow* obs_main_window);
 	void Shutdown();
 
-	void Logout();
+	void Reset();
 
 	StreamElementsBrowserWidgetManager* GetWidgetManager() { return m_widgetManager; }
 	StreamElementsMenuManager* GetMenuManager() { return m_menuManager; }
