@@ -1,10 +1,10 @@
 #include "StreamElementsBrowserWidgetManager.hpp"
+#include "StreamElementsUtils.hpp"
 
 #include "cef-headers.hpp"
-
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
-#include "StreamElementsUtils.hpp"
+#include <QUuid>
 
 StreamElementsBrowserWidgetManager::StreamElementsBrowserWidgetManager(QMainWindow* parent) :
 	StreamElementsWidgetManager(parent),
@@ -26,6 +26,125 @@ void StreamElementsBrowserWidgetManager::PushCentralBrowserWidget(
 bool StreamElementsBrowserWidgetManager::DestroyCurrentCentralBrowserWidget()
 {
 	return DestroyCurrentCentralWidget();
+}
+
+std::string StreamElementsBrowserWidgetManager::AddDockBrowserWidget(CefRefPtr<CefValue> input, std::string requestId)
+{
+	std::string id = QUuid::createUuid().toString().toStdString();
+
+	if (requestId.size() && !m_browserWidgets.count(requestId)) {
+		id = requestId;
+	}
+
+	CefRefPtr<CefDictionaryValue> widgetDictionary = input->GetDictionary();
+
+	if (widgetDictionary.get()) {
+		if (widgetDictionary->HasKey("title") && widgetDictionary->HasKey("url")) {
+			std::string title;
+			std::string url;
+			std::string dockingAreaString = "floating";
+			std::string executeJavaScriptOnLoad;
+			bool visible = true;
+			QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+			int requestWidth = 100;
+			int requestHeight = 100;
+			int minWidth = 0;
+			int minHeight = 0;
+			int left = -1;
+			int top = -1;
+
+			QRect rec = QApplication::desktop()->screenGeometry();
+
+			title = widgetDictionary->GetString("title");
+			url = widgetDictionary->GetString("url");
+
+			if (widgetDictionary->HasKey("dockingArea")) {
+				dockingAreaString = widgetDictionary->GetString("dockingArea");
+			}
+
+			if (widgetDictionary->HasKey("executeJavaScriptOnLoad")) {
+				executeJavaScriptOnLoad = widgetDictionary->GetString("executeJavaScriptOnLoad");
+			}
+
+			if (widgetDictionary->HasKey("visible")) {
+				visible = widgetDictionary->GetBool("visible");
+			}
+
+			Qt::DockWidgetArea dockingArea = Qt::NoDockWidgetArea;
+
+			if (dockingAreaString == "left") {
+				dockingArea = Qt::LeftDockWidgetArea;
+				sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+			}
+			else if (dockingAreaString == "right") {
+				dockingArea = Qt::RightDockWidgetArea;
+				sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+			}
+			else if (dockingAreaString == "top") {
+				dockingArea = Qt::TopDockWidgetArea;
+				sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+			}
+			else if (dockingAreaString == "bottom") {
+				dockingArea = Qt::BottomDockWidgetArea;
+				sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+			}
+
+			if (widgetDictionary->HasKey("minWidth")) {
+				minWidth = widgetDictionary->GetInt("minWidth");
+			}
+
+			if (widgetDictionary->HasKey("width")) {
+				requestWidth = widgetDictionary->GetInt("width");
+			}
+
+			if (widgetDictionary->HasKey("minHeight")) {
+				minHeight = widgetDictionary->GetInt("minHeight");
+			}
+
+			if (widgetDictionary->HasKey("height")) {
+				requestHeight = widgetDictionary->GetInt("height");
+			}
+
+			if (widgetDictionary->HasKey("left")) {
+				left = widgetDictionary->GetInt("left");
+			}
+
+			if (widgetDictionary->HasKey("top")) {
+				top = widgetDictionary->GetInt("top");
+			}
+
+			if (AddDockBrowserWidget(
+				id.c_str(),
+				title.c_str(),
+				url.c_str(),
+				executeJavaScriptOnLoad.c_str(),
+				dockingArea)) {
+				QWidget* widget = GetDockWidget(id.c_str());
+
+				//QSize savedMaxSize = widget->maximumSize();
+
+				widget->setVisible(visible);
+				widget->setSizePolicy(sizePolicy);
+				widget->setMinimumSize(requestWidth, requestHeight);
+				//widget->setMaximumSize(requestWidth, requestHeight);
+
+				QApplication::sendPostedEvents();
+
+				widget->setMinimumSize(minWidth, minHeight);
+				//widget->setMaximumSize(savedMaxSize);
+
+				if (left >= 0 || top >= 0) {
+					widget->move(left, top);
+				}
+
+				QApplication::sendPostedEvents();
+			}
+
+			return id;
+		}
+
+		return "";
+	}
 }
 
 bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
@@ -141,110 +260,7 @@ void StreamElementsBrowserWidgetManager::DeserializeDockingWidgets(CefRefPtr<Cef
 	for (auto id : rootDictionaryKeys) {
 		CefRefPtr<CefValue> widgetValue = rootDictionary->GetValue(id);
 
-		CefRefPtr<CefDictionaryValue> widgetDictionary = widgetValue->GetDictionary();
-
-		if (widgetDictionary.get()) {
-			if (widgetDictionary->HasKey("title") && widgetDictionary->HasKey("url")) {
-				std::string title;
-				std::string url;
-				std::string dockingAreaString = "floating";
-				std::string executeJavaScriptOnLoad;
-				bool visible;
-				QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-				int requestWidth = 100;
-				int requestHeight = 100;
-				int minWidth = 0;
-				int minHeight = 0;
-				int left = -1;
-				int top = -1;
-
-				QRect rec = QApplication::desktop()->screenGeometry();
-
-				title = widgetDictionary->GetString("title");
-				url = widgetDictionary->GetString("url");
-
-				if (widgetDictionary->HasKey("dockingArea")) {
-					dockingAreaString = widgetDictionary->GetString("dockingArea");
-				}
-
-				if (widgetDictionary->HasKey("executeJavaScriptOnLoad")) {
-					executeJavaScriptOnLoad = widgetDictionary->GetString("executeJavaScriptOnLoad");
-				}
-
-				if (widgetDictionary->HasKey("visible")) {
-					visible = widgetDictionary->GetBool("visible");
-				}
-
-				Qt::DockWidgetArea dockingArea = Qt::NoDockWidgetArea;
-
-				if (dockingAreaString == "left") {
-					dockingArea = Qt::LeftDockWidgetArea;
-					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
-				}
-				else if (dockingAreaString == "right") {
-					dockingArea = Qt::RightDockWidgetArea;
-					sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
-				}
-				else if (dockingAreaString == "top") {
-					dockingArea = Qt::TopDockWidgetArea;
-					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-				}
-				else if (dockingAreaString == "bottom") {
-					dockingArea = Qt::BottomDockWidgetArea;
-					sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
-				}
-
-				if (widgetDictionary->HasKey("minWidth")) {
-					minWidth = widgetDictionary->GetInt("minWidth");
-				}
-
-				if (widgetDictionary->HasKey("width")) {
-					requestWidth = widgetDictionary->GetInt("width");
-				}
-
-				if (widgetDictionary->HasKey("minHeight")) {
-					minHeight = widgetDictionary->GetInt("minHeight");
-				}
-
-				if (widgetDictionary->HasKey("height")) {
-					requestHeight = widgetDictionary->GetInt("height");
-				}
-
-				if (widgetDictionary->HasKey("left")) {
-					left = widgetDictionary->GetInt("left");
-				}
-
-				if (widgetDictionary->HasKey("top")) {
-					top = widgetDictionary->GetInt("top");
-				}
-
-				if (AddDockBrowserWidget(
-					id.ToString().c_str(),
-					title.c_str(),
-					url.c_str(),
-					executeJavaScriptOnLoad.c_str(),
-					dockingArea)) {
-					QWidget* widget = GetDockWidget(id.ToString().c_str());
-
-					//QSize savedMaxSize = widget->maximumSize();
-
-					widget->setSizePolicy(sizePolicy);
-					widget->setMinimumSize(requestWidth, requestHeight);
-					//widget->setMaximumSize(requestWidth, requestHeight);
-
-					QApplication::sendPostedEvents();
-
-					widget->setMinimumSize(minWidth, minHeight);
-					//widget->setMaximumSize(savedMaxSize);
-
-					if (left >= 0 || top >= 0) {
-						widget->move(left, top);
-					}
-
-					QApplication::sendPostedEvents();
-				}
-			}
-		}
+		AddDockBrowserWidget(widgetValue, id);
 	}
 }
 

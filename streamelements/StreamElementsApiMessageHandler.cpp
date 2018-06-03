@@ -294,4 +294,37 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		result->SetBool(true);
 	}
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("addDockingWidget");
+	{
+		CefRefPtr<CefValue> widgetInfo = args->GetValue(0);
+
+		std::string id =
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->AddDockBrowserWidget(widgetInfo);
+
+		result->SetString(id);
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("removeDockingWidgetsByIds");
+	{
+		CefRefPtr<CefListValue> list = args->GetList(0);
+
+		if (list.get()) {
+			for (int i = 0; i < list->GetSize(); ++i) {
+				CefString id = list->GetString(i);
+
+				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->RemoveDockWidget(id.ToString().c_str());
+			}
+
+			result->SetBool(true);
+		}
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("getAllDockingWidgets");
+	{
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->SerializeDockingWidgets(result);
+	}
+	API_HANDLER_END();
 }

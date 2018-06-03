@@ -48,6 +48,8 @@ public:
 	/* Dockable widgets */
 	/********************/
 
+	std::string AddDockBrowserWidget(CefRefPtr<CefValue> input, std::string requestId = "");
+
 	bool AddDockBrowserWidget(
 		const char* const id,
 		const char* const title,
