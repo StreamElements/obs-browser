@@ -289,7 +289,9 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 	API_HANDLER_BEGIN("hideCentralWidget");
 	{
-		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget();
+		while (StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget())
+		{
+		}
 
 		result->SetBool(true);
 	}
@@ -301,6 +303,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 		std::string id =
 			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->AddDockBrowserWidget(widgetInfo);
+
+		StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
 
 		result->SetString(id);
 	}
@@ -316,6 +320,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->RemoveDockWidget(id.ToString().c_str());
 			}
+
+			StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
 
 			result->SetBool(true);
 		}

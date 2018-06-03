@@ -124,6 +124,12 @@ private:
 	void DestroyBrowser()
 	{
 		if (m_cef_browser.get() != NULL) {
+			// Detach browser to prevent WM_CLOSE event from being sent
+			// from CEF to the parent window.
+			::SetParent(
+				m_cef_browser->GetHost()->GetWindowHandle(),
+				0L);
+
 			m_cef_browser->GetHost()->CloseBrowser(true);
 			m_cef_browser = NULL;
 		}

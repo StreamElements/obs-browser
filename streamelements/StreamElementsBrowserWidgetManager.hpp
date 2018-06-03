@@ -61,6 +61,8 @@ public:
 
 	virtual bool RemoveDockWidget(const char* const id) override;
 
+	void RemoveAllDockWidgets();
+
 	void GetDockBrowserWidgetIdentifiers(std::vector<std::string>& result);
 
 	DockBrowserWidgetInfo* GetDockBrowserWidgetInfo(const char* const id);

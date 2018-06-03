@@ -31,6 +31,7 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const 
 {
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);
+	// setAttribute(Qt::WA_QuitOnClose, false);
 
 	// This influences docking widget width/height
 	//setMinimumWidth(200);
@@ -43,7 +44,6 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const 
 	policy.setVerticalPolicy(QSizePolicy::MinimumExpanding);
 	setSizePolicy(policy);
 }
-
 
 StreamElementsBrowserWidget::~StreamElementsBrowserWidget()
 {

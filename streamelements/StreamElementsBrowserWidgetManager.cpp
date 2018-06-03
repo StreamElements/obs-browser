@@ -165,6 +165,13 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	}
 }
 
+void StreamElementsBrowserWidgetManager::RemoveAllDockWidgets()
+{
+	while (m_browserWidgets.size()) {
+		RemoveDockWidget(m_browserWidgets.begin()->first.c_str());
+	}
+}
+
 bool StreamElementsBrowserWidgetManager::RemoveDockWidget(const char* const id)
 {
 	if (m_browserWidgets.count(id)) {

@@ -39,15 +39,18 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 		local_context* context = (local_context*)data;
 
 		context->self->m_widgetManager = new StreamElementsBrowserWidgetManager(context->obs_main_window);
+		context->self->m_menuManager = new StreamElementsMenuManager(context->obs_main_window);
 
 		if (StreamElementsConfig::GetInstance()->GetStartupFlags() | StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE) {
 			// On-boarding
 
-			context->self->GetWidgetManager()->PushCentralBrowserWidget("http://streamelements.local/onboarding.html", nullptr);
+			context->self->Logout();
 		}
 		else {
 			// Regular
 		}
+
+		context->self->m_menuManager->Update();
 	}, &context);
 
 	m_initialized = true;
@@ -62,7 +65,21 @@ void StreamElementsGlobalStateManager::Shutdown()
 		StreamElementsGlobalStateManager* self = (StreamElementsGlobalStateManager*)data;
 
 		delete self->m_widgetManager;
+		delete self->m_menuManager;
 	}, this);
 
 	m_initialized = false;
+}
+
+void StreamElementsGlobalStateManager::Logout()
+{
+	CefCookieManager::GetGlobalManager(NULL)->DeleteCookies(
+		CefString(""), // URL
+		CefString(""), // Cookie name
+		nullptr);      // On-complete callback
+
+	GetWidgetManager()->HideNotificationBar();
+	GetWidgetManager()->RemoveAllDockWidgets();
+	GetWidgetManager()->DestroyCurrentCentralBrowserWidget();
+	GetWidgetManager()->PushCentralBrowserWidget("http://streamelements.local/onboarding.html", nullptr);
 }
