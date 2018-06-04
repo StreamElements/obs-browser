@@ -126,7 +126,11 @@ std::string StreamElementsBrowserWidgetManager::AddDockBrowserWidget(CefRefPtr<C
 				dockingArea)) {
 				QDockWidget* widget = GetDockWidget(id.c_str());
 
+				widget->setVisible(!visible);
+				QApplication::sendPostedEvents();
 				widget->setVisible(visible);
+				QApplication::sendPostedEvents();
+
 				widget->setSizePolicy(sizePolicy);
 				widget->setMinimumSize(requestWidth, requestHeight);
 

@@ -76,8 +76,15 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 			context->self->RestoreState();
 		}
 
+		QApplication::sendPostedEvents();
+
 		context->self->m_menuManager->Update();
 	}, &context);
+
+	QtPostTask([](void* data) {
+		// Update visible state
+		StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+	}, this);
 
 	m_initialized = true;
 	m_persistStateEnabled = true;
