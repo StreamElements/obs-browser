@@ -129,12 +129,21 @@ bool StreamElementsWidgetManager::AddDockWidget(
 	m_dockWidgets[id] = dock;
 	m_dockWidgetAreas[id] = area;
 
-	QObject::connect(dock, &QDockWidget::dockLocationChanged, [id, dock, this](Qt::DockWidgetArea area) {
-		if (!m_dockWidgets.count(id)) {
+	if (area == Qt::NoDockWidgetArea) {
+		dock->setFloating(false);
+		QApplication::sendPostedEvents();
+		dock->setFloating(true);
+		QApplication::sendPostedEvents();
+	}
+
+	std::string savedId = id;
+
+	QObject::connect(dock, &QDockWidget::dockLocationChanged, [savedId, dock, this](Qt::DockWidgetArea area) {
+		if (!m_dockWidgets.count(savedId)) {
 			return;
 		}
 
-		m_dockWidgetAreas[id] = area;
+		m_dockWidgetAreas[savedId] = area;
 
 		StreamElementsGlobalStateManager::GetInstance()->PersistState();
 	});

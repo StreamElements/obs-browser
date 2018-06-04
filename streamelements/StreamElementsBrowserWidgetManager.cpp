@@ -88,6 +88,11 @@ std::string StreamElementsBrowserWidgetManager::AddDockBrowserWidget(CefRefPtr<C
 				dockingArea = Qt::BottomDockWidgetArea;
 				sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
 			}
+			else
+			{
+				sizePolicy.setHorizontalPolicy(QSizePolicy::Expanding);
+				sizePolicy.setVerticalPolicy(QSizePolicy::Expanding);
+			}
 
 			if (widgetDictionary->HasKey("minWidth")) {
 				minWidth = widgetDictionary->GetInt("minWidth");
@@ -118,7 +123,9 @@ std::string StreamElementsBrowserWidgetManager::AddDockBrowserWidget(CefRefPtr<C
 				title.c_str(),
 				url.c_str(),
 				executeJavaScriptOnLoad.c_str(),
-				dockingArea)) {
+				dockingArea /*,
+				Qt::AllDockWidgetAreas,
+				QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable*/)) {
 				QDockWidget* widget = GetDockWidget(id.c_str());
 
 				//QSize savedMaxSize = widget->maximumSize();
@@ -293,15 +300,19 @@ void StreamElementsBrowserWidgetManager::ShowNotificationBar(
 	m_notificationBarToolBar->addWidget(m_notificationBarBrowserWidget);
 	mainWindow()->addToolBar(NOTIFICATION_BAR_AREA, m_notificationBarToolBar);
 
-	UpdateDockWidgets();
+	// UpdateDockWidgets();
 }
 
 void StreamElementsBrowserWidgetManager::HideNotificationBar()
 {
 	if (m_notificationBarToolBar) {
+		m_notificationBarToolBar->setVisible(false);
+
+		QApplication::sendPostedEvents();
+
 		mainWindow()->removeToolBar(m_notificationBarToolBar);
 
-		UpdateDockWidgets();
+		// UpdateDockWidgets();
 
 		m_notificationBarToolBar = nullptr;
 	}
