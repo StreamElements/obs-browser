@@ -57,11 +57,6 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 		QApplication::sendPostedEvents();
 		QSize currSize = mainWindow()->centralWidget()->size();
 
-		// Take ownership of central widget. This prevents
-		// CEF from sending WM_CLOSE to the main window when
-		// widget switch takes place.
-		m_parent->takeCentralWidget();
-
 		m_parent->setCentralWidget(m_centralWidgetStack.top());
 
 		m_centralWidgetStack.pop();
