@@ -41,7 +41,7 @@ void StreamElementsMenuManager::Update()
 			});
 	};
 
-	QAction* logout_action = new QAction(obs_module_text("StreamElements.Menu.ResetState"));
+	QAction* logout_action = new QAction(obs_module_text("StreamElements.Action.ResetState"));
 	m_menu->addAction(logout_action);
 	logout_action->connect(
 		logout_action,
@@ -53,13 +53,13 @@ void StreamElementsMenuManager::Update()
 
 
 	m_menu->addSeparator();
-	addURL(obs_module_text("StreamElements.Menu.Bot"), obs_module_text("StreamElements.Menu.Bot.URL"));
-	addURL(obs_module_text("StreamElements.Menu.Tipping"), obs_module_text("StreamElements.Menu.Tipping.URL"));
-	addURL(obs_module_text("StreamElements.Menu.Overlays"), obs_module_text("StreamElements.Menu.Overlays.URL"));
-	addURL(obs_module_text("StreamElements.Menu.GroundControl"), obs_module_text("StreamElements.Menu.GroundControl.URL"));
+	addURL(obs_module_text("StreamElements.Action.Bot"), obs_module_text("StreamElements.Action.Bot.URL"));
+	addURL(obs_module_text("StreamElements.Action.Tipping"), obs_module_text("StreamElements.Action.Tipping.URL"));
+	addURL(obs_module_text("StreamElements.Action.Overlays"), obs_module_text("StreamElements.Action.Overlays.URL"));
+	addURL(obs_module_text("StreamElements.Action.GroundControl"), obs_module_text("StreamElements.Action.GroundControl.URL"));
 	m_menu->addSeparator();
 	m_menu->addSeparator();
-	addURL(obs_module_text("StreamElements.Menu.Import"), obs_module_text("StreamElements.Menu.Import.URL"));
+	addURL(obs_module_text("StreamElements.Action.Import"), obs_module_text("StreamElements.Action.Import.URL"));
 	m_menu->addSeparator();
-	addURL(obs_module_text("StreamElements.Menu.LiveSupport"), obs_module_text("StreamElements.Menu.LiveSupport.URL"));
+	addURL(obs_module_text("StreamElements.Action.LiveSupport"), obs_module_text("StreamElements.Action.LiveSupport.URL"));
 }

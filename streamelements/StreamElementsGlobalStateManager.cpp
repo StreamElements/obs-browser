@@ -3,6 +3,8 @@
 
 #include <util/threading.h>
 
+#include <QPushButton>
+
 StreamElementsGlobalStateManager* StreamElementsGlobalStateManager::s_instance = nullptr;
 
 StreamElementsGlobalStateManager::StreamElementsGlobalStateManager()
@@ -40,6 +42,24 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 
 		context->self->m_widgetManager = new StreamElementsBrowserWidgetManager(context->obs_main_window);
 		context->self->m_menuManager = new StreamElementsMenuManager(context->obs_main_window);
+
+		{
+			// Set up "Live Support" button
+			QPushButton* liveSupport = new QPushButton(
+				QIcon(QPixmap(QString(":/images/icon.png"))),
+				obs_module_text("StreamElements.Action.LiveSupport"));
+
+			QDockWidget* controlsDock = (QDockWidget*)context->obs_main_window->findChild<QDockWidget*>("controlsDock");
+			QVBoxLayout* buttonsVLayout = (QVBoxLayout*)controlsDock->findChild<QVBoxLayout*>("buttonsVLayout");
+			buttonsVLayout->addWidget(liveSupport);
+
+			QObject::connect(liveSupport, &QPushButton::clicked, []()
+			{
+				QUrl navigate_url = QUrl(obs_module_text("StreamElements.Action.LiveSupport.URL"), QUrl::TolerantMode);
+				QDesktopServices::openUrl(navigate_url);
+			});
+		}
+
 
 		if (StreamElementsConfig::GetInstance()->GetStartupFlags() | StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE) {
 			// On-boarding
