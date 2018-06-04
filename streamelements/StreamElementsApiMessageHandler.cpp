@@ -304,9 +304,22 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		std::string id =
 			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->AddDockBrowserWidget(widgetInfo);
 
-		StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+		QDockWidget* dock =
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockWidget(id.c_str());
 
-		result->SetString(id);
+		if (dock) {
+			QObject::connect(
+				dock,
+				&QDockWidget::visibilityChanged,
+				[]() {
+					StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+				}
+			);
+
+			StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+
+			result->SetString(id);
+		}
 	}
 	API_HANDLER_END();
 

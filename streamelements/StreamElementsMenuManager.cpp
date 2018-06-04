@@ -7,6 +7,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 
+#include <algorithm>
+
 StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow* parent):
 	m_mainWindow(parent)
 {
@@ -58,6 +60,56 @@ void StreamElementsMenuManager::Update()
 	addURL(obs_module_text("StreamElements.Action.Overlays"), obs_module_text("StreamElements.Action.Overlays.URL"));
 	addURL(obs_module_text("StreamElements.Action.GroundControl"), obs_module_text("StreamElements.Action.GroundControl.URL"));
 	m_menu->addSeparator();
+	{
+		std::vector<std::string> widgetIds;
+		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockBrowserWidgetIdentifiers(widgetIds);
+
+		std::vector<StreamElementsBrowserWidgetManager::DockBrowserWidgetInfo*> widgets;
+		for (auto id : widgetIds) {
+			widgets.emplace_back(
+				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockBrowserWidgetInfo(
+					id.c_str()));
+		}
+
+		std::sort(
+			widgets.begin(),
+			widgets.end(),
+			[](StreamElementsBrowserWidgetManager::DockBrowserWidgetInfo* a, StreamElementsBrowserWidgetManager::DockBrowserWidgetInfo* b)
+		{
+			return a->m_title < b->m_title;
+		});
+
+		for (auto widget : widgets) {
+			// widget->m_visible
+			QAction* widget_action = new QAction(QString(widget->m_title.c_str()));
+			m_menu->addAction(widget_action);
+
+			std::string id = widget->m_id;
+			bool isVisible = widget->m_visible;
+
+			widget_action->setCheckable(true);
+			widget_action->setChecked(isVisible);
+
+			QObject::connect(
+				widget_action,
+				&QAction::triggered,
+				[this, id, isVisible, widget_action]
+			{
+				QDockWidget* dock =
+					StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockWidget(id.c_str());
+
+				if (dock) {
+					dock->setVisible(!isVisible);
+
+					Update();
+				}
+			});
+		}
+
+		for (auto widget : widgets) {
+			delete widget;
+		}
+	}
 	m_menu->addSeparator();
 	addURL(obs_module_text("StreamElements.Action.Import"), obs_module_text("StreamElements.Action.Import.URL"));
 	m_menu->addSeparator();
