@@ -52,9 +52,14 @@ void StreamElementsMenuManager::Update()
 		});
 
 
-	addURL("StreamElements", "http://www.streamelements.com/");
 	m_menu->addSeparator();
-	addURL("Google", "http://www.google.com/");
+	addURL(obs_module_text("StreamElements.Menu.Bot"), obs_module_text("StreamElements.Menu.Bot.URL"));
+	addURL(obs_module_text("StreamElements.Menu.Tipping"), obs_module_text("StreamElements.Menu.Tipping.URL"));
+	addURL(obs_module_text("StreamElements.Menu.Overlays"), obs_module_text("StreamElements.Menu.Overlays.URL"));
+	addURL(obs_module_text("StreamElements.Menu.GroundControl"), obs_module_text("StreamElements.Menu.GroundControl.URL"));
 	m_menu->addSeparator();
-	addURL("StreamElements", "http://www.streamelements.com/");
+	m_menu->addSeparator();
+	addURL(obs_module_text("StreamElements.Menu.Import"), obs_module_text("StreamElements.Menu.Import.URL"));
+	m_menu->addSeparator();
+	addURL(obs_module_text("StreamElements.Menu.LiveSupport"), obs_module_text("StreamElements.Menu.LiveSupport.URL"));
 }
