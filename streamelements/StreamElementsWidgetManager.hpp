@@ -56,8 +56,6 @@ public:
 
 	/* dockable widgets */
 
-	void UpdateDockWidgets();
-
 	bool AddDockWidget(
 		const char* const id,
 		const char* const title,
