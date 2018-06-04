@@ -22,6 +22,20 @@ public:
 		bool m_visible;
 		std::string m_dockingArea;
 
+	public:
+		DockWidgetInfo()
+		{ }
+
+		DockWidgetInfo(DockWidgetInfo& other)
+		{
+			m_id = other.m_id;
+			m_title = other.m_title;
+			m_visible = other.m_visible;
+			m_dockingArea = other.m_dockingArea;
+
+			m_widget = other.m_widget;
+		}
+
 	private:
 		QWidget* m_widget;
 
@@ -41,6 +55,8 @@ public:
 	bool DestroyCurrentCentralWidget();
 
 	/* dockable widgets */
+
+	void UpdateDockWidgets();
 
 	bool AddDockWidget(
 		const char* const id,

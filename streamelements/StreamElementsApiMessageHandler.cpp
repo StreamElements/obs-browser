@@ -217,9 +217,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 	API_HANDLER_BEGIN("setStartupFlags");
 	{
-		StreamElementsConfig::GetInstance()->SetStartupFlags(args->GetValue(0)->GetInt());
+		if (args->GetSize()) {
+			StreamElementsConfig::GetInstance()->SetStartupFlags(args->GetValue(0)->GetInt());
 
-		result->SetBool(true);
+			result->SetBool(true);
+		}
 	}
 	API_HANDLER_END();
 
@@ -236,22 +238,28 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 	API_HANDLER_BEGIN("openDefaultBrowser");
 	{
-		CefString url = args->GetValue(0)->GetString();
+		if (args->GetSize()) {
+			CefString url = args->GetValue(0)->GetString();
 
-		QUrl navigate_url = QUrl(url.ToString().c_str(), QUrl::TolerantMode);
-		QDesktopServices::openUrl(navigate_url);
+			QUrl navigate_url = QUrl(url.ToString().c_str(), QUrl::TolerantMode);
+			QDesktopServices::openUrl(navigate_url);
 
-		result->SetBool(true);
+			result->SetBool(true);
+		}
 	}
 	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("showNotificationBar");
 	{
-		CefRefPtr<CefValue> barInfo = args->GetValue(0);
+		if (args->GetSize()) {
+			CefRefPtr<CefValue> barInfo = args->GetValue(0);
 
-		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeNotificationBar(barInfo);
+			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeNotificationBar(barInfo);
 
-		result->SetBool(true);
+			StreamElementsGlobalStateManager::GetInstance()->PersistState();
+
+			result->SetBool(true);
+		}
 	}
 	API_HANDLER_END();
 
@@ -259,30 +267,37 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	{
 		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->HideNotificationBar();
 
+		StreamElementsGlobalStateManager::GetInstance()->PersistState();
+
 		result->SetBool(true);
 	}
 	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("showCentralWidget");
 	{
-		CefRefPtr<CefDictionaryValue> rootDictionary = args->GetValue(0)->GetDictionary();
+		if (args->GetSize()) {
+			CefRefPtr<CefDictionaryValue> rootDictionary = args->GetValue(0)->GetDictionary();
 
-		if (rootDictionary.get() && rootDictionary->HasKey("url")) {
-			// Remove all central widgets
-			while (StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget())
-			{ }
+			if (rootDictionary.get() && rootDictionary->HasKey("url")) {
+				// Remove all central widgets
+				while (StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget())
+				{
+				}
 
-			std::string executeJavaScriptCodeOnLoad;
+				std::string executeJavaScriptCodeOnLoad;
 
-			if (rootDictionary->HasKey("executeJavaScriptCodeOnLoad")) {
-				executeJavaScriptCodeOnLoad = rootDictionary->GetString("executeJavaScriptCodeOnLoad").ToString();
+				if (rootDictionary->HasKey("executeJavaScriptCodeOnLoad")) {
+					executeJavaScriptCodeOnLoad = rootDictionary->GetString("executeJavaScriptCodeOnLoad").ToString();
+				}
+
+				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget(
+					rootDictionary->GetString("url").ToString().c_str(),
+					executeJavaScriptCodeOnLoad.c_str());
+
+				StreamElementsGlobalStateManager::GetInstance()->PersistState();
+
+				result->SetBool(true);
 			}
-
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget(
-				rootDictionary->GetString("url").ToString().c_str(),
-				executeJavaScriptCodeOnLoad.c_str());
-
-			result->SetBool(true);
 		}
 	}
 	API_HANDLER_END();
@@ -293,50 +308,59 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		{
 		}
 
+		StreamElementsGlobalStateManager::GetInstance()->PersistState();
+
 		result->SetBool(true);
 	}
 	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("addDockingWidget");
 	{
-		CefRefPtr<CefValue> widgetInfo = args->GetValue(0);
+		if (args->GetSize()) {
+			CefRefPtr<CefValue> widgetInfo = args->GetValue(0);
 
-		std::string id =
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->AddDockBrowserWidget(widgetInfo);
+			std::string id =
+				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->AddDockBrowserWidget(widgetInfo);
 
-		QDockWidget* dock =
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockWidget(id.c_str());
+			QDockWidget* dock =
+				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockWidget(id.c_str());
 
-		if (dock) {
-			QObject::connect(
-				dock,
-				&QDockWidget::visibilityChanged,
-				[]() {
-					StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
-				}
-			);
+			if (dock) {
+				QObject::connect(
+					dock,
+					&QDockWidget::visibilityChanged,
+					[]() {
+						StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+						StreamElementsGlobalStateManager::GetInstance()->PersistState();
+					}
+				);
 
-			StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+				StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+				StreamElementsGlobalStateManager::GetInstance()->PersistState();
 
-			result->SetString(id);
+				result->SetString(id);
+			}
 		}
 	}
 	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("removeDockingWidgetsByIds");
 	{
-		CefRefPtr<CefListValue> list = args->GetList(0);
+		if (args->GetSize()) {
+			CefRefPtr<CefListValue> list = args->GetList(0);
 
-		if (list.get()) {
-			for (int i = 0; i < list->GetSize(); ++i) {
-				CefString id = list->GetString(i);
+			if (list.get()) {
+				for (int i = 0; i < list->GetSize(); ++i) {
+					CefString id = list->GetString(i);
 
-				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->RemoveDockWidget(id.ToString().c_str());
+					StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->RemoveDockWidget(id.ToString().c_str());
+				}
+
+				StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+				StreamElementsGlobalStateManager::GetInstance()->PersistState();
+
+				result->SetBool(true);
 			}
-
-			StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
-
-			result->SetBool(true);
 		}
 	}
 	API_HANDLER_END();

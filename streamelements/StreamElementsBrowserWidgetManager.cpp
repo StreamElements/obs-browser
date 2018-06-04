@@ -119,7 +119,7 @@ std::string StreamElementsBrowserWidgetManager::AddDockBrowserWidget(CefRefPtr<C
 				url.c_str(),
 				executeJavaScriptOnLoad.c_str(),
 				dockingArea)) {
-				QWidget* widget = GetDockWidget(id.c_str());
+				QDockWidget* widget = GetDockWidget(id.c_str());
 
 				//QSize savedMaxSize = widget->maximumSize();
 
@@ -292,12 +292,16 @@ void StreamElementsBrowserWidgetManager::ShowNotificationBar(
 	m_notificationBarToolBar->setLayout(new QVBoxLayout());
 	m_notificationBarToolBar->addWidget(m_notificationBarBrowserWidget);
 	mainWindow()->addToolBar(NOTIFICATION_BAR_AREA, m_notificationBarToolBar);
+
+	UpdateDockWidgets();
 }
 
 void StreamElementsBrowserWidgetManager::HideNotificationBar()
 {
 	if (m_notificationBarToolBar) {
 		mainWindow()->removeToolBar(m_notificationBarToolBar);
+
+		UpdateDockWidgets();
 
 		m_notificationBarToolBar = nullptr;
 	}

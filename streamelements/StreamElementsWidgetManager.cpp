@@ -1,5 +1,6 @@
 #include "StreamElementsWidgetManager.hpp"
 #include "StreamElementsUtils.hpp"
+#include "StreamElementsGlobalStateManager.hpp"
 
 #include <cassert>
 #include <mutex>
@@ -81,6 +82,26 @@ void StreamElementsWidgetManager::OnObsExit()
 	}
 }
 
+void StreamElementsWidgetManager::UpdateDockWidgets()
+{
+	for (auto pair : m_dockWidgets) {
+		std::string id = pair.first;
+		QDockWidget* dock = pair.second;
+
+		Qt::DockWidgetArea savedArea = m_dockWidgetAreas[id];
+
+		if (savedArea != Qt::NoDockWidgetArea) {
+			QApplication::sendPostedEvents();
+			mainWindow()->removeDockWidget(dock);
+			QApplication::sendPostedEvents();
+			mainWindow()->addDockWidget(savedArea, dock);
+			QApplication::sendPostedEvents();
+		}
+	}
+
+	mainWindow()->centralWidget()->updateGeometry();
+}
+
 bool StreamElementsWidgetManager::AddDockWidget(
 	const char* const id,
 	const char* const title,
@@ -114,6 +135,8 @@ bool StreamElementsWidgetManager::AddDockWidget(
 		}
 
 		m_dockWidgetAreas[id] = area;
+
+		StreamElementsGlobalStateManager::GetInstance()->PersistState();
 	});
 
 	return true;

@@ -1,6 +1,8 @@
 #include "StreamElementsGlobalStateManager.hpp"
 #include "StreamElementsUtils.hpp"
 
+#include "base64/base64.hpp"
+
 #include <util/threading.h>
 
 #include <QPushButton>
@@ -63,25 +65,29 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 		}
 
 
-		if (StreamElementsConfig::GetInstance()->GetStartupFlags() | StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE) {
+		if (StreamElementsConfig::GetInstance()->GetStartupFlags() & StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE) {
 			// On-boarding
 
 			context->self->Reset();
 		}
 		else {
 			// Regular
+
+			context->self->RestoreState();
 		}
 
 		context->self->m_menuManager->Update();
 	}, &context);
 
 	m_initialized = true;
+	m_persistStateEnabled = true;
 }
 
 void StreamElementsGlobalStateManager::Shutdown()
 {
-	if (!m_initialized)
+	if (!m_initialized) {
 		return;
+	}
 
 	QtExecSync([](void* data) -> void {
 		StreamElementsGlobalStateManager* self = (StreamElementsGlobalStateManager*)data;
@@ -108,4 +114,66 @@ void StreamElementsGlobalStateManager::Reset()
 	StreamElementsConfig::GetInstance()->SetStartupFlags(StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE);
 
 	GetMenuManager()->Update();
+	PersistState();
+}
+
+void StreamElementsGlobalStateManager::PersistState()
+{
+	if (!m_persistStateEnabled) {
+		return;
+	}
+
+	CefRefPtr<CefValue> root = CefValue::Create();
+	CefRefPtr<CefDictionaryValue> rootDictionary = CefDictionaryValue::Create();
+	root->SetDictionary(rootDictionary);
+
+	CefRefPtr<CefValue> dockingWidgetsState = CefValue::Create();
+	CefRefPtr<CefValue> notificationBarState = CefValue::Create();
+
+	GetWidgetManager()->SerializeDockingWidgets(dockingWidgetsState);
+	GetWidgetManager()->SerializeNotificationBar(notificationBarState);
+
+	rootDictionary->SetValue("dockingWidgets", dockingWidgetsState);
+	rootDictionary->SetValue("notificationBar", notificationBarState);
+
+	CefString json = CefWriteJSON(root, JSON_WRITER_DEFAULT);
+
+	std::string base64EncodedJSON = base64_encode(json.ToString());
+
+	StreamElementsConfig::GetInstance()->SetStartupState(base64EncodedJSON);
+}
+
+void StreamElementsGlobalStateManager::RestoreState()
+{
+	std::string base64EncodedJSON = StreamElementsConfig::GetInstance()->GetStartupState();
+
+	if (!base64EncodedJSON.size()) {
+		return;
+	}
+
+	CefString json = base64_decode(base64EncodedJSON);
+
+	if (!json.size()) {
+		return;
+	}
+
+	CefRefPtr<CefValue> root = CefParseJSON(json, JSON_PARSER_ALLOW_TRAILING_COMMAS);
+	CefRefPtr<CefDictionaryValue> rootDictionary = root->GetDictionary();
+
+	if (!rootDictionary.get()) {
+		return;
+	}
+
+	auto dockingWidgetsState = rootDictionary->GetValue("dockingWidgets");
+	auto notificationBarState = rootDictionary->GetValue("notificationBar");
+
+	GetWidgetManager()->DeserializeDockingWidgets(dockingWidgetsState);
+	GetWidgetManager()->DeserializeNotificationBar(notificationBarState);
+}
+
+void StreamElementsGlobalStateManager::OnObsExit()
+{
+	PersistState();
+
+	m_persistStateEnabled = false;
 }

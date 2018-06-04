@@ -3,12 +3,14 @@
 #include "StreamElementsBrowserWidgetManager.hpp"
 #include "StreamElementsMenuManager.hpp"
 #include "StreamElementsConfig.hpp"
+#include "StreamElementsObsAppMonitor.hpp"
 
-class StreamElementsGlobalStateManager
+class StreamElementsGlobalStateManager :
+	public StreamElementsObsAppMonitor
 {
 private:
 	StreamElementsGlobalStateManager();
-	~StreamElementsGlobalStateManager();
+	virtual ~StreamElementsGlobalStateManager();
 
 public:
 	static StreamElementsGlobalStateManager* GetInstance();
@@ -19,10 +21,17 @@ public:
 
 	void Reset();
 
+	void PersistState();
+	void RestoreState();
+
 	StreamElementsBrowserWidgetManager* GetWidgetManager() { return m_widgetManager; }
 	StreamElementsMenuManager* GetMenuManager() { return m_menuManager; }
 
+protected:
+	virtual void OnObsExit() override;
+
 private:
+	bool m_persistStateEnabled = false;
 	bool m_initialized = false;
 	StreamElementsBrowserWidgetManager* m_widgetManager = nullptr;
 	StreamElementsMenuManager* m_menuManager = nullptr;

@@ -23,6 +23,7 @@ config_t* StreamElementsConfig::GetConfig()
 			CONFIG_OPEN_ALWAYS);
 
 		config_set_default_uint(m_config, "Startup", "Flags", STARTUP_FLAGS_ONBOARDING_MODE);
+		config_set_default_string(m_config, "Startup", "State", "");
 	}
 
 	return m_config;

@@ -3,6 +3,8 @@
 #include <obs-module.h>
 #include <util/config-file.h>
 
+#include <xstring>
+
 class StreamElementsConfig
 {
 private:
@@ -44,6 +46,25 @@ public:
 			"Startup",
 			"Flags",
 			value);
+
+		SaveConfig();
+	}
+
+	std::string GetStartupState()
+	{
+		return config_get_string(
+			StreamElementsConfig::GetInstance()->GetConfig(),
+			"Startup",
+			"State");
+	}
+
+	void SetStartupState(std::string value)
+	{
+		config_set_string(
+			StreamElementsConfig::GetInstance()->GetConfig(),
+			"Startup",
+			"State",
+			value.c_str());
 
 		SaveConfig();
 	}
