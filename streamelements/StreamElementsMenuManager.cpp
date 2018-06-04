@@ -12,7 +12,7 @@
 StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow* parent):
 	m_mainWindow(parent)
 {
-	m_menu = new QMenu("StreamElements");
+	m_menu = new QMenu("St&reamElements");
 
 	mainWindow()->menuBar()->addMenu(m_menu);
 }

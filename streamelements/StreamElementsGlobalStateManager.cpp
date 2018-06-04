@@ -140,7 +140,7 @@ void StreamElementsGlobalStateManager::PersistState()
 	GetWidgetManager()->SerializeDockingWidgets(dockingWidgetsState);
 	GetWidgetManager()->SerializeNotificationBar(notificationBarState);
 
-	rootDictionary->SetValue("dockingWidgets", dockingWidgetsState);
+	rootDictionary->SetValue("dockingBrowserWidgets", dockingWidgetsState);
 	rootDictionary->SetValue("notificationBar", notificationBarState);
 
 	CefString json = CefWriteJSON(root, JSON_WRITER_DEFAULT);
@@ -171,7 +171,7 @@ void StreamElementsGlobalStateManager::RestoreState()
 		return;
 	}
 
-	auto dockingWidgetsState = rootDictionary->GetValue("dockingWidgets");
+	auto dockingWidgetsState = rootDictionary->GetValue("dockingBrowserWidgets");
 	auto notificationBarState = rootDictionary->GetValue("notificationBar");
 
 	GetWidgetManager()->DeserializeDockingWidgets(dockingWidgetsState);
