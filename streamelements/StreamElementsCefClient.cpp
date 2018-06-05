@@ -32,6 +32,25 @@ void StreamElementsCefClient::OnLoadEnd(
 		0);
 }
 
+#include <QFile>
+#include <QTextStream>
+#include <QString>
+
+static std::string LoadResourceString(std::string path)
+{
+	std::string result = "";
+
+	QFile file(QString(path.c_str()));
+
+	if (file.open(QFile::ReadOnly | QFile::Text)) {
+		QTextStream stream(&file);
+
+		result = stream.readAll().toStdString();
+	}
+
+	return result;
+}
+
 void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
 	CefRefPtr<CefFrame> frame,
 	ErrorCode errorCode,
@@ -43,7 +62,12 @@ void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
 		return;
 	}*/
 
-	std::string htmlString = "<html><body><h1>error page</h1><p>${error.code}</p><p>${error.url}</p></body></html>";
+	std::string htmlString = LoadResourceString(":/html/error.html");
+
+	if (!htmlString.size()) {
+		// Default
+		htmlString = "<html><body><h1>error page</h1><p>${error.code}</p><p>${error.url}</p></body></html>";
+	}
 
 	std::stringstream error;
 	if (errorText.size()) {
