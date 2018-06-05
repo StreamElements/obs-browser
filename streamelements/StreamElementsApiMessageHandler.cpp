@@ -370,4 +370,21 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->SerializeDockingWidgets(result);
 	}
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("beginOnBoarding");
+		StreamElementsGlobalStateManager::GetInstance()->Reset();
+
+		result->SetBool(true);
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("completeOnBoarding");
+		while (StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DestroyCurrentCentralBrowserWidget())
+		{ }
+
+		StreamElementsConfig::GetInstance()->SetStartupFlags(
+			StreamElementsConfig::GetInstance()->GetStartupFlags() &
+			~StreamElementsConfig::STARTUP_FLAGS_ONBOARDING_MODE);
+
+		result->SetBool(true);
+	API_HANDLER_END();
 }
