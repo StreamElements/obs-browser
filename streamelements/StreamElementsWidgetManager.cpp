@@ -128,6 +128,11 @@ bool StreamElementsWidgetManager::AddDockWidget(
 		StreamElementsGlobalStateManager::GetInstance()->PersistState();
 	});
 
+	QObject::connect(dock, &QDockWidget::visibilityChanged, []() {
+		StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
+		StreamElementsGlobalStateManager::GetInstance()->PersistState();
+	});
+
 	return true;
 }
 

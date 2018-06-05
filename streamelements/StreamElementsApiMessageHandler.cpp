@@ -326,15 +326,6 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 				StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->GetDockWidget(id.c_str());
 
 			if (dock) {
-				QObject::connect(
-					dock,
-					&QDockWidget::visibilityChanged,
-					[]() {
-						StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
-						StreamElementsGlobalStateManager::GetInstance()->PersistState();
-					}
-				);
-
 				StreamElementsGlobalStateManager::GetInstance()->GetMenuManager()->Update();
 				StreamElementsGlobalStateManager::GetInstance()->PersistState();
 
