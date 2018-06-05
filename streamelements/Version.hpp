@@ -5,14 +5,14 @@
  * the API is introduced(change of existing API methods/properties
  * signatures).
  */
-#define API_VERSION_MAJOR 1
+#define HOST_API_VERSION_MAJOR 1
 
 /* Numeric value indicating the current minor version of the API.
  * This value will be incremented each time a non-breaking change
  * to the API is introduced (additional functionality, bugfixes
  * of existing functionality).
  */
-#define API_VERSION_MINOR 0
+#define HOST_API_VERSION_MINOR 0
 
 /* Numeric value in the YYYYMMDDHHmmss format, indicating the current
  * version of the plugin.
