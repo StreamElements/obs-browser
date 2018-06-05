@@ -64,7 +64,13 @@ public:
 	virtual void OnLoadEnd(
 		CefRefPtr<CefBrowser> browser,
 		CefRefPtr<CefFrame> frame,
-		int httpStatusCode);
+		int httpStatusCode) override;
+
+	virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefFrame> frame,
+		ErrorCode errorCode,
+		const CefString& errorText,
+		const CefString& failedUrl) override;
 
 public:
 	std::string& GetExecuteJavaScriptCodeOnLoad()

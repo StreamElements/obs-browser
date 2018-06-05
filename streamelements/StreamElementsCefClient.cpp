@@ -3,6 +3,8 @@
 #include "json11/json11.hpp"
 #include <obs-frontend-api.h>
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
+#include <regex>
+#include <sstream>
 
 using namespace json11;
 
@@ -28,6 +30,37 @@ void StreamElementsCefClient::OnLoadEnd(
 		CefString(m_executeJavaScriptCodeOnLoad),
 		frame->GetURL(),
 		0);
+}
+
+void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
+	CefRefPtr<CefFrame> frame,
+	ErrorCode errorCode,
+	const CefString& errorText,
+	const CefString& failedUrl)
+{
+	/*if (errorCode == ERR_ABORTED) {
+		// Don't display an error for downloaded files.
+		return;
+	}*/
+
+	std::string htmlString = "<html><body><h1>error page</h1><p>${error.code}</p><p>${error.url}</p></body></html>";
+
+	std::stringstream error;
+	if (errorText.size()) {
+		error << errorText.ToString();
+	}
+	else {
+		error << "UNKNOWN";
+	}
+	error << " (";
+	error << (int)errorCode;
+	error << ")";
+
+	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.code\\}"), error.str());
+	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.text\\}"), error.str());
+	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.url\\}"), failedUrl.ToString());
+
+	frame->GetBrowser()->GetMainFrame()->LoadStringW(htmlString, failedUrl);
 }
 
 /* ========================================================================= */
