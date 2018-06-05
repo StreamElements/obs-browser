@@ -104,6 +104,7 @@ set(obs-browser_HEADERS
 	deps/base64/base64.hpp
 	deps/wide-string.hpp
 	cef-headers.hpp
+	streamelements/Version.hpp
 	streamelements/StreamElementsUtils.hpp
 	streamelements/StreamElementsAsyncTaskQueue.hpp
 	streamelements/StreamElementsCefClient.hpp

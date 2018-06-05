@@ -2,26 +2,13 @@
 
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
+#include "Version.hpp"
 #include "StreamElementsConfig.hpp"
 #include "StreamElementsGlobalStateManager.hpp"
 #include "StreamElementsUtils.hpp"
 
 #include <QDesktopServices>
 #include <QUrl>
-
-/* Numeric value indicating the current major version of the API.
- * This value must be incremented each time a breaking change to
- * the API is introduced(change of existing API methods/properties
- * signatures).
- */
-const int API_VERSION_MAJOR = 1;
-
-/* Numeric value indicating the current minor version of the API.
- * This value will be incremented each time a non-breaking change
- * to the API is introduced (additional functionality, bugfixes
- * of existing functionality).
- */
-const int API_VERSION_MINOR = 0;
 
 /* Incoming messages from renderer process */
 const char* MSG_ON_CONTEXT_CREATED = "CefRenderProcessHandler::OnContextCreated";
