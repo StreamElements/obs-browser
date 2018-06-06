@@ -141,7 +141,11 @@ CefRefPtr<CefDictionaryValue> StreamElementsBandwidthTestManager::EndBandwidthTe
 
 CefRefPtr<CefDictionaryValue> StreamElementsBandwidthTestManager::GetBandwidthTestStatus()
 {
+	std::lock_guard<std::mutex> guard(m_mutex);
+
 	CefRefPtr<CefDictionaryValue> resultDictionary = CefDictionaryValue::Create();
+
+	resultDictionary->SetBool("isRunning", m_isTestInProgress);
 
 	// Build servers list
 	{
