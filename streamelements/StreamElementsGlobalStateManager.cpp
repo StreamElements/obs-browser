@@ -79,20 +79,20 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 			container->setLayout(layout);
 
 			char version_buf[512];
-			sprintf(version_buf, "Version %d.%d.%d.%d",
+			sprintf(version_buf, "OBS.Live version %d.%d.%d.%d powered by ",
 				(int)((STREAMELEMENTS_PLUGIN_VERSION % 1000000000000L) / 10000000000L),
 				(int)((STREAMELEMENTS_PLUGIN_VERSION % 10000000000L) / 100000000L),
 				(int)((STREAMELEMENTS_PLUGIN_VERSION % 100000000L) / 1000000L),
 				(int)(STREAMELEMENTS_PLUGIN_VERSION % 1000000L));
 
-			container->layout()->addWidget(new QLabel("OBS.Live powered by ", container));
+			container->layout()->addWidget(new QLabel(version_buf, container));
 			QLabel* h_logo = new QLabel();
-			h_logo->setPixmap(QPixmap(QString(":/images/logo.png")));
+			h_logo->setPixmap(QPixmap(QString(":/images/logo_137x30.png")));
 			h_logo->setScaledContents(true);
-			h_logo->setFixedSize(26, 30);
+			h_logo->setFixedSize(137, 30);
 			container->layout()->addWidget(h_logo);
-			QLabel* suffix = new QLabel(version_buf, container);
-			container->layout()->addWidget(suffix);
+			//QLabel* suffix = new QLabel("", container);
+			//container->layout()->addWidget(suffix);
 
 			context->obs_main_window->statusBar()->addPermanentWidget(container);
 		}
