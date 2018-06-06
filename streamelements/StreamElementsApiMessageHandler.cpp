@@ -365,4 +365,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 
 		result->SetBool(true);
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("showStatusBarTemporaryMessage");
+		if (args->GetSize()) {
+			result->SetBool(
+				StreamElementsGlobalStateManager::GetInstance()->DeserializeStatusBarTemporaryMessage(args->GetValue(0)));
+		}
+	API_HANDLER_END();
 }

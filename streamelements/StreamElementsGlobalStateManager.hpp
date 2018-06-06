@@ -26,6 +26,10 @@ public:
 
 	StreamElementsBrowserWidgetManager* GetWidgetManager() { return m_widgetManager; }
 	StreamElementsMenuManager* GetMenuManager() { return m_menuManager; }
+	QMainWindow* mainWindow() { return m_mainWindow; }
+
+public:
+	bool DeserializeStatusBarTemporaryMessage(CefRefPtr<CefValue> input);
 
 protected:
 	virtual void OnObsExit() override;
@@ -33,6 +37,7 @@ protected:
 private:
 	bool m_persistStateEnabled = false;
 	bool m_initialized = false;
+	QMainWindow* m_mainWindow = nullptr;
 	StreamElementsBrowserWidgetManager* m_widgetManager = nullptr;
 	StreamElementsMenuManager* m_menuManager = nullptr;
 

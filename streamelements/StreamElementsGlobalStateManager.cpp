@@ -33,6 +33,8 @@ StreamElementsGlobalStateManager* StreamElementsGlobalStateManager::GetInstance(
 
 void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 {
+	m_mainWindow = obs_main_window;
+
 	struct local_context {
 		StreamElementsGlobalStateManager* self;
 		QMainWindow* obs_main_window;
@@ -223,4 +225,24 @@ void StreamElementsGlobalStateManager::OnObsExit()
 	PersistState();
 
 	m_persistStateEnabled = false;
+}
+
+bool StreamElementsGlobalStateManager::DeserializeStatusBarTemporaryMessage(CefRefPtr<CefValue> input)
+{
+	CefRefPtr<CefDictionaryValue> d = input->GetDictionary();
+
+	if (d.get() && d->HasKey("text")) {
+		int timeoutMilliseconds = 0;
+		std::string text = d->GetString("text");
+
+		if (d->HasKey("timeoutMilliseconds")) {
+			timeoutMilliseconds = d->GetInt("timeoutMilliseconds");
+		}
+
+		mainWindow()->statusBar()->showMessage(text.c_str(), timeoutMilliseconds);
+
+		return true;
+	}
+
+	return false;
 }
