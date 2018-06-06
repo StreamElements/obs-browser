@@ -142,7 +142,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 	QtExecSync([](void* data) -> void {
 		StreamElementsGlobalStateManager* self = (StreamElementsGlobalStateManager*)data;
 
-		delete self->m_bwTestClient;
+		delete self->m_bwTestManager;
 		delete self->m_widgetManager;
 		delete self->m_menuManager;
 	}, this);

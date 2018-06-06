@@ -5,15 +5,11 @@ extern void DispatchJSEvent(const char *eventName, const char *jsonString);
 StreamElementsBandwidthTestManager::StreamElementsBandwidthTestManager()
 {
 	m_isTestInProgress = false;
-	m_client = new StreamElementsBandwidthTestManager();
+	m_client = new StreamElementsBandwidthTestClient();
 }
 
 StreamElementsBandwidthTestManager::~StreamElementsBandwidthTestManager()
 {
-	if (m_last_test_results) {
-		delete m_last_test_results;
-	}
-
 	delete m_client;
 }
 
