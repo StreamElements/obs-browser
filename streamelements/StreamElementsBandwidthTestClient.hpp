@@ -17,10 +17,26 @@ public:
 	public:
 		std::string url;
 		std::string streamKey;
+		bool useAuth = false;
+		std::string authUsername;
+		std::string authPassword;
 
 		Server() { }
-		Server(const char* const url, const char* const streamKey): url(url), streamKey(streamKey) { }
-		Server(Server& other) : url(other.url), streamKey(other.streamKey) { }
+		Server(const char* const url, const char* const streamKey, bool useAuth = false, const char* username = nullptr, const char* password = nullptr):
+			url(url),
+			streamKey(streamKey),
+			useAuth(useAuth),
+			authUsername(username != nullptr ? username : ""),
+			authPassword(password != nullptr ? password : "")
+		{ }
+
+		Server(Server& other) :
+			url(other.url),
+			streamKey(other.streamKey),
+			useAuth(other.useAuth),
+			authUsername(other.authUsername),
+			authPassword(other.authPassword)
+		{ }
 	};
 
 	class Result
@@ -79,6 +95,9 @@ public:
 		const int maxBitrateBitsPerSecond,
 		const char* const bindToIP,
 		const int durationSeconds,
+		const bool useAuth,
+		const char* const authUsername,
+		const char* const authPassword,
 		const TestServerBitsPerSecondAsyncCallback callback,
 		void* const data);
 
@@ -87,6 +106,7 @@ public:
 		const int maxBitrateBitsPerSecond,
 		const char* const bindToIP,
 		const int durationSeconds,
+		const TestMultipleServersBitsPerSecondAsyncCallback progress_callback,
 		const TestMultipleServersBitsPerSecondAsyncCallback callback,
 		void* const data);
 
@@ -98,5 +118,8 @@ private:
 		const char* streamKey,
 		const int maxBitrateBitsPerSecond,
 		const char* bindToIP = nullptr,
-		const int durationSeconds = 10);
+		const int durationSeconds = 10,
+		const bool useAuth = false,
+		const char* const authUsername = nullptr,
+		const char* const authPassword = nullptr);
 };

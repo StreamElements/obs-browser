@@ -26,7 +26,10 @@ StreamElementsBandwidthTestClient::Result StreamElementsBandwidthTestClient::Tes
 	const char* streamKey,
 	const int maxBitrateBitsPerSecond,
 	const char* bindToIP,
-	const int durationSeconds)
+	const int durationSeconds,
+	const bool useAuth,
+	const char* const authUsername,
+	const char* const authPassword)
 {
 	StreamElementsBandwidthTestClient::Result result;
 
@@ -68,6 +71,10 @@ StreamElementsBandwidthTestClient::Result StreamElementsBandwidthTestClient::Tes
 	obs_data_set_string(service_settings, "service", "rtmp_custom");
 	obs_data_set_string(service_settings, "server", serverUrl);
 	obs_data_set_string(service_settings, "key", streamKey);
+
+	obs_data_set_bool(service_settings, "use_auth", useAuth);
+	obs_data_set_string(service_settings, "username", authUsername ? authUsername : "");
+	obs_data_set_string(service_settings, "password", authPassword ? authPassword : "");
 
 	obs_service_update(service, service_settings);
 	obs_service_apply_encoder_settings(service, vencoder_settings, aencoder_settings);
@@ -229,6 +236,9 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 	const int maxBitrateBitsPerSecond,
 	const char* const bindToIP,
 	const int durationSeconds,
+	const bool useAuth,
+	const char* const authUsername,
+	const char* const authPassword,
 	const TestServerBitsPerSecondAsyncCallback callback,
 	void* const data)
 {
@@ -246,6 +256,9 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 		StreamElementsBandwidthTestClient* self;
 		std::string serverUrl;
 		std::string streamKey;
+		bool useAuth;
+		std::string authUsername;
+		std::string authPassword;
 		int maxBitrateBitsPerSecond;
 		std::string bindToIP;
 		int durationSeconds;
@@ -258,6 +271,9 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 	context->self = this;
 	context->serverUrl = serverUrl;
 	context->streamKey = streamKey;
+	context->useAuth = useAuth;
+	context->authUsername = authUsername != nullptr ? authUsername : "";
+	context->authPassword = authPassword != nullptr ? authPassword : "";
 	context->maxBitrateBitsPerSecond = maxBitrateBitsPerSecond;
 
 	if (bindToIP)
@@ -275,7 +291,10 @@ void StreamElementsBandwidthTestClient::TestServerBitsPerSecondAsync(
 			context->streamKey.c_str(),
 			context->maxBitrateBitsPerSecond,
 			context->bindToIP.empty() ? nullptr : context->bindToIP.c_str(),
-			context->durationSeconds);
+			context->durationSeconds,
+			context->useAuth,
+			context->authUsername.c_str(),
+			context->authPassword.c_str());
 
 		context->callback(&result, context->data);
 
@@ -302,6 +321,7 @@ void StreamElementsBandwidthTestClient::TestMultipleServersBitsPerSecondAsync(
 	const int maxBitrateBitsPerSecond,
 	const char* const bindToIP,
 	const int durationSeconds,
+	const TestMultipleServersBitsPerSecondAsyncCallback progress_callback,
 	const TestMultipleServersBitsPerSecondAsyncCallback callback,
 	void* const data)
 {
@@ -346,6 +366,10 @@ void StreamElementsBandwidthTestClient::TestMultipleServersBitsPerSecondAsync(
 				break;
 
 			context->results.emplace_back(testResult);
+
+			if (progress_callback) {
+				progress_callback(&context->results, context->data);
+			}
 		}
 
 		context->callback(&context->results, context->data);

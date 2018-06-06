@@ -372,4 +372,28 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 				StreamElementsGlobalStateManager::GetInstance()->DeserializeStatusBarTemporaryMessage(args->GetValue(0)));
 		}
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("streamingBandwidthTestBegin")
+		if (args->GetSize() >= 2) {
+			result->SetBool(
+				StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->BeginBandwidthTest(
+					args->GetValue(0),
+					args->GetValue(1)));
+		}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("streamingBandwidthTestEnd")
+		CefRefPtr<CefValue> options;
+
+		if (args->GetSize()) {
+			options = args->GetValue(0);
+		}
+		result->SetList(
+			StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->EndBandwidthTest(options));
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("streamingBandwidthTestStatus")
+		result->SetDictionary(
+			StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->GetBandwidthTestStatus());
+	API_HANDLER_END();
 }

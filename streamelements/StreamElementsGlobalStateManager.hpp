@@ -4,6 +4,7 @@
 #include "StreamElementsMenuManager.hpp"
 #include "StreamElementsConfig.hpp"
 #include "StreamElementsObsAppMonitor.hpp"
+#include "StreamElementsBandwidthTestManager.hpp"
 
 class StreamElementsGlobalStateManager :
 	public StreamElementsObsAppMonitor
@@ -26,6 +27,7 @@ public:
 
 	StreamElementsBrowserWidgetManager* GetWidgetManager() { return m_widgetManager; }
 	StreamElementsMenuManager* GetMenuManager() { return m_menuManager; }
+	StreamElementsBandwidthTestManager* GetBandwidthTestManager() { return m_bwTestManager; }
 	QMainWindow* mainWindow() { return m_mainWindow; }
 
 public:
@@ -40,6 +42,7 @@ private:
 	QMainWindow* m_mainWindow = nullptr;
 	StreamElementsBrowserWidgetManager* m_widgetManager = nullptr;
 	StreamElementsMenuManager* m_menuManager = nullptr;
+	StreamElementsBandwidthTestManager* m_bwTestManager = nullptr;
 
 private:
 	static StreamElementsGlobalStateManager* s_instance;
