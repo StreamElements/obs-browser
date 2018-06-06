@@ -69,7 +69,7 @@ bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> 
 					m_last_test_servers,
 					maxBitsPerSecond,
 					nullptr,
-					3,
+					serverTestDurationSeconds,
 					[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data) {
 						StreamElementsBandwidthTestManager* self = (StreamElementsBandwidthTestManager*)data;
 
