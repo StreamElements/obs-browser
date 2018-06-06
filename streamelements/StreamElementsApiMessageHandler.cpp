@@ -100,6 +100,7 @@ bool StreamElementsApiMessageHandler::OnProcessMessageReceived(
 					context->message,
 					context->callArgs,
 					context->result,
+					context->browser,
 					context->complete,
 					context);
 
@@ -187,7 +188,7 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandler(std::string
 	m_apiCallHandlers[id] = handler;
 }
 
-#define API_HANDLER_BEGIN(name) RegisterIncomingApiCallHandler(name, [](StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result, void (*complete_callback)(void*), void* complete_context) {
+#define API_HANDLER_BEGIN(name) RegisterIncomingApiCallHandler(name, [](StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result, CefRefPtr<CefBrowser> browser, void (*complete_callback)(void*), void* complete_context) {
 #define API_HANDLER_END() complete_callback(complete_context); });
 
 void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
@@ -378,7 +379,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 			result->SetBool(
 				StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->BeginBandwidthTest(
 					args->GetValue(0),
-					args->GetValue(1)));
+					args->GetValue(1),
+					browser));
 		}
 	API_HANDLER_END();
 
@@ -388,11 +390,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		if (args->GetSize()) {
 			options = args->GetValue(0);
 		}
-		result->SetList(
+		result->SetDictionary(
 			StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->EndBandwidthTest(options));
 	API_HANDLER_END();
 
-	API_HANDLER_BEGIN("streamingBandwidthTestStatus")
+	API_HANDLER_BEGIN("streamingBandwidthTestGetStatus")
 		result->SetDictionary(
 			StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->GetBandwidthTestStatus());
 	API_HANDLER_END();

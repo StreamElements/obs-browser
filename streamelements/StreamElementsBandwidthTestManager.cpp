@@ -1,6 +1,16 @@
 #include "StreamElementsBandwidthTestManager.hpp"
+#include "StreamElementsUtils.hpp"
 
-extern void DispatchJSEvent(const char *eventName, const char *jsonString);
+static void DispatchJSEvent(CefRefPtr<CefBrowser> browser, const char *eventName, const char *jsonString)
+{
+	CefRefPtr<CefProcessMessage> msg =
+		CefProcessMessage::Create("DispatchJSEvent");
+	CefRefPtr<CefListValue> args = msg->GetArgumentList();
+
+	args->SetString(0, eventName);
+	args->SetString(1, jsonString ? jsonString : "null");
+	browser->SendProcessMessage(PID_RENDERER, msg);
+}
 
 StreamElementsBandwidthTestManager::StreamElementsBandwidthTestManager()
 {
@@ -13,7 +23,7 @@ StreamElementsBandwidthTestManager::~StreamElementsBandwidthTestManager()
 	delete m_client;
 }
 
-bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> settingsValue, CefRefPtr<CefValue> serversValue)
+bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> settingsValue, CefRefPtr<CefValue> serversValue, CefRefPtr<CefBrowser> browser)
 {
 	std::lock_guard<std::mutex> guard(m_mutex);
 
@@ -63,7 +73,17 @@ bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> 
 				m_isTestInProgress = true;
 
 				// Signal test started
-				DispatchJSEvent("hostBandwidthTestStarted", nullptr);
+				DispatchJSEvent(browser, "hostBandwidthTestStarted", nullptr);
+
+				struct local_context {
+					StreamElementsBandwidthTestManager* self;
+					CefRefPtr<CefBrowser> browser;
+				};
+
+				local_context* context = new local_context();
+
+				context->self = this;
+				context->browser = browser;
 
 				m_client->TestMultipleServersBitsPerSecondAsync(
 					m_last_test_servers,
@@ -71,30 +91,32 @@ bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> 
 					nullptr,
 					serverTestDurationSeconds,
 					[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data) {
-						StreamElementsBandwidthTestManager* self = (StreamElementsBandwidthTestManager*)data;
+						local_context* context = (local_context*)data;
 
-						std::lock_guard<std::mutex> guard(self->m_mutex);
+						std::lock_guard<std::mutex> guard(context->self->m_mutex);
 
 						// Copy
-						self->m_last_test_results = *results;
+						context->self->m_last_test_results = *results;
 
-						// Signal test completed
-						DispatchJSEvent("hostBandwidthTestProgress", nullptr);
+						// Signal test progress
+						DispatchJSEvent(context->browser, "hostBandwidthTestProgress", nullptr);
 					},
 					[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data) {
-						StreamElementsBandwidthTestManager* self = (StreamElementsBandwidthTestManager*)data;
+						local_context* context = (local_context*)data;
 
-						std::lock_guard<std::mutex> guard(self->m_mutex);
+						std::lock_guard<std::mutex> guard(context->self->m_mutex);
 
 						// Copy
-						self->m_last_test_results = *results;
+						context->self->m_last_test_results = *results;
 
-						self->m_isTestInProgress = false;
+						context->self->m_isTestInProgress = false;
 
 						// Signal test completed
-						DispatchJSEvent("hostBandwidthTestCompleted", nullptr);
+						DispatchJSEvent(context->browser, "hostBandwidthTestCompleted", nullptr);
+
+						delete context;
 					},
-					this);
+					context);
 			}
 		}
 	}
@@ -102,33 +124,19 @@ bool StreamElementsBandwidthTestManager::BeginBandwidthTest(CefRefPtr<CefValue> 
 	return m_isTestInProgress;
 }
 
-CefRefPtr<CefListValue> StreamElementsBandwidthTestManager::EndBandwidthTest(CefRefPtr<CefValue> options)
+CefRefPtr<CefDictionaryValue> StreamElementsBandwidthTestManager::EndBandwidthTest(CefRefPtr<CefValue> options)
 {
-	CefRefPtr<CefListValue> list = CefListValue::Create();
-
 	bool stopIfRunning = false;
 
-	if (options.get() && options->GetType() == VT_BOOL) {
+	if (options.get()) {
 		stopIfRunning = options->GetBool();
 	}
 
-	m_client->CancelAll();
-
-	for (auto result : m_last_test_results) {
-		CefRefPtr<CefValue> itemValue = CefValue::Create();
-		CefRefPtr<CefDictionaryValue> item = CefDictionaryValue::Create();
-		itemValue->SetDictionary(item);
-
-		item->SetBool("success", result.success);
-		item->SetBool("wasCancelled", result.cancelled);
-		item->SetString("serverUrl", result.serverUrl);
-		item->SetString("streamKey", result.streamKey);
-		item->SetInt("connectTimeMilliseconds", result.connectTimeMilliseconds);
-
-		list->SetValue(list->GetSize(), itemValue);
+	if (stopIfRunning) {
+		m_client->CancelAll();
 	}
 
-	return list;
+	return GetBandwidthTestStatus();
 }
 
 CefRefPtr<CefDictionaryValue> StreamElementsBandwidthTestManager::GetBandwidthTestStatus()

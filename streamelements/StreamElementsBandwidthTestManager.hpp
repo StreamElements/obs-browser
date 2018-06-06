@@ -12,8 +12,8 @@ public:
 	StreamElementsBandwidthTestManager();
 	virtual ~StreamElementsBandwidthTestManager();
 
-	bool BeginBandwidthTest(CefRefPtr<CefValue> settingsValue, CefRefPtr<CefValue> serversValue);
-	CefRefPtr<CefListValue> EndBandwidthTest(CefRefPtr<CefValue> options);
+	bool BeginBandwidthTest(CefRefPtr<CefValue> settingsValue, CefRefPtr<CefValue> serversValue, CefRefPtr<CefBrowser> browser);
+	CefRefPtr<CefDictionaryValue> EndBandwidthTest(CefRefPtr<CefValue> options);
 	CefRefPtr<CefDictionaryValue> GetBandwidthTestStatus();
 
 private:

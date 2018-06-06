@@ -18,7 +18,7 @@ public:
 protected:
 	virtual void RegisterIncomingApiCallHandlers();
 
-	typedef void (*incoming_call_handler_t)(StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result, void (*complete)(void*), void* context);
+	typedef void (*incoming_call_handler_t)(StreamElementsApiMessageHandler*, CefRefPtr<CefProcessMessage> message, CefRefPtr<CefListValue> args, CefRefPtr<CefValue>& result, CefRefPtr<CefBrowser> browser, void (*complete)(void*), void* context);
 
 	void RegisterIncomingApiCallHandler(std::string id, incoming_call_handler_t handler);
 
