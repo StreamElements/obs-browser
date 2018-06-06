@@ -51,9 +51,11 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 
 		{
 			// Set up "Live Support" button
-			QPushButton* liveSupport = new QPushButton(
+			/*QPushButton* liveSupport = new QPushButton(
 				QIcon(QPixmap(QString(":/images/icon.png"))),
-				obs_module_text("StreamElements.Action.LiveSupport"));
+				obs_module_text("StreamElements.Action.LiveSupport"));*/
+
+			QPushButton* liveSupport = new QPushButton(obs_module_text("StreamElements.Action.LiveSupport"));
 
 			//liveSupport->setStyleSheet(QString("QPushButton { 	border-radius: 15px; 	background-color: #444444; 	color: white; 	padding: 8px; 	padding-left: 40px; 	padding-right: 40px; }  QPushButton:hover { 	background-color: #666666; }  QPushButton:pressed { 	background-color: #eeeeee; 	color: black; }"));
 			liveSupport->setStyleSheet(QString("QPushButton { background-color: #d9dded; border: 1px solid #5771dc; color: #5771dc; padding: 2px; }"));
