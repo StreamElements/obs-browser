@@ -323,6 +323,10 @@ bool StreamElementsOutputSettingsManager::SetEncodingSettings(CefRefPtr<CefValue
 		bfree(profileParentFolder);
 
 		obs_data_t* settings = obs_data_create_from_json_file_safe(streamEncoderJsonPath.c_str(), "bak");
+		if (!settings) {
+			settings = obs_data_create();
+		}
+
 		obs_data_set_int(settings, "bitrate", videoBitrate);
 		obs_data_save_json_safe(settings, streamEncoderJsonPath.c_str(), "tmp", "bak");
 		obs_data_release(settings);
