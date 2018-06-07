@@ -421,4 +421,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 				StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->SetStreamingSettings(args->GetValue(0)));
 		}
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("setEncodingSettings");
+		if (args->GetSize()) {
+			result->SetBool(
+				StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->SetEncodingSettings(args->GetValue(0)));
+		}
+	API_HANDLER_END();
 }
