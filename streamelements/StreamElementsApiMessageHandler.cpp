@@ -398,4 +398,20 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		result->SetDictionary(
 			StreamElementsGlobalStateManager::GetInstance()->GetBandwidthTestManager()->GetBandwidthTestStatus());
 	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("getAvailableEncoders")
+		StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->GetAvailableEncoders(result, nullptr);
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("getAvailableVideoEncoders")
+		obs_encoder_type type = OBS_ENCODER_VIDEO;
+
+		StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->GetAvailableEncoders(result, &type);
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("getAvailableAudioEncoders")
+		obs_encoder_type type = OBS_ENCODER_AUDIO;
+
+		StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->GetAvailableEncoders(result, &type);
+	API_HANDLER_END();
 }

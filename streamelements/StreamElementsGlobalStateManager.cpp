@@ -51,6 +51,7 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 		context->self->m_widgetManager = new StreamElementsBrowserWidgetManager(context->obs_main_window);
 		context->self->m_menuManager = new StreamElementsMenuManager(context->obs_main_window);
 		context->self->m_bwTestManager = new StreamElementsBandwidthTestManager();
+		context->self->m_outputSettingsManager = new StreamElementsOutputSettingsManager();
 
 		{
 			// Set up "Live Support" button
@@ -142,6 +143,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 	QtExecSync([](void* data) -> void {
 		StreamElementsGlobalStateManager* self = (StreamElementsGlobalStateManager*)data;
 
+		delete self->m_outputSettingsManager;
 		delete self->m_bwTestManager;
 		delete self->m_widgetManager;
 		delete self->m_menuManager;
