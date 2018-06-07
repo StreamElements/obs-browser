@@ -41,17 +41,7 @@ using namespace json11;
 
 static thread manager_thread;
 
-#include "streamelements/StreamElementsUtils.hpp"
-#include "streamelements/StreamElementsBrowserWidget.hpp"
-#include "streamelements/StreamElementsObsBandwidthTestClient.hpp"
-#include "streamelements/StreamElementsBrowserWidgetManager.hpp"
 #include "streamelements/StreamElementsGlobalStateManager.hpp"
-#include <QMainWindow>
-#include <QDockWidget>
-#include <QGridLayout>
-#include <QPushButton>
-#include <QLabel>
-#include <QIcon>
 
 /* ========================================================================= */
 
@@ -361,8 +351,6 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void *)
 	}
 }
 
-static StreamElementsObsBandwidthTestClient* s_bwClient;
-
 bool obs_module_load(void)
 {
 	// Enable CEF high DPI support
@@ -377,124 +365,8 @@ bool obs_module_load(void)
 	RegisterBrowserSource();
 	obs_frontend_add_event_callback(handle_obs_frontend_event, nullptr);
 
-	// Browser dialog setup
-	obs_frontend_push_ui_translation(obs_module_get_string);
-
-	obs_frontend_pop_ui_translation();
-
+	// Initialize StreamElements plug-in
 	StreamElementsGlobalStateManager::GetInstance()->Initialize((QMainWindow*)obs_frontend_get_main_window());
-
-	/*
-	QtPostTask([] (void*) -> void {
-		// Add button in controls dock
-		QMainWindow* obs_main_window = (QMainWindow*)obs_frontend_get_main_window();
-
-		// Non-permanent msgs will be covered by showMessage()
-		// obs_main_window->statusBar()->addWidget(new QLabel(QString("Hello World Non-Permanent")));
-		QLabel* imageLabel = new QLabel();
-		imageLabel->setPixmap(QPixmap(QString(":/images/logo.png")));
-		imageLabel->setScaledContents(true);
-		imageLabel->setFixedSize(26, 30);
-		obs_main_window->statusBar()->addPermanentWidget(imageLabel);
-
-		obs_main_window->statusBar()->addPermanentWidget(new QLabel(QString("Hello World, StreamElements!")));
-		obs_main_window->statusBar()->showMessage(QString("Temporary message"), 10000);
-
-		QDockWidget* controlsDock = (QDockWidget*)obs_main_window->findChild<QDockWidget*>("controlsDock");
-		//QPushButton* streamButton = (QPushButton*)controlsDock->findChild<QPushButton*>("streamButton");
-		QVBoxLayout* buttonsVLayout = (QVBoxLayout*)controlsDock->findChild<QVBoxLayout*>("buttonsVLayout");
-
-		QPushButton* newButton = new QPushButton(QString("Hello World"));
-		buttonsVLayout->addWidget(newButton);
-
-		if (true) {
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->ShowNotificationBar("http://www.google.com/", 100, nullptr);
-		}
-	}, nullptr);
-	*/
-	s_bwClient = new StreamElementsObsBandwidthTestClient();
-
-	QtExecSync([] (void*) -> void {
-		/*
-		std::vector<StreamElementsBandwidthTestClient::Server> servers;
-
-		servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-fra.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
-		//servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-ams.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
-		//servers.emplace_back(StreamElementsBandwidthTestClient::Server("rtmp://live-arn.twitch.tv/app", "live_183796457_QjqUeY56dQN15RzEC122i1ZEeC1MKd?bandwidthtest"));
-
-		struct local_context {
-			StreamElementsBrowserWidgetManager* widgetManager;
-
-			local_context() {
-				widgetManager =
-					new StreamElementsBrowserWidgetManager(
-					(QMainWindow*)obs_frontend_get_main_window());
-			}
-
-			~local_context() {
-				QtPostTask([](void* data) {
-					StreamElementsBrowserWidgetManager* widgetManager =
-						(StreamElementsBrowserWidgetManager*)data;
-
-					while (widgetManager->PopCentralBrowserWidget())
-					{ }
-
-					// delete widgetManager;
-				}, widgetManager);
-			}
-		};
-
-		local_context* context = new local_context();
-		*/
-
-		// obs_frontend_push_ui_translation(obs_module_get_string);
-
-		// StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PushCentralBrowserWidget("http://streamelements.local/onboarding.html", nullptr);
-
-		// obs_frontend_pop_ui_translation();
-
-		/*
-		if (true) {
-			std::string state = "{ \"test1\":{\"dockingArea\":\"left\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 300 }, \"test2\":{\"dockingArea\":\"right\",\"title\":\"Test 1\",\"url\":\"http://streamelements.local/index.html\", \"width\": 200} }";
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->DeserializeDockingWidgets(state);
-
-			std::string dockingWidgetsState;
-			StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->SerializeDockingWidgets(dockingWidgetsState);
-			::MessageBoxA(0, dockingWidgetsState.c_str(), "dockingWidgetsState", 0);
-		}
-
-		StreamElementsGlobalStateManager::GetInstance()->GetWidgetManager()->PopCentralBrowserWidget();
-		*/
-
-		/*
-		// Test bandwidth
-		s_bwClient->TestMultipleServersBitsPerSecondAsync(
-			servers,
-			10000 * 1000,
-			NULL,
-			1,
-			[](std::vector<StreamElementsBandwidthTestClient::Result>* results, void* data)
-			{
-				local_context* context = (local_context*)data;
-
-				char buf[512];
-
-				for (size_t i = 0; i < results->size(); ++i) {
-					StreamElementsBandwidthTestClient::Result result = (*results)[i];
-
-					sprintf(buf, "Server: %s | Success: %s | Bits per second: %d | Connect time %lu ms",
-						result.serverUrl.c_str(),
-						result.success ? "true" : "false",
-						result.bitsPerSecond,
-						result.connectTimeMilliseconds);
-
-					::MessageBoxA(0, buf, buf, 0);
-				}
-
-				delete context;
-			},
-			context);*/
-	}, nullptr);
 
 	return true;
 }
@@ -503,8 +375,7 @@ void obs_module_unload(void)
 {
 	obs_frontend_remove_event_callback(handle_obs_frontend_event, nullptr);
 
-	delete s_bwClient;
-
+	// Shutdown StreamElements plug-in
 	StreamElementsGlobalStateManager::GetInstance()->Shutdown();
 
 	if (manager_thread.joinable()) {
