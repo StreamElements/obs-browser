@@ -2,6 +2,7 @@
 #include "StreamElementsUtils.hpp"
 
 #include <obs-frontend-api.h>
+#include <obs-module.h>
 #include <util/platform.h>
 #include <util/config-file.h>
 
@@ -138,6 +139,11 @@ bool StreamElementsOutputSettingsManager::SetStreamingSettings(CefRefPtr<CefValu
 	return true;
 }
 
+#define SIMPLE_ENCODER_X264                    "x264"
+#define SIMPLE_ENCODER_QSV                     "qsv"
+#define SIMPLE_ENCODER_NVENC                   "nvenc"
+#define SIMPLE_ENCODER_AMD                     "amd"
+
 bool StreamElementsOutputSettingsManager::SetEncodingSettings(CefRefPtr<CefValue> input)
 {
 	if (!input.get()) return false;
@@ -173,9 +179,9 @@ bool StreamElementsOutputSettingsManager::SetEncodingSettings(CefRefPtr<CefValue
 
 	config_t* basicConfig = obs_frontend_get_profile_config(); // does not increase refcount
 
-	config_set_string(basicConfig, "Output", "Mode", "Advanced"); // Advanced???
+	config_set_string(basicConfig, "Output", "Mode", "Simple"); // Advanced???
 	config_set_uint(basicConfig, "SimpleOutput", "VBitrate", videoBitrate);
-	config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", "x264");
+	// config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", "x264");
 	config_set_uint(basicConfig, "SimpleOutput", "ABitrate", audioBitrate);
 	config_set_bool(basicConfig, "SimpleOutput", "UseAdvanced", true); // Advanced???
 	config_set_bool(basicConfig, "SimpleOutput", "EnforceBitrate", true);
@@ -195,6 +201,20 @@ bool StreamElementsOutputSettingsManager::SetEncodingSettings(CefRefPtr<CefValue
 	config_set_uint(basicConfig, "AdvOut", "TrackIndex", 1);
 
 	if (videoEncoderId.size()) {
+		if (videoEncoderId == "ffmpeg_nvenc") {
+			config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", SIMPLE_ENCODER_NVENC);
+		}
+		else if (videoEncoderId == "obs_qsv11") {
+			config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", SIMPLE_ENCODER_QSV);
+		}
+		else if (videoEncoderId == "amd_amf_h264") {
+			config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", SIMPLE_ENCODER_AMD);
+		}
+		else /* if (videoEncoderId == "obs_x264") */ {
+			config_set_string(basicConfig, "SimpleOutput", "StreamEncoder", SIMPLE_ENCODER_X264);
+		}
+
+		// obs_x264
 		config_set_string(basicConfig, "AdvOut", "Encoder", videoEncoderId.c_str());
 	}
 
@@ -292,6 +312,21 @@ bool StreamElementsOutputSettingsManager::SetEncodingSettings(CefRefPtr<CefValue
 
 	// Save UI configuration
 	obs_frontend_save();
+
+	// streamEncoder.json
+	{
+		// TODO: Find a better way to do this. This section assumes knowledge about front-end internals.
+		std::string profileName = obs_frontend_get_current_profile();
+		char* profileParentFolder = obs_module_get_config_path(obs_current_module(), "../../basic/profiles");
+
+		std::string streamEncoderJsonPath = FormatString("%s/%s/streamEncoder.json", profileParentFolder, profileName);
+		bfree(profileParentFolder);
+
+		obs_data_t* settings = obs_data_create_from_json_file_safe(streamEncoderJsonPath.c_str(), "bak");
+		obs_data_set_int(settings, "bitrate", videoBitrate);
+		obs_data_save_json_safe(settings, streamEncoderJsonPath.c_str(), "tmp", "bak");
+		obs_data_release(settings);
+	}
 
 	return true;
 }
