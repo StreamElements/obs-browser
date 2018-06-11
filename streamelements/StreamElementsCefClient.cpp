@@ -74,11 +74,8 @@ void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
 		error << errorText.ToString();
 	}
 	else {
-		error << "UNKNOWN";
+		error << "UNKNOWN" << " (" << (int)errorCode << ")";
 	}
-	error << " (";
-	error << (int)errorCode;
-	error << ")";
 
 	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.code\\}"), error.str());
 	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.text\\}"), error.str());
