@@ -1,11 +1,14 @@
 #include "StreamElementsApiMessageHandler.hpp"
 
+#include "../cef-headers.hpp"
+
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
 #include "Version.hpp"
 #include "StreamElementsConfig.hpp"
 #include "StreamElementsGlobalStateManager.hpp"
 #include "StreamElementsUtils.hpp"
+#include "StreamElementsCefClient.hpp"
 
 #include <QDesktopServices>
 #include <QUrl>
@@ -427,5 +430,17 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 			result->SetBool(
 				StreamElementsGlobalStateManager::GetInstance()->GetOutputSettingsManager()->SetEncodingSettings(args->GetValue(0)));
 		}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("getCurrentContainerProperties");
+		CefRefPtr<StreamElementsCefClient> client =
+			static_cast<StreamElementsCefClient*>(browser->GetHost()->GetClient().get());
+
+		CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
+		result->SetDictionary(d);
+
+		d->SetString("id", client->GetContainerId());
+		d->SetString("area", client->GetLocationArea());
+		d->SetString("url", browser->GetMainFrame()->GetURL().ToString());
 	API_HANDLER_END();
 }

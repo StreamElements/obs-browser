@@ -19,6 +19,7 @@
 #include "../browser-client.hpp"
 
 #include "StreamElementsAsyncTaskQueue.hpp"
+#include "StreamElementsCefClient.hpp"
 
 #include <QtWidgets>
 
@@ -31,11 +32,18 @@ class StreamElementsBrowserWidget:
 private:
 	std::string m_url;
 	std::string m_executeJavaScriptCodeOnLoad;
+	std::string m_pendingLocationArea;
+	std::string m_pendingId;
 
 	QSize m_sizeHint;
 
 public:
-	StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad);
+	StreamElementsBrowserWidget(
+		QWidget* parent,
+		const char* const url,
+		const char* const executeJavaScriptCodeOnLoad,
+		const char* const locationArea,
+		const char* const id);
 	~StreamElementsBrowserWidget();
 
 	void setSizeHint(QSize& size)
@@ -47,28 +55,6 @@ public:
 	{
 		m_sizeHint = QSize(w, h);
 	}
-
-	/*
-	virtual QSize sizeHint() const override
-	{
-		QSize size = QWidget::sizeHint();
-
-		if (size.isValid() && !size.isNull() && !size.isEmpty())
-			return size;
-		else
-			return m_sizeHint;
-	}
-
-	virtual QSize minimumSizeHint() const override
-	{
-		QSize size = QWidget::minimumSizeHint();
-
-		if (size.isValid() && !size.isNull() && !size.isEmpty())
-			return size;
-		else
-			return QSize(m_sizeHint.width(), m_sizeHint.height() / 2);
-	}
-	*/
 
 public:
 	std::string GetCurrentUrl();

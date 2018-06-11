@@ -68,3 +68,21 @@ inline static void QtExecSync(void(*func)(void*), void* const data)
 		os_event_destroy(completeEvent);
 	}
 }
+
+inline std::string DockWidgetAreaToString(const Qt::DockWidgetArea area)
+{
+	switch (area)
+	{
+	case Qt::LeftDockWidgetArea:
+		return "left";
+	case Qt::RightDockWidgetArea:
+		return "right";
+	case Qt::TopDockWidgetArea:
+		return "top";
+	case Qt::BottomDockWidgetArea:
+		return "bottom";
+	case Qt::NoDockWidgetArea:
+	default:
+		return "floating";
+	}
+}

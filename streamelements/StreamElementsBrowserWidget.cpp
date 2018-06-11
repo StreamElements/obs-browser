@@ -22,12 +22,19 @@ static bool QueueCEFTask(std::function<void()> task)
 
 #include <QVBoxLayout>
 
-StreamElementsBrowserWidget::StreamElementsBrowserWidget(QWidget* parent, const char* const url, const char* const executeJavaScriptCodeOnLoad):
+StreamElementsBrowserWidget::StreamElementsBrowserWidget(
+	QWidget* parent,
+	const char* const url,
+	const char* const executeJavaScriptCodeOnLoad,
+	const char* const locationArea,
+	const char* const id):
 	QWidget(parent),
 	m_url(url),
 	m_window_handle(0),
 	m_task_queue("StreamElementsBrowserWidget task queue"),
-	m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad == nullptr ? "" : executeJavaScriptCodeOnLoad)
+	m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad == nullptr ? "" : executeJavaScriptCodeOnLoad),
+	m_pendingLocationArea(locationArea == nullptr ? "" : locationArea),
+	m_pendingId(id == nullptr ? "" : id)
 {
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);
@@ -142,12 +149,18 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		cefBrowserSettings.javascript_close_windows = STATE_DISABLED;
 		cefBrowserSettings.local_storage = STATE_DISABLED;
 
+		CefRefPtr<StreamElementsCefClient> cefClient =
+			new StreamElementsCefClient(
+				m_executeJavaScriptCodeOnLoad,
+				new StreamElementsApiMessageHandler());
+
+		cefClient->SetLocationArea(m_pendingLocationArea);
+		cefClient->SetContainerId(m_pendingId);
+
 		m_cef_browser =
 			CefBrowserHost::CreateBrowserSync(
 				windowInfo,
-				new StreamElementsCefClient(
-					m_executeJavaScriptCodeOnLoad,
-					new StreamElementsApiMessageHandler()),
+				cefClient,
 				m_url.c_str(),
 				cefBrowserSettings,
 				nullptr);
@@ -179,7 +192,7 @@ void StreamElementsBrowserWidget::CefUIThreadExecute(std::function<void()> func,
 
 std::string StreamElementsBrowserWidget::GetCurrentUrl()
 {
-	if (!m_cef_browser) {
+	if (!m_cef_browser.get()) {
 		return std::string();
 	}
 
@@ -189,12 +202,5 @@ std::string StreamElementsBrowserWidget::GetCurrentUrl()
 
 std::string StreamElementsBrowserWidget::GetExecuteJavaScriptCodeOnLoad()
 {
-	if (!m_cef_browser) {
-		return std::string();
-	}
-
-	CefRefPtr<StreamElementsCefClient> client =
-		static_cast<StreamElementsCefClient*>(m_cef_browser->GetHost()->GetClient().get());
-
-	return client->GetExecuteJavaScriptCodeOnLoad();
+	return m_executeJavaScriptCodeOnLoad;
 }

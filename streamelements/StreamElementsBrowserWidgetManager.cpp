@@ -1,5 +1,6 @@
 #include "StreamElementsBrowserWidgetManager.hpp"
 #include "StreamElementsUtils.hpp"
+#include "StreamElementsCefClient.hpp"
 
 #include "cef-headers.hpp"
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
@@ -20,7 +21,9 @@ void StreamElementsBrowserWidgetManager::PushCentralBrowserWidget(
 	const char* const url,
 	const char* const executeJavaScriptCodeOnLoad)
 {
-	PushCentralWidget(new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad));
+	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad, "center", "");
+
+	PushCentralWidget(widget);
 }
 
 bool StreamElementsBrowserWidgetManager::DestroyCurrentCentralBrowserWidget()
@@ -161,7 +164,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	const Qt::DockWidgetAreas allowedAreas,
 	const QDockWidget::DockWidgetFeatures features)
 {
-	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad);
+	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
+		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
 
 	if (AddDockWidget(id, title, widget, area, allowedAreas, features)) {
 		m_browserWidgets[id] = widget;
@@ -283,7 +287,7 @@ void StreamElementsBrowserWidgetManager::ShowNotificationBar(
 {
 	HideNotificationBar();
 
-	m_notificationBarBrowserWidget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad);
+	m_notificationBarBrowserWidget = new StreamElementsBrowserWidget(nullptr, url, executeJavaScriptCodeOnLoad, "notification", "");
 
 	const Qt::ToolBarArea NOTIFICATION_BAR_AREA = Qt::TopToolBarArea;
 

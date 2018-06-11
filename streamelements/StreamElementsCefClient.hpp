@@ -10,6 +10,10 @@ class StreamElementsCefClient :
 	public CefContextMenuHandler,
 	public CefLoadHandler
 {
+private:
+	std::string m_containerId = "";
+	std::string m_locationArea = "unknown";
+
 public:
 	StreamElementsCefClient(std::string& executeJavaScriptCodeOnLoad, CefRefPtr<StreamElementsBrowserMessageHandler> messageHandler) :
 		m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad),
@@ -20,6 +24,13 @@ public:
 	inline ~StreamElementsCefClient()
 	{
 	}
+
+	/* Own */
+	std::string GetContainerId() { return m_containerId; }
+	void SetContainerId(std::string id) { m_containerId = id; }
+
+	std::string GetLocationArea() { return m_locationArea; }
+	void SetLocationArea(std::string area) { m_locationArea = area; }
 
 	/* CefClient */
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
@@ -73,7 +84,7 @@ public:
 		const CefString& failedUrl) override;
 
 public:
-	std::string& GetExecuteJavaScriptCodeOnLoad()
+	std::string GetExecuteJavaScriptCodeOnLoad()
 	{
 		return m_executeJavaScriptCodeOnLoad;
 	}
