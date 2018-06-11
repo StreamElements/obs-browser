@@ -57,7 +57,7 @@
 			color: #ffffff;
 		}
 
-		button {
+		button.emphasize {
 			width: 130px;
 			height: 40px;
 			object-fit: contain;
@@ -74,6 +74,30 @@
 			color: #ffffff;
 			cursor: pointer;
 		}
+
+		button.blur {
+			width: 130px;
+			height: 40px;
+			object-fit: contain;
+			border-radius: 20px;
+			background-color: black;
+			border: 1px solid #7057dc;
+			font-size: 14px;
+			font-weight: bold;
+			font-style: normal;
+			font-stretch: normal;
+			line-height: normal;
+			letter-spacing: 1.2px;
+			text-align: center;
+			color: #5770dc;
+			cursor: pointer;
+		}
+
+		button {
+			margin-top: 12px;
+			margin-left: 5px;
+			margin-right: 5px;
+		}
 	</style>
 </head>
 <body>
@@ -89,8 +113,28 @@
 			Please try again later
 		</p>
 		<p>
-			<button onclick="location.reload(true); return false">RELOAD</button>
+			<button class="emphasize" onclick="location.reload(true); return false">RELOAD</button>
+			<button class="blur" id="cmdClose" style="display: none" onclick="window.host.hideCentralWidget(); return false">CLOSE</button>
 		</p>
 	</div>
+	<script type="text/javascript">
+		function obsApiReady(callback) {
+			if (window.host && window.host.hostReady) {
+				callback();
+			} else {
+				window.addEventListener("hostReady", function (e) {
+					callback();
+				});
+			}
+		}
+
+		obsApiReady(function () {
+			window.host.getCurrentContainerProperties(function (props) {
+				if (props && props.area && props.area === "center") {
+					document.getElementById("cmdClose").style.display = "inline";
+				}
+			});
+		});
+	</script>
 </body>
 </html>
