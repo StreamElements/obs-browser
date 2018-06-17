@@ -28,6 +28,5 @@
  * This value should be set as part of the build process.
  */
 #ifndef STREAMELEMENTS_PLUGIN_VERSION
-#define STREAMELEMENTS_PLUGIN_VERSION 20180506015800L
-//#define STREAMELEMENTS_PLUGIN_VERSION 20192536415800L
+#include "Version.generated.hpp"
 #endif
