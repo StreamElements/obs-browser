@@ -236,14 +236,6 @@ void StreamElementsCefClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
 {
 }
 
-/*
-// Not available in CEF version we build against
-void StreamElementsCefClient::OnNavStateChange(CefRefPtr<CefBrowser> browser,
-	bool canGoBack, bool canGoForward)
-{
-
-}*/
-
 void StreamElementsCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
 	SetWindowDefaultIcon(
