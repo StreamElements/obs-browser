@@ -183,12 +183,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
-	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
-		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
-
 	QMainWindow* main = new QMainWindow(nullptr);
-
-	main->setCentralWidget(widget);
 
 	const Qt::ToolBarArea TOOLBAR_AREA = Qt::BottomToolBarArea;
 
@@ -233,6 +228,22 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	QAction* reloadAction = addButton(
 		toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
 		QString("reload"));
+
+	backAction->setEnabled(false);
+	forwardAction->setEnabled(false);
+
+	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
+		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
+
+	widget->connect(
+		widget,
+		&StreamElementsBrowserWidget::browserStateChanged,
+		[this, widget, backAction, forwardAction]() {
+		backAction->setEnabled(widget->BrowserHistoryCanGoBack());
+		forwardAction->setEnabled(widget->BrowserHistoryCanGoForward());
+	});
+
+	main->setCentralWidget(widget);
 
 	backAction->connect(
 		backAction,

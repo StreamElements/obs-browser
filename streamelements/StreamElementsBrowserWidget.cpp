@@ -127,7 +127,8 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		CefRefPtr<StreamElementsCefClient> cefClient =
 			new StreamElementsCefClient(
 				m_executeJavaScriptCodeOnLoad,
-				m_requestedApiMessageHandler);
+				m_requestedApiMessageHandler,
+				new StreamElementsBrowserWidget_EventHandler(this));
 
 		cefClient->SetLocationArea(m_pendingLocationArea);
 		cefClient->SetContainerId(m_pendingId);

@@ -85,9 +85,10 @@ using namespace json11;
 
 /* ========================================================================= */
 
-StreamElementsCefClient::StreamElementsCefClient(std::string executeJavaScriptCodeOnLoad, CefRefPtr<StreamElementsBrowserMessageHandler> messageHandler) :
+StreamElementsCefClient::StreamElementsCefClient(std::string executeJavaScriptCodeOnLoad, CefRefPtr<StreamElementsBrowserMessageHandler> messageHandler, CefRefPtr<StreamElementsCefClientEventHandler> eventHandler) :
 	m_executeJavaScriptCodeOnLoad(executeJavaScriptCodeOnLoad),
-	m_messageHandler(messageHandler)
+	m_messageHandler(messageHandler),
+	m_eventHandler(eventHandler)
 {
 }
 
@@ -149,6 +150,18 @@ void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
 	htmlString = std::regex_replace(htmlString, std::regex("\\$\\{error.url\\}"), failedUrl.ToString());
 
 	frame->GetBrowser()->GetMainFrame()->LoadStringW(htmlString, failedUrl);
+}
+
+void StreamElementsCefClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+	bool isLoading,
+	bool canGoBack,
+	bool canGoForward)
+{
+	if (!m_eventHandler.get()) {
+		return;
+	}
+
+	m_eventHandler->OnLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
 }
 
 /* ========================================================================= */
@@ -222,14 +235,6 @@ void StreamElementsCefClient::OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
 	const std::vector<CefString>& icon_urls)
 {
 }
-
-/*
-// Not available in CEF version we build against
-void StreamElementsCefClient::OnNavStateChange(CefRefPtr<CefBrowser> browser,
-	bool canGoBack, bool canGoForward)
-{
-
-}*/
 
 void StreamElementsCefClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {

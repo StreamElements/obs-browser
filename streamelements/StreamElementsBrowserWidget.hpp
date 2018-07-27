@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StreamElementsUtils.hpp"
+
 #include <QWidget>
 #include <QHideEvent>
 
@@ -194,7 +196,38 @@ private:
 private:
 	std::mutex m_create_destroy_mutex;
 
-public:
-//	IMPLEMENT_REFCOUNTING(StreamElementsBrowserWidget)
+signals:
+	void browserStateChanged();
+
+private:
+	void emitBrowserStateChanged()
+	{
+		emit browserStateChanged();
+	}
+
+	static class StreamElementsBrowserWidget_EventHandler :
+		public StreamElementsCefClientEventHandler
+	{
+	public:
+		StreamElementsBrowserWidget_EventHandler(StreamElementsBrowserWidget* widget) : m_widget(widget)
+		{ }
+
+	public:
+		virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+			bool isLoading,
+			bool canGoBack,
+			bool canGoForward) override
+		{
+			QtPostTask([](void* data) {
+				StreamElementsBrowserWidget* widget = (StreamElementsBrowserWidget*)data;
+
+				widget->emitBrowserStateChanged();
+			}, m_widget);
+		}
+
+	private:
+		StreamElementsBrowserWidget* m_widget;
+	};
+
 };
 
