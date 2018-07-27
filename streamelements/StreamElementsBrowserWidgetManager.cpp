@@ -198,8 +198,6 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	toolbar->setMovable(false);
 	toolbar->setLayout(new QHBoxLayout());
 
-	// toolbar->setIconSize(QSize(24, 24));
-
 	auto addButton = [&](QIcon icon, QString id) -> QAction* {
 		QAction* action = toolbar->addAction(icon, "");
 
@@ -215,25 +213,32 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	};
 
 	QAction* backAction = addButton(
-		toolbar->style()->standardIcon(QStyle::SP_ArrowBack, 0, toolbar),
+		//toolbar->style()->standardIcon(QStyle::SP_ArrowBack, 0, toolbar),
+		QIcon(":/images/toolbar/back.ico"),
 		QString("back"));
 
 	QAction* forwardAction = addButton(
-		toolbar->style()->standardIcon(QStyle::SP_ArrowForward, 0, toolbar),
+		//toolbar->style()->standardIcon(QStyle::SP_ArrowForward, 0, toolbar),
+		QIcon(":/images/toolbar/forward.ico"),
 		QString("forward"));
 
 	addSpacer();
 
 	QAction* resetAction = addButton(
-		toolbar->style()->standardIcon(QStyle::SP_DialogResetButton, 0, toolbar),
+		//toolbar->style()->standardIcon(QStyle::SP_DialogResetButton, 0, toolbar),
+		QIcon(":/images/toolbar/home.ico"),
 		QString("reset"));
 
 	QAction* reloadAction = addButton(
-		toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
+		//toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
+		QIcon(":/images/toolbar/reload.ico"),
 		QString("reload"));
 
 	backAction->setEnabled(false);
 	forwardAction->setEnabled(false);
+
+	int iconSize = 16 * toolbar->devicePixelRatio();
+	toolbar->setIconSize(QSize(iconSize, iconSize));
 
 	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
 		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
@@ -241,7 +246,10 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	widget->connect(
 		widget,
 		&StreamElementsBrowserWidget::browserStateChanged,
-		[this, widget, backAction, forwardAction]() {
+		[this, widget, toolbar, backAction, forwardAction]() {
+		int iconSize = 16 * toolbar->devicePixelRatio();
+		toolbar->setIconSize(QSize(iconSize, iconSize));
+
 		backAction->setEnabled(widget->BrowserHistoryCanGoBack());
 		forwardAction->setEnabled(widget->BrowserHistoryCanGoForward());
 	});
