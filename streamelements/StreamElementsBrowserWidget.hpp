@@ -103,6 +103,8 @@ protected:
 		InitBrowserAsync();
 
 		ShowBrowser();
+
+		emit browserStateChanged();
 	}
 
 	virtual void hideEvent(QHideEvent *hideEvent) override
@@ -110,6 +112,8 @@ protected:
 		QWidget::hideEvent(hideEvent);
 
 		HideBrowser();
+
+		emit browserStateChanged();
 	}
 
 	virtual void resizeEvent(QResizeEvent* event) override
@@ -117,6 +121,8 @@ protected:
 		QWidget::resizeEvent(event);
 
 		UpdateBrowserSize();
+
+		emit browserStateChanged();
 	}
 
 	virtual void moveEvent(QMoveEvent* event) override
@@ -124,6 +130,8 @@ protected:
 		QWidget::moveEvent(event);
 
 		UpdateBrowserSize();
+
+		emit browserStateChanged();
 	}
 
 	virtual void changeEvent(QEvent* event) override
