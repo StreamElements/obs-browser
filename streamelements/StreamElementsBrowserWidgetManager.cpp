@@ -209,6 +209,10 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		toolbar->addWidget(spacerWidget);
 	};
 
+	QAction* backAction = toolbar->addAction("←");
+	QAction* forwardAction = toolbar->addAction("→");
+
+	/*
 	QAction* backAction = addButton(
 		//toolbar->style()->standardIcon(QStyle::SP_ArrowBack, 0, toolbar),
 		QIcon(":/images/toolbar/back.ico"),
@@ -218,24 +222,37 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		//toolbar->style()->standardIcon(QStyle::SP_ArrowForward, 0, toolbar),
 		QIcon(":/images/toolbar/forward.ico"),
 		QString("forward"));
+	*/
 
 	addSpacer();
 
+	//QAction* resetAction = toolbar->addAction("⌂");
+
+	/*
 	QAction* resetAction = addButton(
 		//toolbar->style()->standardIcon(QStyle::SP_DialogResetButton, 0, toolbar),
 		QIcon(":/images/toolbar/home.ico"),
 		QString("reset"));
+	*/
 
+	QAction* reloadAction = toolbar->addAction("↺");
+
+	/*
 	QAction* reloadAction = addButton(
 		//toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
 		QIcon(":/images/toolbar/reload.ico"),
 		QString("reload"));
+	*/
 
 	backAction->setEnabled(false);
 	forwardAction->setEnabled(false);
 
-	int iconSize = 16 * toolbar->devicePixelRatio();
-	toolbar->setIconSize(QSize(iconSize, iconSize));
+	//int iconSize = 16 * toolbar->devicePixelRatio();
+	//toolbar->setIconSize(QSize(iconSize, iconSize));
+
+	QFont font = QFont("Arial");
+	font.setBold(true);
+	font.setPointSize(14);
 
 	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
 		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
@@ -244,8 +261,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		widget,
 		&StreamElementsBrowserWidget::browserStateChanged,
 		[this, widget, toolbar, backAction, forwardAction]() {
-		int iconSize = 16 * toolbar->devicePixelRatio();
-		toolbar->setIconSize(QSize(iconSize, iconSize));
+		//int iconSize = 16 * toolbar->devicePixelRatio();
+		//toolbar->setIconSize(QSize(iconSize, iconSize));
 
 		backAction->setEnabled(widget->BrowserHistoryCanGoBack());
 		forwardAction->setEnabled(widget->BrowserHistoryCanGoForward());
@@ -269,7 +286,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		widget->BrowserHistoryGoForward();
 	});
 
-	
+	/*
 	resetAction->connect(
 		resetAction,
 		&QAction::triggered,
@@ -277,6 +294,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	{
 		widget->BrowserLoadInitialPage();
 	});
+	*/
 
 	reloadAction->connect(
 		reloadAction,
@@ -285,6 +303,11 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	{
 		widget->BrowserReload(true);
 	});
+
+	backAction->setFont(font);
+	forwardAction->setFont(font);
+	reloadAction->setFont(font);
+	//resetAction->setFont(font);
 
 	main->addToolBar(TOOLBAR_AREA, toolbar);
 
