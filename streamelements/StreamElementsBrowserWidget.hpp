@@ -66,6 +66,13 @@ public:
 	std::string GetExecuteJavaScriptCodeOnLoad();
 	std::string GetCurrentUrl();
 
+	bool BrowserHistoryCanGoBack();
+	bool BrowserHistoryCanGoForward();
+	void BrowserHistoryGoBack();
+	void BrowserHistoryGoForward();
+	void BrowserReload(bool ignoreCache);
+	void BrowserLoadInitialPage();
+
 private:
 	///
 	// Browser initialization
@@ -77,6 +84,9 @@ private:
 
 private slots:
 	void InitBrowserAsyncInternal();
+
+private:
+	std::string GetInitialPageURLInternal();
 
 private:
 	StreamElementsAsyncTaskQueue m_task_queue;

@@ -6,8 +6,11 @@
 #include <include/cef_parser.h>		// CefParseJSON, CefWriteJSON
 
 #include <QUuid>
+#include <QMainWindow>
+#include <QSpacerItem>
 
 #include <algorithm>    // std::sort
+#include <functional>
 
 StreamElementsBrowserWidgetManager::StreamElementsBrowserWidgetManager(QMainWindow* parent) :
 	StreamElementsWidgetManager(parent),
@@ -183,7 +186,90 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
 		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
 
-	if (AddDockWidget(id, title, widget, area, allowedAreas, features)) {
+	QMainWindow* main = new QMainWindow(nullptr);
+
+	main->setCentralWidget(widget);
+
+	const Qt::ToolBarArea TOOLBAR_AREA = Qt::BottomToolBarArea;
+
+	QToolBar* toolbar = new QToolBar(nullptr);
+
+	toolbar->setAutoFillBackground(true);
+	toolbar->setAllowedAreas(TOOLBAR_AREA);
+	toolbar->setFloatable(false);
+	toolbar->setMovable(false);
+	toolbar->setLayout(new QHBoxLayout());
+
+	// toolbar->setIconSize(QSize(24, 24));
+
+	auto addButton = [&](QIcon icon, QString id) -> QAction* {
+		QAction* action = toolbar->addAction(icon, "");
+
+		return action;
+	};
+
+	auto addSpacer = [&]() {
+		QWidget *spacerWidget = new QWidget(toolbar);
+		spacerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+		spacerWidget->setVisible(true);
+
+		toolbar->addWidget(spacerWidget);
+	};
+
+	QAction* backAction = addButton(
+		toolbar->style()->standardIcon(QStyle::SP_ArrowBack, 0, toolbar),
+		QString("back"));
+
+	QAction* forwardAction = addButton(
+		toolbar->style()->standardIcon(QStyle::SP_ArrowForward, 0, toolbar),
+		QString("forward"));
+
+	addSpacer();
+
+	QAction* resetAction = addButton(
+		toolbar->style()->standardIcon(QStyle::SP_DialogResetButton, 0, toolbar),
+		QString("reset"));
+
+	QAction* reloadAction = addButton(
+		toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
+		QString("reload"));
+
+	backAction->connect(
+		backAction,
+		&QAction::triggered,
+		[this, widget]
+	{
+		widget->BrowserHistoryGoBack();
+	});
+
+	forwardAction->connect(
+		forwardAction,
+		&QAction::triggered,
+		[this, widget]
+	{
+		widget->BrowserHistoryGoForward();
+	});
+
+	
+	resetAction->connect(
+		resetAction,
+		&QAction::triggered,
+		[this, widget]
+	{
+		widget->BrowserLoadInitialPage();
+	});
+
+	reloadAction->connect(
+		reloadAction,
+		&QAction::triggered,
+		[this, widget]
+	{
+		widget->BrowserReload(true);
+	});
+
+	main->addToolBar(TOOLBAR_AREA, toolbar);
+
+	if (AddDockWidget(id, title, main, area, allowedAreas, features)) {
 		m_browserWidgets[id] = widget;
 
 		return true;

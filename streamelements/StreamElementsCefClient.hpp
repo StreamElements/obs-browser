@@ -104,6 +104,12 @@ public:
 	virtual void OnFaviconURLChange(CefRefPtr<CefBrowser> browser,
 		const std::vector<CefString>& icon_urls) override;
 
+	/*
+	// Available in CEF version newer than we have
+	virtual void OnNavStateChange(CefRefPtr<CefBrowser> browser,
+		bool canGoBack, bool canGoForward) override;
+	*/
+
 public:
 	std::string GetExecuteJavaScriptCodeOnLoad()
 	{
