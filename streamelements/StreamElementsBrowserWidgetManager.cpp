@@ -195,10 +195,9 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	toolbar->setMovable(false);
 	toolbar->setLayout(new QHBoxLayout());
 
-	auto addButton = [&](QIcon icon, QString id) -> QAction* {
-		QAction* action = toolbar->addAction(icon, "");
-
-		return action;
+	auto updateIconSize = [toolbar]() {
+		int iconSize = 16 * toolbar->devicePixelRatio();
+		toolbar->setIconSize(QSize(iconSize, iconSize));
 	};
 
 	auto addSpacer = [&]() {
@@ -212,47 +211,19 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	QAction* backAction = toolbar->addAction("←");
 	QAction* forwardAction = toolbar->addAction("→");
 
-	/*
-	QAction* backAction = addButton(
-		//toolbar->style()->standardIcon(QStyle::SP_ArrowBack, 0, toolbar),
-		QIcon(":/images/toolbar/back.ico"),
-		QString("back"));
-
-	QAction* forwardAction = addButton(
-		//toolbar->style()->standardIcon(QStyle::SP_ArrowForward, 0, toolbar),
-		QIcon(":/images/toolbar/forward.ico"),
-		QString("forward"));
-	*/
-
 	addSpacer();
 
-	//QAction* resetAction = toolbar->addAction("⌂");
-
-	/*
-	QAction* resetAction = addButton(
-		//toolbar->style()->standardIcon(QStyle::SP_DialogResetButton, 0, toolbar),
-		QIcon(":/images/toolbar/home.ico"),
-		QString("reset"));
-	*/
-
 	QAction* reloadAction = toolbar->addAction("↺");
-
-	/*
-	QAction* reloadAction = addButton(
-		//toolbar->style()->standardIcon(QStyle::SP_BrowserReload, 0, toolbar),
-		QIcon(":/images/toolbar/reload.ico"),
-		QString("reload"));
-	*/
 
 	backAction->setEnabled(false);
 	forwardAction->setEnabled(false);
 
-	//int iconSize = 16 * toolbar->devicePixelRatio();
-	//toolbar->setIconSize(QSize(iconSize, iconSize));
+	// updateIconSize();
 
 	QFont font = QFont("Arial");
-	font.setBold(true);
+	font.setBold(false);
 	font.setPointSize(14);
+	font.setOverline(false);
 
 	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
 		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
@@ -261,8 +232,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		widget,
 		&StreamElementsBrowserWidget::browserStateChanged,
 		[this, widget, toolbar, backAction, forwardAction]() {
-		//int iconSize = 16 * toolbar->devicePixelRatio();
-		//toolbar->setIconSize(QSize(iconSize, iconSize));
+		// updateIconSize();
 
 		backAction->setEnabled(widget->BrowserHistoryCanGoBack());
 		forwardAction->setEnabled(widget->BrowserHistoryCanGoForward());
@@ -286,16 +256,6 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		widget->BrowserHistoryGoForward();
 	});
 
-	/*
-	resetAction->connect(
-		resetAction,
-		&QAction::triggered,
-		[this, widget]
-	{
-		widget->BrowserLoadInitialPage();
-	});
-	*/
-
 	reloadAction->connect(
 		reloadAction,
 		&QAction::triggered,
@@ -307,7 +267,6 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	backAction->setFont(font);
 	forwardAction->setFont(font);
 	reloadAction->setFont(font);
-	//resetAction->setFont(font);
 
 	main->addToolBar(TOOLBAR_AREA, toolbar);
 
