@@ -188,9 +188,9 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 
 	QMainWindow* main = new QMainWindow(nullptr);
 
-	QAction* backAction = new QAction("←");
-	QAction* forwardAction = new QAction("→");
-	QAction* reloadAction = new QAction("↺");
+	QAction* backAction = new QAction("❮");
+	QAction* forwardAction = new QAction("❯");
+	QAction* reloadAction = new QAction("☀");
 	QAction* floatAction = new QAction("🗗");
 	QAction* closeAction = new QAction("×");
 
@@ -287,7 +287,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		titleWidget->setLayout(new QHBoxLayout());
 		titleWidget->layout()->setMargin(1);
 
-		QString buttonStyle = "QToolButton { border: none; padding: 4px; font-size: 12; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
+		QString buttonStyle = "QToolButton { font-smoothing: antialiased; border: none; padding: 4px; font-size: 16px; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
+		QString labelStyle = "QLabel { font-smoothing: antialiased; font-size: 16px; font-weight: normal; background-color: transparent; padding: 2px; }";
 
 		auto createButton = [&](QAction* action, const char* toolTipText) {
 			auto result = new LocalToolButton();
@@ -325,7 +326,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 
 		auto windowTitle = new QLabel(title);
 		windowTitle->setAlignment(Qt::AlignCenter);
-		windowTitle->setStyleSheet("QLabel { background-color: transparent; padding: 2px; }");
+		windowTitle->setStyleSheet(labelStyle);
+		windowTitle->setFont(font);
 
 		titleWidget->layout()->addWidget(backButton);
 		titleWidget->layout()->addWidget(forwardButton);
