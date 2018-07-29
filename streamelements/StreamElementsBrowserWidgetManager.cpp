@@ -11,6 +11,9 @@
 
 #include <algorithm>    // std::sort
 #include <functional>
+#include <regex>
+
+#include <obs-module.h>
 
 StreamElementsBrowserWidgetManager::StreamElementsBrowserWidgetManager(QMainWindow* parent) :
 	StreamElementsWidgetManager(parent),
@@ -185,45 +188,23 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 
 	QMainWindow* main = new QMainWindow(nullptr);
 
-	const Qt::ToolBarArea TOOLBAR_AREA = Qt::BottomToolBarArea;
+	QAction* backAction = new QAction("←");
+	QAction* forwardAction = new QAction("→");
+	QAction* reloadAction = new QAction("↺");
+	QAction* floatAction = new QAction("🗗");
+	QAction* closeAction = new QAction("×");
 
-	QToolBar* toolbar = new QToolBar(nullptr);
+	QFont font;
+	font.setStyleStrategy(QFont::PreferAntialias);
 
-	toolbar->setAutoFillBackground(true);
-	toolbar->setAllowedAreas(TOOLBAR_AREA);
-	toolbar->setFloatable(false);
-	toolbar->setMovable(false);
-	toolbar->setLayout(new QHBoxLayout());
-
-	auto updateIconSize = [toolbar]() {
-		int iconSize = 16 * toolbar->devicePixelRatio();
-		toolbar->setIconSize(QSize(iconSize, iconSize));
-	};
-
-	auto addSpacer = [&]() {
-		QWidget *spacerWidget = new QWidget(toolbar);
-		spacerWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-		spacerWidget->setVisible(true);
-
-		toolbar->addWidget(spacerWidget);
-	};
-
-	QAction* backAction = toolbar->addAction("←");
-	QAction* forwardAction = toolbar->addAction("→");
-
-	addSpacer();
-
-	QAction* reloadAction = toolbar->addAction("↺");
+	backAction->setFont(font);
+	forwardAction->setFont(font);
+	reloadAction->setFont(font);
+	floatAction->setFont(font);
+	closeAction->setFont(font);
 
 	backAction->setEnabled(false);
 	forwardAction->setEnabled(false);
-
-	// updateIconSize();
-
-	QFont font = QFont("Arial");
-	font.setBold(false);
-	font.setPointSize(14);
-	font.setOverline(false);
 
 	StreamElementsBrowserWidget* widget = new StreamElementsBrowserWidget(
 		nullptr, url, executeJavaScriptCodeOnLoad, DockWidgetAreaToString(area).c_str(), id);
@@ -231,47 +212,158 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	widget->connect(
 		widget,
 		&StreamElementsBrowserWidget::browserStateChanged,
-		[this, widget, toolbar, backAction, forwardAction]() {
-		// updateIconSize();
-
+		[this, widget, backAction, forwardAction]() {
 		backAction->setEnabled(widget->BrowserHistoryCanGoBack());
 		forwardAction->setEnabled(widget->BrowserHistoryCanGoForward());
 	});
 
 	main->setCentralWidget(widget);
 
+	reloadAction->connect(
+		reloadAction,
+		&QAction::triggered,
+		[widget] {
+		widget->BrowserReload(true);
+	});
+
 	backAction->connect(
 		backAction,
 		&QAction::triggered,
-		[this, widget]
-	{
+		[widget] {
 		widget->BrowserHistoryGoBack();
 	});
 
 	forwardAction->connect(
-		forwardAction,
+		backAction,
 		&QAction::triggered,
-		[this, widget]
-	{
+		[widget] {
 		widget->BrowserHistoryGoForward();
 	});
 
-	reloadAction->connect(
-		reloadAction,
-		&QAction::triggered,
-		[this, widget]
-	{
-		widget->BrowserReload(true);
-	});
-
-	backAction->setFont(font);
-	forwardAction->setFont(font);
-	reloadAction->setFont(font);
-
-	main->addToolBar(TOOLBAR_AREA, toolbar);
-
 	if (AddDockWidget(id, title, main, area, allowedAreas, features)) {
 		m_browserWidgets[id] = widget;
+
+		QDockWidget* dock = GetDockWidget(id);
+
+		class LocalTitleWidget : public QWidget
+		{
+		private:
+			QDockWidget dock;
+
+		public:
+			virtual void paintEvent(QPaintEvent* /* event */) override
+			{
+				QPainter painter(this);
+
+				QStyleOptionDockWidget option;
+				option.initFrom(this);
+
+				dock.style()->drawControl(QStyle::CE_DockWidgetTitle, &option, &painter, this);
+			}
+		};
+
+		class LocalToolButton : public QToolButton
+		{
+		public:
+			virtual void paintEvent(QPaintEvent* /* event */) override
+			{
+				QStylePainter p(this);
+
+				p.setRenderHints(QPainter::SmoothPixmapTransform, true);
+				p.setRenderHints(QPainter::Antialiasing, true);
+				p.setRenderHints(QPainter::TextAntialiasing, true);
+
+				QStyleOptionToolButton opt;
+				initStyleOption(&opt);
+
+				p.drawComplexControl(QStyle::CC_ToolButton, opt);
+			}
+		};
+
+		QWidget* titleWidget = new LocalTitleWidget();
+
+		dock->setTitleBarWidget(titleWidget);
+
+		titleWidget->setLayout(new QHBoxLayout());
+		titleWidget->layout()->setMargin(1);
+
+		QString buttonStyle = "QToolButton { border: none; padding: 4px; font-size: 12; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
+
+		auto createButton = [&](QAction* action, const char* toolTipText) {
+			auto result = new LocalToolButton();
+
+			result->setToolButtonStyle(Qt::ToolButtonTextOnly);
+			result->setStyleSheet(buttonStyle);
+			result->setFocusPolicy(Qt::NoFocus);
+			result->setDefaultAction(action);
+
+			result->setToolTip(toolTipText);
+			action->setToolTip(toolTipText);
+
+			return result;
+		};
+
+		auto backButton = createButton(backAction, obs_module_text("StreamElements.Action.BrowserBack.Tooltip"));
+		auto forwardButton = createButton(forwardAction, obs_module_text("StreamElements.Action.BrowserForward.Tooltip"));
+		auto reloadButton = createButton(reloadAction, obs_module_text("StreamElements.Action.BrowserReload.Tooltip"));
+		auto floatButton = createButton(floatAction, obs_module_text("StreamElements.Action.DockToggleFloat.Tooltip"));
+		auto closeButton = createButton(closeAction, obs_module_text("StreamElements.Action.DockHide.Tooltip"));
+
+		floatAction->connect(
+			floatAction,
+			&QAction::triggered,
+			[dock] {
+			dock->setFloating(!dock->isFloating());
+		});
+
+		closeAction->connect(
+			closeAction,
+			&QAction::triggered,
+			[dock] {
+			dock->setVisible(false);
+		});
+
+		auto windowTitle = new QLabel(title);
+		windowTitle->setAlignment(Qt::AlignCenter);
+		windowTitle->setStyleSheet("QLabel { background-color: transparent; padding: 2px; }");
+
+		titleWidget->layout()->addWidget(backButton);
+		titleWidget->layout()->addWidget(forwardButton);
+		titleWidget->layout()->addWidget(reloadButton);
+		titleWidget->layout()->addWidget(windowTitle);
+		titleWidget->layout()->addWidget(floatButton);
+		titleWidget->layout()->addWidget(closeButton);
+
+		backButton->connect(
+			backButton,
+			&QToolButton::click,
+			[this, widget]
+		{
+			widget->BrowserHistoryGoBack();
+		});
+
+		forwardButton->connect(
+			forwardButton,
+			&QToolButton::click,
+			[this, widget]
+		{
+			widget->BrowserHistoryGoForward();
+		});
+
+		reloadButton->connect(
+			reloadButton,
+			&QToolButton::click,
+			[this, widget]
+		{
+			widget->BrowserReload(true);
+		});
+
+		dock->connect(
+			dock,
+			&QDockWidget::windowTitleChanged,
+			[windowTitle](const QString value) {
+			windowTitle->setText(value);
+		});
 
 		return true;
 	} else {
