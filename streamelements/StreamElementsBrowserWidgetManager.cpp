@@ -253,7 +253,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		public:
 			virtual void paintEvent(QPaintEvent* /* event */) override
 			{
-				QPainter painter(this);
+				QStylePainter painter(this);
 
 				QStyleOptionDockWidget option;
 				option.initFrom(this);
