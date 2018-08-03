@@ -60,3 +60,5 @@ void SerializeSystemHardwareProperties(CefRefPtr<CefValue>& output);
 /* ========================================================= */
 
 void SerializeAvailableInputSourceTypes(CefRefPtr<CefValue>& output);
+std::string SerializeAppStyleSheet();
+std::string GetAppStyleSheetSelectorContent(std::string selector);
