@@ -75,13 +75,6 @@ public:
 	void BrowserReload(bool ignoreCache);
 	void BrowserLoadInitialPage();
 
-	bool BrowserHistoryCanGoBack();
-	bool BrowserHistoryCanGoForward();
-	void BrowserHistoryGoBack();
-	void BrowserHistoryGoForward();
-	void BrowserReload(bool ignoreCache);
-	void BrowserLoadInitialPage();
-
 private:
 	///
 	// Browser initialization

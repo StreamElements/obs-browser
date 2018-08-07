@@ -428,6 +428,8 @@ void SerializeAvailableInputSourceTypes(CefRefPtr<CefValue>& output)
 			}
 		}
 	}
+}
+
 std::string SerializeAppStyleSheet()
 {
 	std::string result = qApp->styleSheet().toStdString();
