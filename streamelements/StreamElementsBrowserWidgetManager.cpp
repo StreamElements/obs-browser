@@ -15,6 +15,8 @@
 
 #include <obs-module.h>
 
+static const bool ENABLE_CUSTOM_DOCK_WIDGET_TITLE_BAR = true;
+
 class LocalTitleWidget : public QWidget
 {
 private:
@@ -504,92 +506,94 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 
 		QDockWidget* dock = GetDockWidget(id);
 
-		QWidget* titleWidget = new LocalTitleWidget(dock);
+		if (ENABLE_CUSTOM_DOCK_WIDGET_TITLE_BAR) {
+			QWidget* titleWidget = new LocalTitleWidget(dock);
 
-		dock->setTitleBarWidget(titleWidget);
+			dock->setTitleBarWidget(titleWidget);
 
-		titleWidget->setLayout(new QHBoxLayout());
-		titleWidget->layout()->setMargin(2);
+			titleWidget->setLayout(new QHBoxLayout());
+			titleWidget->layout()->setMargin(2);
 
-		//QString buttonStyle = "QToolButton { border: none; padding: 4px; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
-		//QString labelStyle = "QLabel { background-color: transparent; padding: 2px; }";
+			//QString buttonStyle = "QToolButton { border: none; padding: 4px; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
+			//QString labelStyle = "QLabel { background-color: transparent; padding: 2px; }";
 
-		auto createButton = [&](QAction* action, const char* toolTipText) {
-			auto result = new LocalToolButton();
+			auto createButton = [&](QAction* action, const char* toolTipText) {
+				auto result = new LocalToolButton();
 
-			result->setDefaultAction(action);
+				result->setDefaultAction(action);
 
-			result->setToolTip(toolTipText);
-			action->setToolTip(toolTipText);
+				result->setToolTip(toolTipText);
+				action->setToolTip(toolTipText);
 
-			return result;
-		};
+				return result;
+			};
 
-		auto backButton = createButton(backAction, obs_module_text("StreamElements.Action.BrowserBack.Tooltip"));
-		auto forwardButton = createButton(forwardAction, obs_module_text("StreamElements.Action.BrowserForward.Tooltip"));
-		auto reloadButton = createButton(reloadAction, obs_module_text("StreamElements.Action.BrowserReload.Tooltip"));
-		auto floatButton = createButton(floatAction, obs_module_text("StreamElements.Action.DockToggleFloat.Tooltip"));
-		auto closeButton = createButton(closeAction, obs_module_text("StreamElements.Action.DockHide.Tooltip"));
+			auto backButton = createButton(backAction, obs_module_text("StreamElements.Action.BrowserBack.Tooltip"));
+			auto forwardButton = createButton(forwardAction, obs_module_text("StreamElements.Action.BrowserForward.Tooltip"));
+			auto reloadButton = createButton(reloadAction, obs_module_text("StreamElements.Action.BrowserReload.Tooltip"));
+			auto floatButton = createButton(floatAction, obs_module_text("StreamElements.Action.DockToggleFloat.Tooltip"));
+			auto closeButton = createButton(closeAction, obs_module_text("StreamElements.Action.DockHide.Tooltip"));
 
-		floatAction->connect(
-			floatAction,
-			&QAction::triggered,
-			[dock] {
-			dock->setFloating(!dock->isFloating());
-		});
+			floatAction->connect(
+				floatAction,
+				&QAction::triggered,
+				[dock] {
+				dock->setFloating(!dock->isFloating());
+			});
 
-		closeAction->connect(
-			closeAction,
-			&QAction::triggered,
-			[dock] {
-			dock->setVisible(false);
-		});
+			closeAction->connect(
+				closeAction,
+				&QAction::triggered,
+				[dock] {
+				dock->setVisible(false);
+			});
 
-		auto windowTitle = new LocalTitleLabel(title);
-		windowTitle->setAlignment(Qt::AlignCenter);
-		//windowTitle->setStyleSheet(labelStyle);
-		//windowTitle->setFont(font);
+			auto windowTitle = new LocalTitleLabel(title);
+			windowTitle->setAlignment(Qt::AlignCenter);
+			//windowTitle->setStyleSheet(labelStyle);
+			//windowTitle->setFont(font);
 
-		if (enableBackForwardNavigation) {
-			titleWidget->layout()->addWidget(backButton);
-			titleWidget->layout()->addWidget(forwardButton);
+			if (enableBackForwardNavigation) {
+				titleWidget->layout()->addWidget(backButton);
+				titleWidget->layout()->addWidget(forwardButton);
+			}
+
+			titleWidget->layout()->addWidget(reloadButton);
+			titleWidget->layout()->addWidget(windowTitle);
+			titleWidget->layout()->addWidget(floatButton);
+			titleWidget->layout()->addWidget(closeButton);
+
+			backButton->connect(
+				backButton,
+				&QToolButton::click,
+				[this, widget]
+			{
+				widget->BrowserHistoryGoBack();
+			});
+
+			forwardButton->connect(
+				forwardButton,
+				&QToolButton::click,
+				[this, widget]
+			{
+				widget->BrowserHistoryGoForward();
+			});
+
+			reloadButton->connect(
+				reloadButton,
+				&QToolButton::click,
+				[this, widget]
+			{
+				widget->BrowserReload(true);
+			});
+
+			dock->connect(
+				dock,
+				&QDockWidget::windowTitleChanged,
+				[windowTitle](const QString value) {
+				windowTitle->setText(value);
+			});
 		}
-
-		titleWidget->layout()->addWidget(reloadButton);
-		titleWidget->layout()->addWidget(windowTitle);
-		titleWidget->layout()->addWidget(floatButton);
-		titleWidget->layout()->addWidget(closeButton);
-
-		backButton->connect(
-			backButton,
-			&QToolButton::click,
-			[this, widget]
-		{
-			widget->BrowserHistoryGoBack();
-		});
-
-		forwardButton->connect(
-			forwardButton,
-			&QToolButton::click,
-			[this, widget]
-		{
-			widget->BrowserHistoryGoForward();
-		});
-
-		reloadButton->connect(
-			reloadButton,
-			&QToolButton::click,
-			[this, widget]
-		{
-			widget->BrowserReload(true);
-		});
-
-		dock->connect(
-			dock,
-			&QDockWidget::windowTitleChanged,
-			[windowTitle](const QString value) {
-			windowTitle->setText(value);
-		});
 
 		return true;
 	} else {
