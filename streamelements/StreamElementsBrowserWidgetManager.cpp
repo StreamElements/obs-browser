@@ -18,9 +18,6 @@
 class LocalTitleWidget : public QWidget
 {
 private:
-	//QDockWidget dock;
-	//QWidget* m_parent;
-
 	void updateStyleSheet()
 	{
 		std::string css =
@@ -84,12 +81,21 @@ public:
 			}
 		}
 
-		int buttonHeight = items.height();
+		int buttonHeight = qMax(
+			items.height(),
+			style()->pixelMetric(QStyle::PM_SmallIconSize, 0, q) +
+			q->style()->pixelMetric(QStyle::PM_DockWidgetTitleBarButtonMargin, 0, q)
+		);
+
 
 		QFontMetrics titleFontMetrics = q->fontMetrics();
-		int mw = q->style()->pixelMetric(QStyle::PM_DockWidgetTitleMargin, 0, q);
+		int mw =
+			q->style()->pixelMetric(QStyle::PM_DockWidgetTitleMargin, 0, q) * 2 +
+			//q->style()->pixelMetric(QStyle::PM_DockWidgetTitleBarButtonMargin, 0, q) +
+			q->style()->pixelMetric(QStyle::PM_DockWidgetFrameWidth, 0, q) +
+			0;
 
-		return qMax(buttonHeight, titleFontMetrics.height() + 2 * mw);
+		return qMax(buttonHeight, titleFontMetrics.height() + mw);
 	}
 
 	virtual QSize minimumSizeHint() const override
@@ -116,6 +122,42 @@ public:
 	}
 };
 
+class LocalTitleLabel : public QLabel
+{
+private:
+	void updateStyleSheet()
+	{
+		std::string css =
+			GetAppStyleSheetSelectorContent("QWidget") +
+			GetAppStyleSheetSelectorContent("QDockWidget") +
+			GetAppStyleSheetSelectorContent("QDockWidget::title");
+
+		if (this->styleSheet() != css.c_str()) {
+			this->setStyleSheet(css.c_str());
+		}
+	}
+
+public:
+	LocalTitleLabel(QString label) :
+		QLabel(label)
+	{
+	}
+
+protected:
+	virtual void changeEvent(QEvent* event) override
+	{
+		if (event->type() == QEvent::StyleChange || event->type() == QEvent::ScreenChangeInternal)
+		{
+			// Style has been changed.
+			updateStyleSheet();
+		}
+
+		update();
+
+		QLabel::changeEvent(event);
+	}
+};
+
 class LocalToolButton : public QToolButton
 {
 private:
@@ -132,7 +174,7 @@ public:
 
 	virtual void changeEvent(QEvent* event) override
 	{
-		if (event->type() == QEvent::StyleChange)
+		if (event->type() == QEvent::StyleChange || event->type() == QEvent::ScreenChangeInternal)
 		{
 			// Style has been changed.
 			//updateStyleSheet();
@@ -148,7 +190,7 @@ public:
 	{
 		QPainter p(this);
 		QStyleOptionToolButton opt;
-		opt.init(this);
+		opt.initFrom(this);
 		opt.state |= QStyle::State_AutoRaise;
 		if (style()->styleHint(QStyle::SH_DockWidget_ButtonsHaveFrame, 0, this))
 		{
@@ -166,29 +208,35 @@ public:
 		opt.activeSubControls = 0;
 		opt.features = QStyleOptionToolButton::None;
 		opt.arrowType = Qt::NoArrow;
-		opt.iconSize = dockButtonIconSize();
+		opt.iconSize = dockButtonIconSize(&opt);
 		style()->drawComplexControl(QStyle::CC_ToolButton, &opt, &p, this);
 	}
 
 	static inline bool isWindowsStyle(const QStyle *style)
 	{
 		// Note: QStyleSheetStyle inherits QWindowsStyle
-		const QStyle *effectiveStyle = style;
+		const QStyle *effectiveStyle = style;	
+
+		//if (style->inherits("QStyleSheetStyle"))
+		//	effectiveStyle = static_cast<const QStyleSheetStyle *>(style)->baseStyle();
 
 		return effectiveStyle->inherits("QWindowsStyle");
 	}
 
-	QSize dockButtonIconSize() const
+	QSize dockButtonIconSize(QStyleOption* styleOption) const
 	{
 		if (m_iconSize < 0) {
-			m_iconSize = style()->pixelMetric(QStyle::PM_SmallIconSize, nullptr, this);
+			m_iconSize = style()->pixelMetric(QStyle::PM_SmallIconSize, styleOption, this);
+
 			// Dock Widget title buttons on Windows where historically limited to size 10
 			// (from small icon size 16) since only a 10x10 XPM was provided.
 			// Adding larger pixmaps to the icons thus caused the icons to grow; limit
 			// this to qpiScaled(10) here.
-			if (isWindowsStyle(style()))
+			if (isWindowsStyle(style())) {
 				m_iconSize = qMin((10 * logicalDpiX()) / 96, m_iconSize);
+			}
 		}
+
 		return QSize(m_iconSize, m_iconSize);
 	}
 
@@ -197,11 +245,24 @@ public:
 		ensurePolished();
 		int size = 2 * style()->pixelMetric(QStyle::PM_DockWidgetTitleBarButtonMargin, 0, this);
 		if (!icon().isNull()) {
-			const QSize sz = icon().actualSize(dockButtonIconSize());
+			const QSize sz = icon().actualSize(dockButtonIconSize(nullptr));
 			size += qMax(sz.width(), sz.height());
 		}
 		return QSize(size, size);
 	}
+
+	virtual void enterEvent(QEvent *event) override
+	{
+		if (isEnabled()) update();
+		QAbstractButton::enterEvent(event);
+	}
+
+	virtual void leaveEvent(QEvent *event) override
+	{
+		if (isEnabled()) update();
+		QAbstractButton::leaveEvent(event);
+	}
+
 };
 
 StreamElementsBrowserWidgetManager::StreamElementsBrowserWidgetManager(QMainWindow* parent) :
@@ -375,6 +436,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
+	const bool enableBackForwardNavigation = false;
+
 	QMainWindow* main = new QMainWindow(nullptr);
 
 	//QAction* floatAction = new QAction("🗗");
@@ -385,7 +448,8 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 
 	QAction* backAction = new QAction(qApp->style()->standardIcon(QStyle::SP_ArrowLeft), "");
 	QAction* forwardAction = new QAction(qApp->style()->standardIcon(QStyle::SP_ArrowRight), "");
-	QAction* reloadAction = new QAction(qApp->style()->standardIcon(QStyle::SP_BrowserReload), "");
+	//QAction* reloadAction = new QAction(qApp->style()->standardIcon(QStyle::SP_BrowserReload), "");
+	QAction* reloadAction = new QAction(QIcon(":/images/toolbar/reload.ico"), "");
 	QAction* floatAction = new QAction(qApp->style()->standardIcon(QStyle::SP_TitleBarNormalButton), "");
 	QAction* closeAction = new QAction(qApp->style()->standardIcon(QStyle::SP_TitleBarCloseButton), "");	
 
@@ -445,7 +509,7 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		dock->setTitleBarWidget(titleWidget);
 
 		titleWidget->setLayout(new QHBoxLayout());
-		titleWidget->layout()->setMargin(1);
+		titleWidget->layout()->setMargin(2);
 
 		//QString buttonStyle = "QToolButton { border: none; padding: 4px; font-weight: bold; } QToolButton:!hover { background-color: transparent; }";
 		//QString labelStyle = "QLabel { background-color: transparent; padding: 2px; }";
@@ -481,13 +545,16 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 			dock->setVisible(false);
 		});
 
-		auto windowTitle = new QLabel(title);
+		auto windowTitle = new LocalTitleLabel(title);
 		windowTitle->setAlignment(Qt::AlignCenter);
 		//windowTitle->setStyleSheet(labelStyle);
-		windowTitle->setFont(font);
+		//windowTitle->setFont(font);
 
-		titleWidget->layout()->addWidget(backButton);
-		titleWidget->layout()->addWidget(forwardButton);
+		if (enableBackForwardNavigation) {
+			titleWidget->layout()->addWidget(backButton);
+			titleWidget->layout()->addWidget(forwardButton);
+		}
+
 		titleWidget->layout()->addWidget(reloadButton);
 		titleWidget->layout()->addWidget(windowTitle);
 		titleWidget->layout()->addWidget(floatButton);
