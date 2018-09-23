@@ -336,7 +336,7 @@ void StreamElementsReportIssueDialog::accept()
 			delete[]lpBitmapInfoHeader;
 		};
 
-		std::string package_manifest = "version=1\n";
+		std::string package_manifest = "version=2\n";
 		addBufferToZip((BYTE*)package_manifest.c_str(), package_manifest.size(), L"manifest.ini");
 
 		// Add user-provided description
@@ -471,6 +471,8 @@ void StreamElementsReportIssueDialog::accept()
 #else
 			d->SetString("platformArch", "32bit");
 #endif
+			d->SetString("machineUniqueId", GetComputerSystemUniqueId());
+
 			addCefValueToZip(basicInfo, L"system\\basic.json");
 		}
 
@@ -547,6 +549,11 @@ void StreamElementsReportIssueDialog::accept()
 
 cancelled:
 		zip_close(zip);
+
+		StreamElementsGlobalStateManager::GetInstance()->GetAnalyticsEventsManager()->trackEvent(
+			"Issue Report",
+			json11::Json::object{{"issueDescription", descriptionText.c_str()}}
+		);
 
 		if (!dialog.cancelled()) {
 			QMetaObject::invokeMethod(&dialog, "accept", Qt::QueuedConnection);
