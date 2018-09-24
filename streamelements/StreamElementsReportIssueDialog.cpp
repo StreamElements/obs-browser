@@ -550,12 +550,12 @@ void StreamElementsReportIssueDialog::accept()
 cancelled:
 		zip_close(zip);
 
-		StreamElementsGlobalStateManager::GetInstance()->GetAnalyticsEventsManager()->trackEvent(
-			"Issue Report",
-			json11::Json::object{{"issueDescription", descriptionText.c_str()}}
-		);
-
 		if (!dialog.cancelled()) {
+			StreamElementsGlobalStateManager::GetInstance()->GetAnalyticsEventsManager()->trackEvent(
+				"Issue Report",
+				json11::Json::object{ { "issueDescription", descriptionText.c_str() } }
+			);
+
 			QMetaObject::invokeMethod(&dialog, "accept", Qt::QueuedConnection);
 		}
 	});
