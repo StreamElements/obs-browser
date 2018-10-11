@@ -13,8 +13,6 @@ install:
   
     set PREBUILT_OBS_STUDIO_DIST_URL=https://github.com/obsproject/obs-studio/releases/download/21.1.2/OBS-Studio-21.1.2-Full.zip
   
-    set
-
     cinst -y git
 
     cinst -y cmake
