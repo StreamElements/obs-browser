@@ -295,6 +295,7 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow* obs_main_window)
 		context->self->m_workerManager = new StreamElementsWorkerManager();
 		context->self->m_hotkeyManager = new StreamElementsHotkeyManager();
 		context->self->m_performanceHistoryTracker = new StreamElementsPerformanceHistoryTracker();
+		context->self->m_sceneCollectionsManager = new StreamElementsSceneCollectionsManager(context->obs_main_window);
 
 		{
 			// Set up "Live Support" button
@@ -457,6 +458,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 		self->m_themeChangeListener->deleteLater();
 		self->m_appStateListener->deleteLater();
 
+		delete self->m_sceneCollectionsManager;
 		delete self->m_analyticsEventsManager;
 		delete self->m_performanceHistoryTracker;
 		delete self->m_outputSettingsManager;

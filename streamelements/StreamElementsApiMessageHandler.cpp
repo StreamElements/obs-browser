@@ -631,4 +631,42 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		// Crash
 		*((int*)nullptr) = 12345; // exception
 	API_HANDLER_END()
+
+	API_HANDLER_BEGIN("getHostCapabilities")
+		CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
+
+		d->SetBool("sceneCollections", StreamElementsGlobalStateManager::GetInstance()->GetSceneCollectionsManager()->IsAvailable());
+
+		result->SetDictionary(d);
+	API_HANDLER_END()
+
+	API_HANDLER_BEGIN("getAllSceneCollections")
+		StreamElementsGlobalStateManager::GetInstance()->GetSceneCollectionsManager()->SerializeSceneCollections(result);
+	API_HANDLER_END()
+
+	API_HANDLER_BEGIN("getCurrentSceneCollectionProperties")
+		StreamElementsGlobalStateManager::GetInstance()->GetSceneCollectionsManager()->SerializeCurrentSceneCollection(result);
+	API_HANDLER_END()
+
+	API_HANDLER_BEGIN("addSceneCollection")
+		if (args->GetSize() > 0) {
+			result->SetBool(
+				StreamElementsGlobalStateManager::GetInstance()->GetSceneCollectionsManager()->DeserializeSceneCollection(
+					args->GetValue(0)));
+		}
+		else {
+			result->SetBool(false);
+		}
+	API_HANDLER_END()
+
+	API_HANDLER_BEGIN("setCurrentSceneCollectionById")
+		if (args->GetSize() > 0) {
+			result->SetBool(
+				StreamElementsGlobalStateManager::GetInstance()->GetSceneCollectionsManager()->SetCurrentSceneCollection(
+					args->GetString(0)));
+		}
+		else {
+			result->SetBool(false);
+		}
+	API_HANDLER_END()
 }

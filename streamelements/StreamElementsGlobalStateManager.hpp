@@ -11,6 +11,7 @@
 #include "StreamElementsPerformanceHistoryTracker.hpp"
 #include "StreamElementsAnalyticsEventsManager.hpp"
 #include "StreamElementsCrashHandler.hpp"
+#include "StreamElementsSceneCollectionsManager.hpp"
 
 class StreamElementsGlobalStateManager :
 	public StreamElementsObsAppMonitor
@@ -50,6 +51,7 @@ public:
 	StreamElementsHotkeyManager* GetHotkeyManager() { return m_hotkeyManager; }
 	StreamElementsPerformanceHistoryTracker* GetPerformanceHistoryTracker() { return m_performanceHistoryTracker; }
 	StreamElementsAnalyticsEventsManager* GetAnalyticsEventsManager() { return m_analyticsEventsManager; }
+	StreamElementsSceneCollectionsManager* GetSceneCollectionsManager() { return m_sceneCollectionsManager; }
 	QMainWindow* mainWindow() { return m_mainWindow; }
 
 public:
@@ -75,6 +77,7 @@ private:
 	StreamElementsHotkeyManager* m_hotkeyManager = nullptr;
 	StreamElementsPerformanceHistoryTracker* m_performanceHistoryTracker = nullptr;
 	StreamElementsAnalyticsEventsManager* m_analyticsEventsManager = nullptr;
+	StreamElementsSceneCollectionsManager* m_sceneCollectionsManager = nullptr;
 	StreamElementsCrashHandler* m_crashHandler = nullptr;
 
 private:
