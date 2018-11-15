@@ -2,6 +2,10 @@
 
 #include <algorithm>
 
+#pragma comment(lib, "advapi32.lib")
+#include <accctrl.h>
+#include <aclapi.h>
+
 static const size_t BUFFER_SIZE = 512;
 static const int CLIENT_TIMEOUT_MS = 5000;
 
@@ -118,15 +122,62 @@ void NamedPipesServer::ThreadProc()
 			Sleep(CLIENT_TIMEOUT_MS);
 		}
 		else {
-			HANDLE hPipe = ::CreateNamedPipeA(
-				m_pipeName.c_str(),
-				PIPE_ACCESS_DUPLEX,
-				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-				m_maxClients,
-				BUFFER_SIZE,
-				BUFFER_SIZE,
-				CLIENT_TIMEOUT_MS,
-				NULL);
+			HANDLE hPipe = INVALID_HANDLE_VALUE;
+			PSID pEveryoneSID = NULL;
+			SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+
+			if (AllocateAndInitializeSid(&SIDAuthWorld, 1,
+				SECURITY_WORLD_RID,
+				0, 0, 0, 0, 0, 0, 0,
+				&pEveryoneSID)) {
+				EXPLICIT_ACCESS ea[1];
+
+				// Initialize an EXPLICIT_ACCESS structure for an ACE.
+				// The ACE will allow Everyone read access to the key.
+				ZeroMemory(&ea, 2 * sizeof(EXPLICIT_ACCESS));
+				ea[0].grfAccessPermissions = GENERIC_READ | GENERIC_WRITE;
+				ea[0].grfAccessMode = SET_ACCESS;
+				ea[0].grfInheritance = NO_INHERITANCE;
+				ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+				ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+				ea[0].Trustee.ptstrName = (LPTSTR)pEveryoneSID;
+
+				PACL pACL = NULL;
+
+				if (ERROR_SUCCESS == SetEntriesInAcl(1, ea, NULL, &pACL)) {
+					PSECURITY_DESCRIPTOR pSD =
+						(PSECURITY_DESCRIPTOR)LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
+
+					if (pSD != NULL) {
+						if (InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION)) {
+							if (SetSecurityDescriptorDacl(pSD, TRUE, pACL, FALSE)) {
+								SECURITY_ATTRIBUTES sa;
+
+								// Initialize a security attributes structure.
+								sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+								sa.lpSecurityDescriptor = pSD;
+								sa.bInheritHandle = FALSE;
+
+								hPipe = ::CreateNamedPipeA(
+									m_pipeName.c_str(),
+									PIPE_ACCESS_DUPLEX,
+									PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+									m_maxClients,
+									BUFFER_SIZE,
+									BUFFER_SIZE,
+									CLIENT_TIMEOUT_MS,
+									&sa);
+							}
+						}
+
+						LocalFree(pSD);
+					}
+
+					LocalFree(pACL);
+				}
+
+				FreeSid(pEveryoneSID);
+			}
 
 			if (hPipe == INVALID_HANDLE_VALUE) {
 				printf("CreateNamedPipe failed: %d\n", GetLastError());
