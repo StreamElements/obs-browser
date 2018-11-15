@@ -105,6 +105,13 @@ void StreamElementsGlobalStateManager::ThemeChangeListener::changeEvent(QEvent* 
 
 			StreamElementsCefClient::DispatchJSEvent("hostUIThemeChanged", json.dump());
 
+			StreamElementsMessageBus::GetInstance()->NotifyAllExternalEventListeners(
+				StreamElementsMessageBus::DEST_ALL_EXTERNAL,
+				StreamElementsMessageBus::SOURCE_APPLICATION,
+				"OBS",
+				"UIThemeChanged",
+				CefParseJSON(json.dump(), JSON_PARSER_ALLOW_TRAILING_COMMAS));
+
 			m_currentTheme = newTheme;
 		}
 	}
@@ -175,6 +182,13 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void* data)
 
 	if (name.size()) {
 		StreamElementsCefClient::DispatchJSEvent(name, args);
+
+		StreamElementsMessageBus::GetInstance()->NotifyAllExternalEventListeners(
+			StreamElementsMessageBus::DEST_ALL_EXTERNAL,
+			StreamElementsMessageBus::SOURCE_APPLICATION,
+			"OBS",
+			name.c_str() + 4, /* remove 'host' prefix */
+			CefParseJSON(args, JSON_PARSER_ALLOW_TRAILING_COMMAS));
 	}
 }
 
