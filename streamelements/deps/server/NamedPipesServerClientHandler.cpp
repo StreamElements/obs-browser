@@ -1,5 +1,6 @@
 #include "NamedPipesServerClientHandler.hpp"
 #include <memory.h>
+#include <obs.h>
 
 static const size_t BUFLEN = 32768;
 
@@ -57,6 +58,8 @@ bool NamedPipesServerClientHandler::SendMessage(const char* const buffer, size_t
 		NULL);
 
 	if (!fWriteSuccess) {
+		blog(LOG_WARNING, "obs-browser: NamedPipesServerClientHandler::SendMessage: client disconnected");
+
 		Disconnect();
 	}
 
@@ -84,6 +87,8 @@ void NamedPipesServerClientHandler::ThreadProc()
 				&bytesLeftThisMessage);
 
 			if (!fPeekSuccess) {
+				blog(LOG_WARNING, "obs-browser: NamedPipesServerClientHandler: PeekNamedPipe: client disconnected");
+
 				Disconnect();
 			}
 			else if (bytesLeftThisMessage > 0) {
@@ -99,8 +104,12 @@ void NamedPipesServerClientHandler::ThreadProc()
 					buffer[bytesLeftThisMessage] = 0;
 
 					m_msgHandler(buffer, bytesLeftThisMessage);
+
+					blog(LOG_DEBUG, "obs-browser: NamedPipesServerClientHandler: incoming message: %s", buffer);
 				}
 				else {
+					blog(LOG_WARNING, "obs-browser: NamedPipesServerClientHandler: ReadFile: client disconnected");
+
 					Disconnect();
 				}
 

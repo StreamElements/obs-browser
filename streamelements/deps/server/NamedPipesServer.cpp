@@ -1,5 +1,7 @@
 #include "NamedPipesServer.hpp"
 
+#include <obs.h>
+
 #include <algorithm>
 
 #pragma comment(lib, "advapi32.lib")
@@ -180,7 +182,7 @@ void NamedPipesServer::ThreadProc()
 			}
 
 			if (hPipe == INVALID_HANDLE_VALUE) {
-				printf("CreateNamedPipe failed: %d\n", GetLastError());
+				blog(LOG_ERROR, "obs-browser: NamedPipesServer: CreateNamedPipe failed: %d", GetLastError());
 
 				Sleep(CLIENT_TIMEOUT_MS);
 			}
@@ -190,7 +192,7 @@ void NamedPipesServer::ThreadProc()
 				TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 
 			if (isConnected) {
-				printf("ConnectNamedPipe: client connected\n");
+				blog(LOG_INFO, "obs-browser: NamedPipesServer: ConnectNamedPipe: client connected");
 
 				m_clients.push_back(new NamedPipesServerClientHandler(hPipe, m_msgHandler));
 			}
