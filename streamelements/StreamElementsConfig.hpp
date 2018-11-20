@@ -14,8 +14,8 @@ private:
 	const char* CONFIG_FILE_NAME = "obs-browser-streamelements.ini";
 
 public:
-	static const uint64_t STARTUP_FLAGS_ONBOARDING_MODE = 0x0000000000000001L;
-	static const uint64_t STARTUP_FLAGS_SIGNED_IN       = 0x0000000000000002L;
+	static const uint64_t STARTUP_FLAGS_ONBOARDING_MODE = 0x0000000000000001ULL;
+	static const uint64_t STARTUP_FLAGS_SIGNED_IN       = 0x0000000000000002ULL;
 
 private:
 	StreamElementsConfig();
