@@ -6,6 +6,7 @@
 #include <xstring>
 
 #include "StreamElementsUtils.hpp"
+#include "StreamElementsMessageBus.hpp"
 
 class StreamElementsConfig
 {
@@ -59,6 +60,8 @@ public:
 			value);
 
 		SaveConfig();
+
+		StreamElementsMessageBus::GetInstance()->PublishSystemState();
 	}
 
 	std::string GetStartupState()

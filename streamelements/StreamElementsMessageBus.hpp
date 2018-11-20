@@ -59,6 +59,8 @@ public:
 		std::string sourceAddress,
 		CefRefPtr<CefValue> payload)
 	{
+		HandleSystemCommands(types, source, sourceAddress, payload);
+
 		if (DEST_ALL_LOCAL & types) {
 			NotifyAllLocalEventListeners(
 				types,
@@ -75,6 +77,16 @@ public:
 				payload);
 		}
 	}
+
+protected:
+	virtual void HandleSystemCommands(
+		message_destination_filter_flags_t types,
+		std::string source,
+		std::string sourceAddress,
+		CefRefPtr<CefValue> payload);
+
+public:
+	virtual void PublishSystemState();
 
 private:
 	std::recursive_mutex m_browser_list_mutex;

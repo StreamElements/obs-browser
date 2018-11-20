@@ -1,4 +1,6 @@
 #include "StreamElementsMessageBus.hpp"
+#include "StreamElementsConfig.hpp"
+#include "StreamElementsGlobalStateManager.hpp"
 
 StreamElementsMessageBus* StreamElementsMessageBus::s_instance = nullptr;
 
@@ -105,4 +107,62 @@ void StreamElementsMessageBus::NotifyAllExternalEventListeners(
 			event,
 			payload);
 	}
+}
+
+void StreamElementsMessageBus::HandleSystemCommands(
+	message_destination_filter_flags_t types,
+	std::string source,
+	std::string sourceAddress,
+	CefRefPtr<CefValue> payload)
+{
+	if (source != SOURCE_EXTERNAL || payload->GetType() != VTYPE_DICTIONARY) {
+		return;
+	}
+
+	CefRefPtr<CefDictionaryValue> root = payload->GetDictionary();
+
+	if (!root->HasKey("payload") || root->GetType("payload") != VTYPE_DICTIONARY) {
+		return;
+	}
+
+	CefRefPtr<CefDictionaryValue> payloadDict = root->GetDictionary("payload");
+
+	if (!payloadDict->HasKey("class") ||
+		!payloadDict->HasKey("command") ||
+		payloadDict->GetType("command") != VTYPE_DICTIONARY ||
+		payloadDict->GetString("class") != "command") {
+		return;
+	}
+
+	CefRefPtr<CefDictionaryValue> commandDict = payloadDict->GetDictionary("command");
+
+	if (!commandDict->HasKey("id") || commandDict->GetType("id") != VTYPE_STRING) {
+		return;
+	}
+
+	std::string commandId = commandDict->GetString("id");
+
+	if (commandId == "SYS$QUERY:STATE") {
+		PublishSystemState();
+	}
+}
+
+void StreamElementsMessageBus::PublishSystemState()
+{
+	CefRefPtr<CefValue> root = CefValue::Create();
+	CefRefPtr<CefDictionaryValue> payload = CefDictionaryValue::Create();
+
+	bool isLoggedIn =
+		StreamElementsConfig::STARTUP_FLAGS_SIGNED_IN == (StreamElementsConfig::GetInstance()->GetStartupFlags() & StreamElementsConfig::STARTUP_FLAGS_SIGNED_IN);
+
+	payload->SetBool("isSignedIn", isLoggedIn);
+
+	root->SetDictionary(payload);
+
+	NotifyAllExternalEventListeners(
+		DEST_ALL_EXTERNAL,
+		SOURCE_APPLICATION,
+		"obs",
+		"SYS$REPORT:STATE",
+		root);
 }
