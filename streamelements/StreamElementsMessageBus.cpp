@@ -109,20 +109,20 @@ void StreamElementsMessageBus::NotifyAllExternalEventListeners(
 	}
 }
 
-void StreamElementsMessageBus::HandleSystemCommands(
+bool StreamElementsMessageBus::HandleSystemCommands(
 	message_destination_filter_flags_t types,
 	std::string source,
 	std::string sourceAddress,
 	CefRefPtr<CefValue> payload)
 {
 	if (source != SOURCE_EXTERNAL || payload->GetType() != VTYPE_DICTIONARY) {
-		return;
+		return false;
 	}
 
 	CefRefPtr<CefDictionaryValue> root = payload->GetDictionary();
 
 	if (!root->HasKey("payload") || root->GetType("payload") != VTYPE_DICTIONARY) {
-		return;
+		return false;
 	}
 
 	CefRefPtr<CefDictionaryValue> payloadDict = root->GetDictionary("payload");
@@ -131,20 +131,24 @@ void StreamElementsMessageBus::HandleSystemCommands(
 		!payloadDict->HasKey("command") ||
 		payloadDict->GetType("command") != VTYPE_DICTIONARY ||
 		payloadDict->GetString("class") != "command") {
-		return;
+		return false;
 	}
 
 	CefRefPtr<CefDictionaryValue> commandDict = payloadDict->GetDictionary("command");
 
 	if (!commandDict->HasKey("id") || commandDict->GetType("id") != VTYPE_STRING) {
-		return;
+		return false;
 	}
 
 	std::string commandId = commandDict->GetString("id");
 
 	if (commandId == "SYS$QUERY:STATE") {
 		PublishSystemState();
+
+		return true;
 	}
+
+	return false;
 }
 
 void StreamElementsMessageBus::PublishSystemState()
@@ -162,7 +166,7 @@ void StreamElementsMessageBus::PublishSystemState()
 	NotifyAllExternalEventListeners(
 		DEST_ALL_EXTERNAL,
 		SOURCE_APPLICATION,
-		"obs",
+		"OBS",
 		"SYS$REPORT:STATE",
 		root);
 }

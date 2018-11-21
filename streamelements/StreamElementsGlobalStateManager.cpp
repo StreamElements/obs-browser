@@ -183,11 +183,14 @@ static void handle_obs_frontend_event(enum obs_frontend_event event, void* data)
 	if (name.size()) {
 		StreamElementsCefClient::DispatchJSEvent(name, args);
 
+		std::string externalEventName = name.c_str() + 4; /* remove 'host' prefix */
+		externalEventName[0] = tolower(externalEventName[0]); /* lower case first letter */
+
 		StreamElementsMessageBus::GetInstance()->NotifyAllExternalEventListeners(
 			StreamElementsMessageBus::DEST_ALL_EXTERNAL,
 			StreamElementsMessageBus::SOURCE_APPLICATION,
 			"OBS",
-			name.c_str() + 4, /* remove 'host' prefix */
+			externalEventName,
 			CefParseJSON(args, JSON_PARSER_ALLOW_TRAILING_COMMAS));
 	}
 }

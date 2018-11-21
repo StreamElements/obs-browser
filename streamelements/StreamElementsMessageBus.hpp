@@ -59,7 +59,9 @@ public:
 		std::string sourceAddress,
 		CefRefPtr<CefValue> payload)
 	{
-		HandleSystemCommands(types, source, sourceAddress, payload);
+		if (HandleSystemCommands(types, source, sourceAddress, payload)) {
+			// System command was handled
+		}
 
 		if (DEST_ALL_LOCAL & types) {
 			NotifyAllLocalEventListeners(
@@ -79,7 +81,7 @@ public:
 	}
 
 protected:
-	virtual void HandleSystemCommands(
+	virtual bool HandleSystemCommands(
 		message_destination_filter_flags_t types,
 		std::string source,
 		std::string sourceAddress,
