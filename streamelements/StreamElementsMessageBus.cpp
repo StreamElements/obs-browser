@@ -136,11 +136,11 @@ bool StreamElementsMessageBus::HandleSystemCommands(
 
 	CefRefPtr<CefDictionaryValue> commandDict = payloadDict->GetDictionary("command");
 
-	if (!commandDict->HasKey("id") || commandDict->GetType("id") != VTYPE_STRING) {
+	if (!commandDict->HasKey("name") || commandDict->GetType("name") != VTYPE_STRING) {
 		return false;
 	}
 
-	std::string commandId = commandDict->GetString("id");
+	std::string commandId = commandDict->GetString("name");
 
 	if (commandId == "SYS$QUERY:STATE") {
 		PublishSystemState();
