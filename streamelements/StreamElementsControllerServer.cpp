@@ -34,7 +34,7 @@ void StreamElementsControllerServer::OnMsgReceivedInternal(std::string& msg)
 	CefRefPtr<CefValue> root =
 		CefParseJSON(msg, JSON_PARSER_ALLOW_TRAILING_COMMAS);
 
-	if (root->GetType() == VTYPE_DICTIONARY) {
+	if (!!root.get() && root->GetType() == VTYPE_DICTIONARY) {
 		CefRefPtr<CefDictionaryValue> d = root->GetDictionary();
 
 		if (d->HasKey("version") && d->HasKey("source") && d->HasKey("target") && d->HasKey("payload")) {
