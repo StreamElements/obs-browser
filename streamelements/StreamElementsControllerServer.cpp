@@ -88,8 +88,13 @@ void StreamElementsControllerServer::SendEventAllClients(
 	CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
 
 	d->SetString("class", "event");
-	d->SetString("name", eventName);
-	d->SetValue("data", eventData);
+
+	CefRefPtr<CefDictionaryValue> ed = CefDictionaryValue::Create();
+
+	ed->SetString("name", eventName);
+	ed->SetValue("data", eventData);
+
+	d->SetDictionary("event", ed);
 
 	root->SetDictionary(d);
 
