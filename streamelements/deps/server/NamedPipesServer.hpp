@@ -9,6 +9,14 @@
 
 #include "NamedPipesServerClientHandler.hpp"
 
+// Multi-threaded named pipes server.
+//
+// Accepts connections on a specified named pipe path.
+// Provides facilities to send a message to all connected clients.
+// Provides callback for handling incoming messages from connected clients.
+//
+// Named pipe operates in MESSAGE mode.
+//
 class NamedPipesServer
 {
 public:

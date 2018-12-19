@@ -19,7 +19,7 @@ const char* const StreamElementsMessageBus::SOURCE_WEB = "web";
 const char* const StreamElementsMessageBus::SOURCE_EXTERNAL = "external";
 
 StreamElementsMessageBus::StreamElementsMessageBus() :
-	m_controller_server(this)
+	m_external_controller_server(this)
 {
 
 }
@@ -101,7 +101,7 @@ void StreamElementsMessageBus::NotifyAllExternalEventListeners(
 	CefRefPtr<CefValue> payload)
 {
 	if (DEST_EXTERNAL_CONTROLLER & types) {
-		m_controller_server.SendEventAllClients(
+		m_external_controller_server.SendEventAllClients(
 			source,
 			sourceAddress,
 			event,

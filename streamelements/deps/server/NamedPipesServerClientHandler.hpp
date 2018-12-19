@@ -5,6 +5,13 @@
 #include <thread>
 #include <mutex>
 
+// Single named pipes client handler.
+//
+// Instantiated and managed by NamedPipesServer class.
+//
+// Provides facility to send messages to the connected client.
+// Provides callback to handle incoming message from client.
+//
 class NamedPipesServerClientHandler
 {
 public:
