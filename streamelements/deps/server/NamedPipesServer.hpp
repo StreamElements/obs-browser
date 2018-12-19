@@ -24,7 +24,7 @@ public:
 	void Stop();
 	bool IsRunning();
 
-	void SendMessage(const char* const buffer, const size_t length);
+	void WriteMessage(const char* const buffer, const size_t length);
 
 private:
 	void ThreadProc();

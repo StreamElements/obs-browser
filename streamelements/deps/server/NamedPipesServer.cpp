@@ -97,12 +97,12 @@ void NamedPipesServer::DisconnectAllClients()
 	}
 }
 
-void NamedPipesServer::SendMessage(const char* const buffer, const size_t length)
+void NamedPipesServer::WriteMessage(const char* const buffer, const size_t length)
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
 	for (auto client : m_clients) {
-		client->SendMessage(buffer, length);
+		client->WriteMessage(buffer, length);
 	}
 
 	RemoveDisconnectedClients();

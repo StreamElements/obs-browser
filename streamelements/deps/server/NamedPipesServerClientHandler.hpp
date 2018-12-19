@@ -17,7 +17,7 @@ public:
 public:
 	bool IsConnected();
 	void Disconnect();
-	bool SendMessage(const char* const buffer, size_t length);
+	bool WriteMessage(const char* const buffer, size_t length);
 
 private:
 	void ThreadProc();

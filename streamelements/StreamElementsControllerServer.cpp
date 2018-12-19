@@ -74,7 +74,7 @@ void StreamElementsControllerServer::NotifyAllClients(
 
 	std::string buf = CefWriteJSON(root, JSON_WRITER_DEFAULT);
 
-	m_server->SendMessage(buf.c_str(), buf.size());
+	m_server->WriteMessage(buf.c_str(), buf.size());
 }
 
 void StreamElementsControllerServer::SendEventAllClients(

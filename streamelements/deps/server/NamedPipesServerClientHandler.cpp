@@ -42,7 +42,7 @@ void NamedPipesServerClientHandler::Disconnect()
 	}
 }
 
-bool NamedPipesServerClientHandler::SendMessage(const char* const buffer, size_t length)
+bool NamedPipesServerClientHandler::WriteMessage(const char* const buffer, size_t length)
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
