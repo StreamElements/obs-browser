@@ -55,6 +55,11 @@ public:
 	std::string GetLocationArea() { return m_locationArea; }
 	void SetLocationArea(std::string area) { m_locationArea = area; }
 
+	void SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(std::string script)
+	{
+		m_foreignPopup_executeJavaScriptCodeOnLoad = script;
+	}
+
 	/* CefClient */
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 	virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
@@ -95,7 +100,11 @@ public:
 	{
 		windowInfo.parent_window = (cef_window_handle_t)obs_frontend_get_main_window_handle();
 
-		client = new StreamElementsCefClient("", nullptr, nullptr, StreamElementsMessageBus::DEST_UI);
+		client = new StreamElementsCefClient(
+			m_foreignPopup_executeJavaScriptCodeOnLoad,
+			nullptr,
+			nullptr,
+			StreamElementsMessageBus::DEST_UI);
 
 		// Allow pop-ups
 		return false;
@@ -156,6 +165,8 @@ public:
 	}
 
 private:
+	std::string m_foreignPopup_executeJavaScriptCodeOnLoad;
+
 	std::string m_executeJavaScriptCodeOnLoad;
 	CefRefPtr<StreamElementsBrowserMessageHandler> m_messageHandler;
 	CefRefPtr<StreamElementsCefClientEventHandler> m_eventHandler;

@@ -799,6 +799,26 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		result->SetBool(true);
 	API_HANDLER_END()
 
+	API_HANDLER_BEGIN("setForeignPopupWindowsProperties");
+		if (args->GetSize() && args->GetType(0) == VTYPE_DICTIONARY) {
+			CefRefPtr<CefDictionaryValue> d = args->GetDictionary(0);
+
+			CefRefPtr<StreamElementsCefClient> client =
+				static_cast<StreamElementsCefClient*>(
+					browser->GetHost()->GetClient().get());
+
+			if (!!client.get()) {
+				if (d->HasKey("executeJavaScriptOnLoad") && d->GetType("executeJavaScriptOnLoad") == VTYPE_STRING) {
+					client->SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(
+						d->GetString("executeJavaScriptOnLoad").ToString());
+				}
+
+				result->SetBool(true);
+			}
+		}
+	API_HANDLER_END();
+
+
 	API_HANDLER_BEGIN("crashProgram")
 		// Crash
 		*((int*)nullptr) = 12345; // exception
