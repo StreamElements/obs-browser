@@ -5,6 +5,7 @@
 #include "cef-headers.hpp"
 
 #include "StreamElementsBrowserMessageHandler.hpp"
+#include "StreamElementsApiMessageHandler.hpp"
 #include "StreamElementsMessageBus.hpp"
 
 class StreamElementsCefClientEventHandler :
@@ -55,9 +56,14 @@ public:
 	std::string GetLocationArea() { return m_locationArea; }
 	void SetLocationArea(std::string area) { m_locationArea = area; }
 
-	void SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(std::string script)
+	void SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(const std::string script)
 	{
 		m_foreignPopup_executeJavaScriptCodeOnLoad = script;
+	}
+
+	void SetForeignPopupWindowsEnableHostApi(const bool enableHostApi)
+	{
+		m_foreignPopup_enableHostApi = enableHostApi;
 	}
 
 	/* CefClient */
@@ -102,7 +108,7 @@ public:
 
 		client = new StreamElementsCefClient(
 			m_foreignPopup_executeJavaScriptCodeOnLoad,
-			nullptr,
+			m_foreignPopup_enableHostApi ? new StreamElementsApiMessageHandler() : nullptr,
 			nullptr,
 			StreamElementsMessageBus::DEST_UI);
 
@@ -165,7 +171,8 @@ public:
 	}
 
 private:
-	std::string m_foreignPopup_executeJavaScriptCodeOnLoad;
+	std::string m_foreignPopup_executeJavaScriptCodeOnLoad = "";
+	bool m_foreignPopup_enableHostApi = false;
 
 	std::string m_executeJavaScriptCodeOnLoad;
 	CefRefPtr<StreamElementsBrowserMessageHandler> m_messageHandler;

@@ -813,6 +813,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 						d->GetString("executeJavaScriptOnLoad").ToString());
 				}
 
+				if (d->HasKey("enableHostApi") && d->GetType("enableHostApi") == VTYPE_BOOL) {
+					client->SetForeignPopupWindowsEnableHostApi(
+						d->GetBool("enableHostApi"));
+				}
+
 				result->SetBool(true);
 			}
 		}
