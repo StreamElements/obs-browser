@@ -56,19 +56,41 @@ public:
 	std::string GetLocationArea() { return m_locationArea; }
 	void SetLocationArea(std::string area) { m_locationArea = area; }
 
-	void SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(const std::string script)
+	void SerializeForeignPopupWindowsSettings(CefRefPtr<CefValue>& output)
 	{
-		m_foreignPopup_executeJavaScriptCodeOnLoad = script;
+		CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
+
+		d->SetBool("volatileSettings", !m_foreignPopup_inheritSettings);
+		d->SetBool("enableHostApi", m_foreignPopup_enableHostApi);
+		d->SetString("executeJavaScriptOnLoad", m_foreignPopup_executeJavaScriptCodeOnLoad);
+
+		output->SetDictionary(d);
 	}
 
-	void SetForeignPopupWindowsEnableHostApi(const bool enableHostApi)
+	bool DeserializeForeignPopupWindowsSettings(CefRefPtr<CefValue>& input)
 	{
-		m_foreignPopup_enableHostApi = enableHostApi;
-	}
+		if (input->GetType() != VTYPE_DICTIONARY) {
+			return false;
+		}
 
-	void SetForeignPopupWindowsInheritSettings(const bool inheritSettings)
-	{
-		m_foreignPopup_inheritSettings = inheritSettings;
+		CefRefPtr<CefDictionaryValue> d = input->GetDictionary();
+
+		if (d->HasKey("executeJavaScriptOnLoad") && d->GetType("executeJavaScriptOnLoad") == VTYPE_STRING) {
+			m_foreignPopup_executeJavaScriptCodeOnLoad =
+				d->GetString("executeJavaScriptOnLoad").ToString();
+		}
+
+		if (d->HasKey("enableHostApi") && d->GetType("enableHostApi") == VTYPE_BOOL) {
+			m_foreignPopup_enableHostApi =
+				d->GetBool("enableHostApi");
+		}
+
+		if (d->HasKey("volatileSettings") && d->GetType("volatileSettings") == VTYPE_BOOL) {
+			m_foreignPopup_inheritSettings =
+				!d->GetBool("volatileSettings");
+		}
+
+		return true;
 	}
 
 	/* CefClient */

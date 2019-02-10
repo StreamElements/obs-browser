@@ -799,35 +799,32 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 		result->SetBool(true);
 	API_HANDLER_END()
 
-	API_HANDLER_BEGIN("setForeignPopupWindowsProperties");
-		if (args->GetSize() && args->GetType(0) == VTYPE_DICTIONARY) {
-			CefRefPtr<CefDictionaryValue> d = args->GetDictionary(0);
-
+	API_HANDLER_BEGIN("setContainerForeignPopupWindowsProperties");
+		if (args->GetSize()) {
 			CefRefPtr<StreamElementsCefClient> client =
 				static_cast<StreamElementsCefClient*>(
 					browser->GetHost()->GetClient().get());
 
 			if (!!client.get()) {
-				if (d->HasKey("executeJavaScriptOnLoad") && d->GetType("executeJavaScriptOnLoad") == VTYPE_STRING) {
-					client->SetForeignPopupWindowsExecuteJavaScriptCodeOnLoad(
-						d->GetString("executeJavaScriptOnLoad").ToString());
-				}
-
-				if (d->HasKey("enableHostApi") && d->GetType("enableHostApi") == VTYPE_BOOL) {
-					client->SetForeignPopupWindowsEnableHostApi(
-						d->GetBool("enableHostApi"));
-				}
-
-				if (d->HasKey("volatileSettings") && d->GetType("volatileSettings") == VTYPE_BOOL) {
-					client->SetForeignPopupWindowsInheritSettings(
-						!d->GetBool("volatileSettings"));
-				}
-
-				result->SetBool(true);
+				result->SetBool(
+					client->DeserializeForeignPopupWindowsSettings(
+						args->GetValue(0)));
 			}
 		}
 	API_HANDLER_END();
 
+	API_HANDLER_BEGIN("getContainerForeignPopupWindowsProperties");
+		CefRefPtr<StreamElementsCefClient> client =
+			static_cast<StreamElementsCefClient*>(
+				browser->GetHost()->GetClient().get());
+
+		if (!!client.get()) {
+			client->SerializeForeignPopupWindowsSettings(result);
+		}
+		else {
+			result->SetNull();
+		}
+	API_HANDLER_END();
 
 	API_HANDLER_BEGIN("crashProgram")
 		// Crash
