@@ -818,6 +818,11 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 						d->GetBool("enableHostApi"));
 				}
 
+				if (d->HasKey("volatileSettings") && d->GetType("volatileSettings") == VTYPE_BOOL) {
+					client->SetForeignPopupWindowsInheritSettings(
+						!d->GetBool("volatileSettings"));
+				}
+
 				result->SetBool(true);
 			}
 		}

@@ -66,6 +66,11 @@ public:
 		m_foreignPopup_enableHostApi = enableHostApi;
 	}
 
+	void SetForeignPopupWindowsInheritSettings(const bool inheritSettings)
+	{
+		m_foreignPopup_inheritSettings = inheritSettings;
+	}
+
 	/* CefClient */
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 	virtual CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
@@ -106,11 +111,24 @@ public:
 	{
 		windowInfo.parent_window = (cef_window_handle_t)obs_frontend_get_main_window_handle();
 
-		client = new StreamElementsCefClient(
+		StreamElementsCefClient* clientObj = new StreamElementsCefClient(
 			m_foreignPopup_executeJavaScriptCodeOnLoad,
 			m_foreignPopup_enableHostApi ? new StreamElementsApiMessageHandler() : nullptr,
 			nullptr,
 			StreamElementsMessageBus::DEST_UI);
+
+		if (m_foreignPopup_inheritSettings) {
+			clientObj->m_foreignPopup_inheritSettings =
+				m_foreignPopup_inheritSettings;
+
+			clientObj->m_foreignPopup_executeJavaScriptCodeOnLoad =
+				m_foreignPopup_executeJavaScriptCodeOnLoad;
+
+			clientObj->m_foreignPopup_enableHostApi =
+				m_foreignPopup_enableHostApi;
+		}
+
+		client = clientObj;
 
 		// Allow pop-ups
 		return false;
@@ -173,6 +191,7 @@ public:
 private:
 	std::string m_foreignPopup_executeJavaScriptCodeOnLoad = "";
 	bool m_foreignPopup_enableHostApi = false;
+	bool m_foreignPopup_inheritSettings = false;
 
 	std::string m_executeJavaScriptCodeOnLoad;
 	CefRefPtr<StreamElementsBrowserMessageHandler> m_messageHandler;
