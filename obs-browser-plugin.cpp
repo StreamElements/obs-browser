@@ -62,6 +62,33 @@ bool hwaccel = false;
 
 /* ========================================================================= */
 
+static std::mutex cookie_managers_mutex;
+static std::vector<CefRefPtr<CefCookieManager>> cookie_managers;
+
+void register_cookie_manager(CefRefPtr<CefCookieManager> cm)
+{
+	std::lock_guard<std::mutex> guard(cookie_managers_mutex);
+
+	cookie_managers.emplace_back(cm);
+}
+
+static void flush_cookie_managers()
+{
+	std::lock_guard<std::mutex> guard(cookie_managers_mutex);
+
+	for (auto cm : cookie_managers) {
+		if (cm->FlushStore(nullptr)) {
+			blog(LOG_INFO, "Flushed cookie store");
+		}
+		else {
+			blog(LOG_WARNING,
+				"Failed flushing cookie store");
+		}
+	}
+}
+
+/* ========================================================================= */
+
 class BrowserTask : public CefTask {
 public:
 	std::function<void()> task;
@@ -523,6 +550,8 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	flush_cookie_managers();
+
 	obs_frontend_remove_event_callback(handle_obs_frontend_event, nullptr);
 
 	// Shutdown StreamElements plug-in
