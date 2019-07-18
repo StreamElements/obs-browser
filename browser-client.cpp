@@ -97,9 +97,7 @@ bool BrowserClient::OnProcessMessageReceived(
 	const std::string &name = message->GetName();
 	Json json;
 
-	BrowserSource* source = bs;
-
-	if (!source) {
+	if (!bs) {
 		return false;
 	}
 
@@ -114,20 +112,22 @@ bool BrowserClient::OnProcessMessageReceived(
 		if (!name)
 			return false;
 
-		json = Json::object {
+		json = Json::object{
 			{"name", name},
 			{"width", (int)obs_source_get_width(current_scene)},
 			{"height", (int)obs_source_get_height(current_scene)}
 		};
 
-	} else if (name == "getStatus") {
-		json = Json::object {
+	}
+	else if (name == "getStatus") {
+		json = Json::object{
 			{"recording", obs_frontend_recording_active()},
 			{"streaming", obs_frontend_streaming_active()},
 			{"replaybuffer", obs_frontend_replay_buffer_active()}
 		};
 
-	} else {
+	}
+	else {
 		return streamelementsMessageHandler.OnProcessMessageReceived(
 					browser, source_process, message, 0);
 	}
@@ -151,9 +151,7 @@ bool BrowserClient::GetViewRect(
 		CefRefPtr<CefBrowser>,
 		CefRect &rect)
 {
-	BrowserSource* source = bs;
-
-	if (!source) {
+	if (!bs) {
 #if CHROME_VERSION_BUILD >= 3578
 		return;
 #else
@@ -161,7 +159,7 @@ bool BrowserClient::GetViewRect(
 #endif
 	}
 
-	rect.Set(0, 0, source->width, source->height);
+	rect.Set(0, 0, bs->width, bs->height);
 #if CHROME_VERSION_BUILD >= 3578
 	return;
 #else
@@ -187,30 +185,29 @@ void BrowserClient::OnPaint(
 	}
 #endif
 
-	BrowserSource* source = bs;
-
-	if (!source) {
+	if (!bs) {
 		return;
 	}
 
-	if (source->width != width || source->height != height) {
+	if (bs->width != width || bs->height != height) {
 		obs_enter_graphics();
-		source->DestroyTextures();
+		bs->DestroyTextures();
 		obs_leave_graphics();
 	}
 
-	if (!source->texture && width && height) {
+	if (!bs->texture && width && height) {
 		obs_enter_graphics();
-		source->texture = gs_texture_create(
+		bs->texture = gs_texture_create(
 				width, height, GS_BGRA, 1,
 				(const uint8_t **)&buffer,
 				GS_DYNAMIC);
-		source->width = width;
-		source->height = height;
+		bs->width = width;
+		bs->height = height;
 		obs_leave_graphics();
-	} else {
+	}
+	else {
 		obs_enter_graphics();
-		gs_texture_set_image(source->texture,
+		gs_texture_set_image(bs->texture,
 				(const uint8_t *)buffer,
 				width * 4, false);
 		obs_leave_graphics();
@@ -237,9 +234,7 @@ void BrowserClient::OnAcceleratedPaint(
 		const RectList &,
 		void *shared_handle)
 {
-	BrowserSource* source = bs;
-
-	if (!source) {
+	if (!bs) {
 		return;
 	}
 
@@ -249,8 +244,8 @@ void BrowserClient::OnAcceleratedPaint(
 		gs_texture_destroy(texture);
 		texture = nullptr;
 #endif
-		gs_texture_destroy(source->texture);
-		source->texture = nullptr;
+		gs_texture_destroy(bs->texture);
+		bs->texture = nullptr;
 
 #if USE_TEXTURE_COPY
 		texture = gs_texture_open_shared(
@@ -260,9 +255,9 @@ void BrowserClient::OnAcceleratedPaint(
 		uint32_t cy = gs_texture_get_height(texture);
 		gs_color_format format = gs_texture_get_color_format(texture);
 
-		source->texture = gs_texture_create(cx, cy, format, 1, nullptr, 0);
+		bs->texture = gs_texture_create(cx, cy, format, 1, nullptr, 0);
 #else
-		source->texture = gs_texture_open_shared(
+		bs->texture = gs_texture_open_shared(
 				(uint32_t)(uintptr_t)shared_handle);
 #endif
 		obs_leave_graphics();
@@ -271,9 +266,9 @@ void BrowserClient::OnAcceleratedPaint(
 	}
 
 #if USE_TEXTURE_COPY
-	if (texture && source->texture) {
+	if (texture && bs->texture) {
 		obs_enter_graphics();
-		gs_copy_texture(source->texture, texture);
+		gs_copy_texture(bs->texture, texture);
 		obs_leave_graphics();
 	}
 #endif
@@ -285,14 +280,12 @@ void BrowserClient::OnLoadEnd(
 		CefRefPtr<CefFrame> frame,
 		int)
 {
-	BrowserSource* source = bs;
-
-	if (!source) {
+	if (!bs) {
 		return;
 	}
 
 	if (frame->IsMain()) {
-		std::string base64EncodedCSS = base64_encode(source->css);
+		std::string base64EncodedCSS = base64_encode(bs->css);
 
 		std::string href;
 		href += "data:text/css;charset=utf-8;base64,";
