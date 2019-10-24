@@ -44,9 +44,63 @@
 #endif
 
 #if CHROME_VERSION_BUILD < 3770
-#define ENABLE_WASHIDDEN 1
+	#define ENABLE_WASHIDDEN 1
+	#if CHROME_VERSION_BUILD >= 3729
+		/* When this hack is enabled, the browser source will
+		 * perform several additional steps in addition to
+		 * calling WasHidden(false):
+		 *
+		 * Step 1:
+		 * Call WasResized(), return (width,height+1) in
+		 * GetClientRect() and advance to step 2.
+		 *
+		 * Step 2:
+		 * Call WasHidden(false), WasHidden(true),
+		 * WasHidden(false), indicate that GetClientRect()
+		 * should return normal size (width,height) and
+		 * call WasResized() again.
+		 *
+		 * All of this is necessary to override a Hardware
+		 * Accelerated rendering bug in CEF 3729 where CEF
+		 * would stop sending frames in cases where (mostly)
+		 * there are 5+ browser sources after calling
+		 * WasHidden(true) and WasHidden(false) again.
+		 *
+		 * Other approaches to overriding this bug (simulating
+		 * the Page Visibility API and avoiding calling
+		 * WasHidden() at all yielded sub-par performance:
+		 * browser sources which are not supposed to be visible
+		 * were still decoding and rendering video in the
+		 * background, consuming CPU & GPU resources.
+		 *
+		 * The current known issue with this is that web
+		 * pages which use the Page Visibility API, will get
+		 * multiple events when the browser source becomes
+		 * visible (i.e. instead of "shown", the web page will
+		 * have the following sequence of events: "shown",
+		 * "hidden", "shown").
+		 *
+		 * For this hack to work, one must build CEF with the
+		 * following patches:
+		 *
+		 * Fix gclient_util after depot_tools changes (fixes issue #2736)
+		 * https://bitbucket.org/chromiumembedded/cef/commits/16a67c450724f60708b8b6af32bd7d547392c485
+		 *
+		 * Fix OSR use_external_begin_frame support and update VSync setters (fixes issue #2618):
+		 * https://bitbucket.org/chromiumembedded/cef/commits/5623338662e9afe558c12f3e4439a3c8da701f1b
+		 *
+		 * Remove CHECK for size change:
+		 * https://chromium-review.googlesource.com/c/chromium/src/+/1792459/2/content/browser/renderer_host/render_widget_host_impl.cc
+		 *
+		 * This was tested only with CEF 3729 release branch.
+		 */
+		#define ENABLE_WASHIDDEN_RESIZE_HACK 1
+	#else
+		#define ENABLE_WASHIDDEN_RESIZE_HACK 0
+	#endif
 #else
 #define ENABLE_WASHIDDEN 0
+#define ENABLE_WASHIDDEN_RESIZE_HACK 0
 #endif
 
 #if CHROME_VERSION_BUILD >= 3770

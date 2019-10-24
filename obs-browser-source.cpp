@@ -48,6 +48,19 @@ static void SendBrowserVisibility(CefRefPtr<CefBrowser> browser, bool isVisible)
 	if (isVisible) {
 		browser->GetHost()->WasHidden(false);
 		browser->GetHost()->Invalidate(PET_VIEW);
+
+#if ENABLE_WASHIDDEN_RESIZE_HACK
+		CefRefPtr<CefClient> client = browser->GetHost()->GetClient();
+
+		BrowserClient *bc =
+			reinterpret_cast<BrowserClient *>(client.get());
+
+		if (bc) {
+			bc->browser_visibility_resize_hack_state = 1;
+		}
+
+		browser->GetHost()->WasResized();
+#endif
 	} else {
 		browser->GetHost()->WasHidden(true);
 	}
@@ -473,6 +486,32 @@ void BrowserSource::Tick()
 #if EXPERIMENTAL_SHARED_TEXTURE_SUPPORT_ENABLED
 	if (!fps_custom)
 		reset_frame = true;
+#endif
+
+#if ENABLE_WASHIDDEN_RESIZE_HACK
+	CefRefPtr<CefBrowser> browser = cefBrowser;
+	if (browser) {
+		CefRefPtr<CefClient> client = browser->GetHost()->GetClient();
+
+		BrowserClient *bc =
+			reinterpret_cast<BrowserClient *>(client.get());
+
+		if (bc) {
+			if (bc->browser_visibility_resize_hack_state >= 2) {
+				browser->GetHost()->WasResized();
+
+				if (is_showing) {
+					/* Seems that this one is still around:
+					 * https://bitbucket.org/chromiumembedded/cef/issues/2483/osr-invalidate-does-not-generate-frame */
+					browser->GetHost()->WasHidden(false);
+					browser->GetHost()->WasHidden(true);
+					browser->GetHost()->WasHidden(false);
+				}
+
+				bc->browser_visibility_resize_hack_state = 0;
+			}
+		}
+	}
 #endif
 }
 

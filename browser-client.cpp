@@ -172,7 +172,18 @@ bool BrowserClient::GetViewRect(
 #endif
 	}
 
+#if ENABLE_WASHIDDEN_RESIZE_HACK
+	if (browser_visibility_resize_hack_state == 0) {
+		rect.Set(0, 0, source->width, source->height);
+	} else {
+		rect.Set(0, 0, source->width, source->height + 1);
+
+		++browser_visibility_resize_hack_state;
+	}
+#else
 	rect.Set(0, 0, source->width, source->height);
+#endif
+
 #if CHROME_VERSION_BUILD >= 3578
 	return;
 #else

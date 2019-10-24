@@ -59,6 +59,9 @@ public:
 	ChannelLayout channel_layout;
 	int frames_per_buffer;
 #endif
+#if ENABLE_WASHIDDEN_RESIZE_HACK
+	int browser_visibility_resize_hack_state = 0; // 0 - inactive, 1 - armed, 2+ - ready to disarm
+#endif
 
 	inline BrowserClient(BrowserSource *bs_, bool sharing_avail,
 			     bool reroute_audio_)
