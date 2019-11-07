@@ -691,6 +691,37 @@ static void handle_scene_item_add(void *my_data, calldata_t *cd)
 	add_scene_signals(group_scene_source, my_data);
 }
 
+static void handle_scene_item_transform(void *my_data, calldata_t *cd)
+{
+	handle_scene_update(my_data, cd);
+
+	// TODO: TBD: Uncommend following code to lock sceneitem transform
+
+	/*
+	obs_sceneitem_t *sceneitem =
+		(obs_sceneitem_t *)calldata_ptr(cd, "item");
+
+	if (!sceneitem)
+		return;
+
+	obs_source_t *source = obs_sceneitem_get_source(sceneitem);
+
+	std::string name = obs_source_get_id(source);
+
+	if (name == "browser_source") {
+		obs_transform_info info;
+
+		obs_sceneitem_get_info(sceneitem, &info);
+
+		if (info.scale.x != 1 || info.scale.y != 1) {
+			info.scale.x = 1;
+			info.scale.y = 1;
+
+			obs_sceneitem_set_scale(sceneitem, &info.scale);
+		}
+	}*/
+}
+
 static void remove_scene_signals(obs_source_t *scene, void *data)
 {
 	if (!scene)
@@ -713,7 +744,7 @@ static void remove_scene_signals(obs_source_t *scene, void *data)
 	signal_handler_disconnect(handler, "item_deselect", handle_scene_update,
 				  data);
 	signal_handler_disconnect(handler, "item_transform",
-				  handle_scene_update, data);
+				  handle_scene_item_transform, data);
 
 	obs_scene_t *obs_scene = obs_scene_from_source(scene);
 
@@ -758,8 +789,8 @@ static void add_scene_signals(obs_source_t *scene, void *data)
 			       data);
 	signal_handler_connect(handler, "item_deselect", handle_scene_update,
 			       data);
-	signal_handler_connect(handler, "item_transform", handle_scene_update,
-			       data);
+	signal_handler_connect(handler, "item_transform",
+			       handle_scene_item_transform, data);
 
 	obs_scene_t *obs_scene = obs_scene_from_source(scene);
 
