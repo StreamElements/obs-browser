@@ -11,6 +11,10 @@
 #include <QUrl>
 #include <QDesktopServices>
 
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(P) (P)
+#endif
+
 class StreamElementsCefClientEventHandler : public CefBaseRefCounted {
 public:
 	virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
