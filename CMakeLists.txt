@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(obs-browser)
 
+set(ENABLE_BUGSPLAT FALSE)
+set(ENABLE_ANGELSCRIPT FALSE)
+
 set(CMAKE_PREFIX_PATH "${QTDIR}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
@@ -15,8 +18,12 @@ find_package(CEF QUIET)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Libcurl REQUIRED)
-find_package(BugSplat REQUIRED)
-find_package(AngelScript REQUIRED)
+if (ENABLE_BUGSPLAT)
+	find_package(BugSplat REQUIRED)
+endif()
+if (ENABLE_ANGELSCRIPT)
+	find_package(AngelScript REQUIRED)
+endif()
 
 include_directories(SYSTEM
 	${Qt5Core_INCLUDES}
@@ -35,12 +42,12 @@ if(NOT CEF_FOUND)
 	return()
 endif()
 
-if (NOT BUGSPLAT_FOUND)
+if (NOT BUGSPLAT_FOUND AND ENABLE_BUGSPLAT)
 	message(STATUS "BugSplat Not found -- obs-browser plugin disabled.")
 	return()
 endif()
 
-if (NOT ANGELSCRIPT_FOUND)
+if (NOT ANGELSCRIPT_FOUND AND ENABLE_ANGELSCRIPT)
 	message(STATUS "AngelScript Not found -- obs-browser plugin disabled.")
 	return()
 endif()
@@ -318,7 +325,7 @@ set_target_properties(obs-browser-page PROPERTIES FOLDER "plugins/obs-browser")
 
 if (APPLE)
 	set_target_properties(obs-browser-page PROPERTIES
-		COMPILE_FLAGS "-mmacosx-version-min=10.8")
+		COMPILE_FLAGS "-mmacosx-version-min=10.13")
 endif(APPLE)
 
 if (WIN32)
@@ -354,27 +361,29 @@ set(obs-browser-streamelements-restore-script-host_LIBRARIES
 	#${LIBCURL_LIBRARIES}
 	)
 
-add_executable(obs-browser-streamelements-restore-script-host
-	${obs-browser-streamelements-restore-script-host_SOURCES}
-	${obs-browser-streamelements-restore-script-host_HEADERS}
-	)
+if(ENABLE_ANGELSCRIPT)
+	add_executable(obs-browser-streamelements-restore-script-host
+		${obs-browser-streamelements-restore-script-host_SOURCES}
+		${obs-browser-streamelements-restore-script-host_HEADERS}
+		)
 
-target_link_libraries(obs-browser-streamelements-restore-script-host
-	${obs-browser-streamelements-restore-script-host_LIBRARIES}
-	)
+	target_link_libraries(obs-browser-streamelements-restore-script-host
+		${obs-browser-streamelements-restore-script-host_LIBRARIES}
+		)
 
-if (APPLE)
-	set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES
-		COMPILE_FLAGS "-mmacosx-version-min=10.8")
-endif(APPLE)
+	if (APPLE)
+		set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES
+			COMPILE_FLAGS "-mmacosx-version-min=10.8")
+	endif(APPLE)
 
-if (WIN32)
-	set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
-endif(WIN32)
+	if (WIN32)
+		set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+	endif(WIN32)
 
-if (APPLE AND XCODE)
-	set_xcode_property(obs-browser-streamelements-restore-script-host CLANG_CXX_LIBRARY "libc++")
-endif(APPLE AND XCODE)
+	if (APPLE AND XCODE)
+		set_xcode_property(obs-browser-streamelements-restore-script-host CLANG_CXX_LIBRARY "libc++")
+	endif(APPLE AND XCODE)
+endif()
 
 # ----------------------------------------------------------------------------
 
@@ -490,5 +499,8 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 endif()
 
 install_obs_plugin_with_data(obs-browser data)
-install_obs_plugin(obs-browser-page)
-install_obs_plugin(obs-browser-streamelements-restore-script-host)
+#install_obs_plugin(obs-browser-page)
+
+if (ENABLE_ANGELSCRIPT)
+	install_obs_plugin(obs-browser-streamelements-restore-script-host)
+endif()
