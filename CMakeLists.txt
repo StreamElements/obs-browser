@@ -466,10 +466,12 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
 		"obs-browser.so")
 	add_custom_command(TARGET obs-browser-page POST_BUILD
+		COMMAND "pwd")
+	add_custom_command(TARGET obs-browser-page POST_BUILD
 		COMMAND "install_name_tool" -change
 		"@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
-		"obs-browser-page")
+		"Debug/obs-browser-page")
 endif()
 
 if (UNIX AND NOT APPLE)
@@ -492,11 +494,11 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 		COMMAND "install_name_tool" -change
 		"@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
-		"obs-browser-page")
+		"${CMAKE_BUILD_TYPE}/obs-browser-page")
 endif()
 
 install_obs_plugin_with_data(obs-browser data)
-#install_obs_plugin(obs-browser-page)
+install_obs_plugin(obs-browser-page)
 
 if (ENABLE_ANGELSCRIPT)
 	install_obs_plugin(obs-browser-streamelements-restore-script-host)
