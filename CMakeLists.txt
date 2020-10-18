@@ -29,10 +29,20 @@ include_directories(SYSTEM
 	${Qt5Core_INCLUDES}
 	${Qt5Widgets_INCLUDES}
 	${LIBCURL_INCLUDE_DIRS}
-	${BUGSPLAT_INCLUDE_DIR}
-	${ANGELSCRIPT_INCLUDE_DIR}
-	${ANGELSCRIPT_ADDON_INCLUDE_DIR}
 )
+
+if (ENABLE_BUGSPLAT)
+	include_directories(SYSTEM
+		${BUGSPLAT_INCLUDE_DIR}
+	)
+endif()
+
+if (ENABLE_ANGELSCRIPT)
+	include_directories(SYSTEM
+		${ANGELSCRIPT_INCLUDE_DIR}
+		${ANGELSCRIPT_ADDON_INCLUDE_DIR}
+	)
+endif()
 
 #qt5_wrap_ui(NetworkDialog "networkdialog.ui")
 qt5_add_resources(obs-browser-streamelements_QRC_SOURCES "streamelements/streamelements.qrc")
@@ -87,15 +97,26 @@ include_directories("${CEF_ROOT_DIR}")
 
 # ----------------------------------------------------------------------------
 
-set(obs-browser_LIBRARIES
-	libobs
-	obs-frontend-api
-	Qt5::Core
-	Qt5::Widgets
-	w32-pthreads
-	${LIBCURL_LIBRARIES}
-	${BUGSPLAT_LIBRARIES}
-	)
+if (ENABLE_BUGSPLAT)
+	set(obs-browser_LIBRARIES
+		libobs
+		obs-frontend-api
+		Qt5::Core
+		Qt5::Widgets
+		w32-pthreads
+		${LIBCURL_LIBRARIES}
+		${BUGSPLAT_LIBRARIES}
+		)
+else()
+	set(obs-browser_LIBRARIES
+		libobs
+		obs-frontend-api
+		Qt5::Core
+		Qt5::Widgets
+		w32-pthreads
+		${LIBCURL_LIBRARIES}
+		)
+endif()
 
 list(APPEND obs-browser_LIBRARIES
 	${CEF_LIBRARIES})
@@ -339,29 +360,29 @@ endif()
 
 # ----------------------------------------------------------------------------
 
-set(obs-browser-streamelements-restore-script-host_SOURCES
-	streamelements/restore-script-host/main.rc
-	streamelements/restore-script-host/main.cpp
-	streamelements/restore-script-host/ScriptEngine.cpp
-	${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptstdstring/scriptstdstring.cpp
-	#${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptstdstring/scriptstdstring_utils.cpp
-	${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptbuilder/scriptbuilder.cpp
-	)
-set(obs-browser-streamelements-restore-script-host_HEADERS
-	streamelements/restore-script-host/main.hpp
-	streamelements/restore-script-host/ScriptEngine.hpp
-	)
-
-set(obs-browser-streamelements-restore-script-host_LIBRARIES
-	${ANGELSCRIPT_LIBRARIES}
-	#libobs
-	#Qt5::Core
-	#Qt5::Widgets
-	#w32-pthreads
-	#${LIBCURL_LIBRARIES}
-	)
-
 if(ENABLE_ANGELSCRIPT)
+	set(obs-browser-streamelements-restore-script-host_SOURCES
+		streamelements/restore-script-host/main.rc
+		streamelements/restore-script-host/main.cpp
+		streamelements/restore-script-host/ScriptEngine.cpp
+		${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptstdstring/scriptstdstring.cpp
+		#${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptstdstring/scriptstdstring_utils.cpp
+		${ANGELSCRIPT_ADDON_INCLUDE_DIR}/scriptbuilder/scriptbuilder.cpp
+		)
+	set(obs-browser-streamelements-restore-script-host_HEADERS
+		streamelements/restore-script-host/main.hpp
+		streamelements/restore-script-host/ScriptEngine.hpp
+		)
+
+	set(obs-browser-streamelements-restore-script-host_LIBRARIES
+		${ANGELSCRIPT_LIBRARIES}
+		#libobs
+		#Qt5::Core
+		#Qt5::Widgets
+		#w32-pthreads
+		#${LIBCURL_LIBRARIES}
+		)
+
 	add_executable(obs-browser-streamelements-restore-script-host
 		${obs-browser-streamelements-restore-script-host_SOURCES}
 		${obs-browser-streamelements-restore-script-host_HEADERS}
@@ -373,7 +394,7 @@ if(ENABLE_ANGELSCRIPT)
 
 	if (APPLE)
 		set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES
-			COMPILE_FLAGS "-mmacosx-version-min=10.8")
+			COMPILE_FLAGS "-mmacosx-version-min=10.13")
 	endif(APPLE)
 
 	if (WIN32)
@@ -426,14 +447,16 @@ if (WIN32)
 		"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/bin/${BITS}bit/"
 	)
 
-	# Copy BugSplat binary files
-	foreach( bugsplat_bin_file ${BUGSPLAT_BIN_FILES})
-		add_custom_command(TARGET obs-browser POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy
-			${bugsplat_bin_file}
-			"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/bin/${BITS}bit/"
-		)
-	endforeach( bugsplat_bin_file )
+	if(ENABLE_BUGSPLAT)
+		# Copy BugSplat binary files
+		foreach( bugsplat_bin_file ${BUGSPLAT_BIN_FILES})
+			add_custom_command(TARGET obs-browser POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy
+				${bugsplat_bin_file}
+				"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/bin/${BITS}bit/"
+			)
+		endforeach( bugsplat_bin_file )
+	endif()
 endif()
 
 if(APPLE AND NOT BROWSER_DEPLOY)

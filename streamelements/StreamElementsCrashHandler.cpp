@@ -30,6 +30,8 @@
  */
 
 #include "StreamElementsCrashHandler.hpp"
+
+#if ENABLE_BUGSPLAT
 #include "StreamElementsGlobalStateManager.hpp"
 #include "deps/StackWalker/StackWalker.h"
 #include <util/base.h>
@@ -917,3 +919,10 @@ StreamElementsCrashHandler::~StreamElementsCrashHandler()
 
 	base_set_crash_handler(null_crash_handler, nullptr);
 }
+
+#else
+
+StreamElementsCrashHandler::StreamElementsCrashHandler() {}
+StreamElementsCrashHandler::~StreamElementsCrashHandler() {}
+
+#endif
