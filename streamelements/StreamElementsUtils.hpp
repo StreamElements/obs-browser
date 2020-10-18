@@ -251,7 +251,7 @@ public:
 			return;
 
 #ifdef USE_QT_LOOP
-		QtPostTask([task]() { task(); });
+		QtPostTask([this]() { task(); });
 #else
 		task();
 #endif
