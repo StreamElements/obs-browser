@@ -270,8 +270,12 @@ public:
 		     target_frame_name.ToString().c_str(),
 		     (int)target_disposition);
 
-		windowInfo.parent_window = (cef_window_handle_t)
-			obs_frontend_get_main_window_handle();
+#ifdef WIN32
+		windowInfo.parent_window =
+#else
+		windowInfo.parent_view =
+#endif
+			(cef_window_handle_t)obs_frontend_get_main_window_handle();
 
 		StreamElementsCefClient *clientObj =
 			new StreamElementsCefClient(
@@ -294,7 +298,11 @@ public:
 
 		client = clientObj;
 
+#ifdef WIN32
 		windowInfo.parent_window =
+#else
+		windowInfo.parent_view =
+#endif
 			browser->GetHost()->GetWindowHandle();
 
 		// Allow pop-ups
