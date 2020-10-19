@@ -2,15 +2,18 @@
 
 static const size_t BUF_SIZE = 60;
 
+#ifdef WIN32
 static uint64_t FromFileTime(const FILETIME& ft) {
 	ULARGE_INTEGER uli = { 0 };
 	uli.LowPart = ft.dwLowDateTime;
 	uli.HighPart = ft.dwHighDateTime;
 	return uli.QuadPart;
 }
+#endif
 
 StreamElementsPerformanceHistoryTracker::StreamElementsPerformanceHistoryTracker()
 {
+#ifdef WIN32
 	os_event_init(&m_quit_event, OS_EVENT_TYPE_AUTO);
 	os_event_init(&m_done_event, OS_EVENT_TYPE_AUTO);
 
@@ -101,15 +104,18 @@ StreamElementsPerformanceHistoryTracker::StreamElementsPerformanceHistoryTracker
 	});
 
 	thread.detach();
+#endif
 }
 
 StreamElementsPerformanceHistoryTracker::~StreamElementsPerformanceHistoryTracker()
 {
+#ifdef WIN32
 	os_event_signal(m_quit_event);
 	os_event_wait(m_done_event);
 
 	os_event_destroy(m_done_event);
 	os_event_destroy(m_quit_event);
+#endif
 }
 
 std::vector<StreamElementsPerformanceHistoryTracker::memory_usage_t> StreamElementsPerformanceHistoryTracker::getMemoryUsageSnapshot()

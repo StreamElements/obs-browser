@@ -1,6 +1,9 @@
 #pragma once
 
+#ifdef WIN32
 #include <windows.h>
+#endif
+
 #include <util/threading.h>
 #include <thread>
 #include <mutex>
@@ -19,7 +22,11 @@ public:
 	};
 
 	typedef CpuTime cpu_usage_t;
+	#ifdef WIN32
 	typedef MEMORYSTATUSEX memory_usage_t;
+	#else
+	typedef long long memory_usage_t;
+	#endif
 
 public:
 	StreamElementsPerformanceHistoryTracker();
