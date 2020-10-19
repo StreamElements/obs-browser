@@ -9,13 +9,23 @@
 
 #include "deps/zip/zip.h"
 
+#ifdef WIN32
 #include <io.h>
+#else
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#endif
 #include <fcntl.h>
 
 #include <vector>
 #include <map>
 #include <codecvt>
 #include <regex>
+
+#ifndef BYTE
+typedef unsigned char BYTE;
+#endif
 
 static bool GetLocalPathFromURL(std::string url, std::string &path)
 {
