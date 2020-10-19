@@ -346,7 +346,7 @@ set_target_properties(obs-browser-page PROPERTIES FOLDER "plugins/obs-browser")
 
 if (APPLE)
 	set_target_properties(obs-browser-page PROPERTIES
-		COMPILE_FLAGS "-mmacosx-version-min=10.13")
+		COMPILE_FLAGS "-mmacosx-version-min=10.15")
 endif(APPLE)
 
 if (WIN32)
@@ -394,7 +394,7 @@ if(ENABLE_ANGELSCRIPT)
 
 	if (APPLE)
 		set_target_properties(obs-browser-streamelements-restore-script-host PROPERTIES
-			COMPILE_FLAGS "-mmacosx-version-min=10.13")
+			COMPILE_FLAGS "-mmacosx-version-min=10.15")
 	endif(APPLE)
 
 	if (WIN32)
