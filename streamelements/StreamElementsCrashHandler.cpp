@@ -49,6 +49,7 @@
 #include "bugsplat.h"
 #include "deps/zip/zip.h"
 #include <iostream>
+#include <experimental/filesystem>
 #include <filesystem>
 #include <stdio.h>
 #include <fcntl.h>

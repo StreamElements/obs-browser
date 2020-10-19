@@ -5,6 +5,7 @@
 #include <string>
 #include <codecvt>
 #include <filesystem>
+#include <experimental/filesystem>
 
 class StreamElementsExternalSceneDataProviderSlobsClient :
 	public StreamElementsExternalSceneDataProvider

@@ -2,6 +2,7 @@
 #include "StreamElementsGlobalStateManager.hpp"
 #include "StreamElementsUtils.hpp"
 #include <filesystem>
+#include <experimental/filesystem>
 #include <codecvt>
 #include <algorithm>
 #include <obs.h>
