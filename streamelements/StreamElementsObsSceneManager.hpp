@@ -30,11 +30,14 @@ public:
 
 	void Reset()
 	{
+		auto out1 = CefValue::Create();
+		auto out2 = CefValue::Create();
+
 		DeserializeSceneItemsAuxiliaryActions(CefValue::Create(),
-						      CefValue::Create());
+						      out1);
 
 		DeserializeScenesAuxiliaryActions(CefValue::Create(),
-						  CefValue::Create());
+						  out2);
 
 		Update();
 	}
