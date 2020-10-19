@@ -47,7 +47,7 @@ public:
 		for (auto &p :
 		     std::experimental::filesystem::directory_iterator(
 			     rootFolderPath)) {
-			std::wstring path = p.path();
+			std::wstring path = p.path().wstring();
 
 			if (!std::experimental::filesystem::is_regular_file(
 				    path)) {

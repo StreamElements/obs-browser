@@ -201,7 +201,7 @@ StreamElementsLocalWebFilesServer::StreamElementsLocalWebFilesServer(std::string
 
 	for (auto &p :
 	     std::experimental::filesystem::directory_iterator(m_rootFolder)) {
-		std::string path = myconv.to_bytes(p.path().c_str());
+		std::string path = p.path().string();
 
 		if (std::experimental::filesystem::is_directory(path)) {
 			std::string host = path;

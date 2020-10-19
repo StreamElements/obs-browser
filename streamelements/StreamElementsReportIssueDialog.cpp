@@ -445,7 +445,7 @@ void StreamElementsReportIssueDialog::accept()
 					     programDataPathBuf)) {
 				if (!std::experimental::filesystem::is_directory(
 					    i.path())) {
-					std::wstring local_path = i.path().c_str();
+					std::wstring local_path = i.path().wstring();
 					std::wstring zip_path = local_path.substr(obsDataPath.size() + 1);
 
 					std::wstring zip_path_lcase = zip_path;
