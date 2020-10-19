@@ -306,11 +306,6 @@ protected:
 			::ShowWindow(
 				m_cef_browser->GetHost()->GetWindowHandle(),
 				SW_HIDE);
-#else
-			QMacCocoaViewContainer cocoa(
-				(NSView *)m_cef_browser->GetHost()
-					->GetWindowHandle());
-			cocoa->hide();
 #endif
 		}
 	}
@@ -322,11 +317,6 @@ protected:
 			::ShowWindow(
 				m_cef_browser->GetHost()->GetWindowHandle(),
 				SW_SHOW);
-#else
-			QMacCocoaViewContainer cocoa(
-				(NSView *)m_cef_browser->GetHost()
-					->GetWindowHandle());
-			cocoa->show();
 #endif
 		}
 	}
