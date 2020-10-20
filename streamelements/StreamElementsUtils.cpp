@@ -30,6 +30,8 @@
 #include "deps/picosha2/picosha2.h"
 
 #ifndef WIN32
+	#define sprintf_s sprintf
+
 	#ifndef WCHAR
 	typedef wchar_t WCHAR;
 	#endif
