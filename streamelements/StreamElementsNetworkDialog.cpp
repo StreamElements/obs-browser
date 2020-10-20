@@ -302,9 +302,14 @@ void StreamElementsNetworkDialog::DownloadFileAsync(
 {
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
 	std::string localPath(localFilePath);
+#ifdef WIN32
 	int fd = _wopen(myconv.from_bytes(localPath).c_str(),
 			O_WRONLY | O_BINARY,
 			S_IWRITE /*_S_IREAD | _S_IWRITE*/);
+#else
+	int fd = ::open(localPath.c_str(),
+			O_WRONLY);
+#endif
 	if (fd < 0) {
 		callback(false, param);
 		return;
