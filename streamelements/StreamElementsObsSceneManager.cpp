@@ -4,6 +4,7 @@
 #include "StreamElementsConfig.hpp"
 
 #include <util/platform.h>
+#include <string.h>
 
 #include <unordered_map>
 #include <regex>
@@ -14,6 +15,10 @@
 #include <QLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
+
+#ifndef WIN32
+#define stricmp strcasecmp
+#endif
 
 //#define CP(a) blog(LOG_INFO, "checkpoint %d", a)
 
@@ -1456,17 +1461,19 @@ StreamElementsObsSceneManager::StreamElementsObsSceneManager(QMainWindow *parent
 	signal_handler_connect(handler, "source_remove", handle_source_remove,
 			       this);
 
+	CefRefPtr<CefValue> dummy1 = CefValue::Create();
 	DeserializeSceneItemsAuxiliaryActions(
 		CefParseJSON(StreamElementsConfig::GetInstance()
 				     ->GetSceneItemsAuxActionsConfig(),
 			     JSON_PARSER_ALLOW_TRAILING_COMMAS),
-		CefValue::Create());
+		dummy1);
 
+	CefRefPtr<CefValue> dummy2 = CefValue::Create();
 	DeserializeScenesAuxiliaryActions(
 		CefParseJSON(StreamElementsConfig::GetInstance()
 				     ->GetScenesAuxActionsConfig(),
 			     JSON_PARSER_ALLOW_TRAILING_COMMAS),
-		CefValue::Create());
+		dummy2);
 }
 
 StreamElementsObsSceneManager::~StreamElementsObsSceneManager()
@@ -2295,8 +2302,9 @@ StreamElementsObsSceneManager::ObsGetUniqueSceneName(std::string name)
 			++sequence;
 
 			char buf[32];
+			sprintf(buf, "%d", sequence);
 			result = name + " ";
-			result += itoa(sequence, buf, 10);
+			result += buf;
 		}
 	}
 
@@ -2329,8 +2337,9 @@ StreamElementsObsSceneManager::ObsGetUniqueSceneCollectionName(std::string name)
 			++sequence;
 
 			char buf[32];
+			sprintf(buf, "%d", sequence);
 			result = name + " ";
-			result += itoa(sequence, buf, 10);
+			result += buf;
 		}
 	}
 
