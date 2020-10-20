@@ -113,7 +113,7 @@ else()
 		obs-frontend-api
 		Qt5::Core
 		Qt5::Widgets
-		w32-pthreads
+		#w32-pthreads
 		${LIBCURL_LIBRARIES}
 		)
 endif()
