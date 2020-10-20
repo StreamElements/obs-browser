@@ -57,9 +57,14 @@ static std::string GetCEFStoragePath()
 	std::string version = GetCefVersionString();
 
 	BPtr<char> rpath = obs_module_config_path(version.c_str());
+
+#ifdef WIN32
 	BPtr<char> path = os_get_abs_path_ptr(rpath.Get());
 
 	return path.Get();
+#else
+	return rpath.Get();
+#endif
 }
 
 /* ========================================================================= */
