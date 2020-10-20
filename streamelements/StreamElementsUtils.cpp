@@ -2799,7 +2799,7 @@ static std::wstring GetWString(CefRefPtr<CefDictionaryValue> input,
 	if (!input->HasKey(key) || input->GetType(key) != VTYPE_STRING)
 		return defaultValue;
 
-	return input->GetString(key).ToString16();
+	return input->GetString(key).ToWString();
 }
 
 static cef_event_flags_t DeserializeCefEventModifiers(CefRefPtr<CefValue> input) {
