@@ -289,7 +289,7 @@ static obs_sceneitem_t *FindSceneItemById(std::string id, bool addRef = false)
 	return context.sceneitem;
 }
 
-static bool IsSceneItemInfoValid(CefRefPtr<CefValue> &input, bool requireClass,
+static bool IsSceneItemInfoValid(CefRefPtr<CefValue> input, bool requireClass,
 				 bool requireSettings)
 {
 	if (input->GetType() != VTYPE_DICTIONARY) {
@@ -321,7 +321,7 @@ static bool IsSceneItemInfoValid(CefRefPtr<CefValue> &input, bool requireClass,
 	return true;
 }
 
-static bool IsBrowserSourceSceneItemInfoValid(CefRefPtr<CefValue> &input)
+static bool IsBrowserSourceSceneItemInfoValid(CefRefPtr<CefValue> input)
 {
 	if (!IsSceneItemInfoValid(input, false, true)) {
 		return false;
@@ -512,7 +512,7 @@ static CefRefPtr<CefDictionaryValue> SerializeVec2(vec2 &vec)
 	return d;
 }
 
-static vec2 DeserializeVec2(CefRefPtr<CefValue> &input)
+static vec2 DeserializeVec2(CefRefPtr<CefValue> input)
 {
 	vec2 result = {0};
 
@@ -571,7 +571,7 @@ static std::string GetAlignmentIdFromInt32(uint32_t a)
 	}
 }
 
-static bool DeserializeSceneItemComposition(CefRefPtr<CefValue> &input,
+static bool DeserializeSceneItemComposition(CefRefPtr<CefValue> input,
 					    obs_transform_info &info,
 					    obs_sceneitem_crop &crop)
 {
@@ -1689,7 +1689,7 @@ StreamElementsObsSceneManager::ObsGetUniqueSourceName(std::string name)
 }
 
 void StreamElementsObsSceneManager::DeserializeObsBrowserSource(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
@@ -1771,7 +1771,7 @@ void StreamElementsObsSceneManager::DeserializeObsBrowserSource(
 }
 
 void StreamElementsObsSceneManager::DeserializeObsGameCaptureSource(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
@@ -1851,7 +1851,7 @@ void StreamElementsObsSceneManager::DeserializeObsGameCaptureSource(
 }
 
 void StreamElementsObsSceneManager::DeserializeObsVideoCaptureSource(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 #ifdef _WIN32
 	const char *VIDEO_DEVICE_ID = "video_device_id";
@@ -1992,7 +1992,7 @@ void StreamElementsObsSceneManager::DeserializeObsVideoCaptureSource(
 }
 
 void StreamElementsObsSceneManager::DeserializeObsNativeSource(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
@@ -2080,7 +2080,7 @@ void StreamElementsObsSceneManager::DeserializeObsNativeSource(
 }
 
 void StreamElementsObsSceneManager::DeserializeObsSceneItemGroup(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
@@ -2159,7 +2159,7 @@ void StreamElementsObsSceneManager::DeserializeObsSceneItemGroup(
 }
 
 void StreamElementsObsSceneManager::SerializeObsSceneItems(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
