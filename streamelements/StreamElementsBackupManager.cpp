@@ -35,6 +35,7 @@ typedef unsigned char BYTE;
 #define SH_DENYNO 0
 #endif
 
+#ifdef WIN32
 static bool GetLocalPathFromURL(std::string url, std::string &path)
 {
 	if (VerifySessionSignedAbsolutePathURL(url, path))
@@ -500,6 +501,7 @@ static void ReadListOfIdsFromCefValue(CefRefPtr<CefValue> input,
 StreamElementsBackupManager::StreamElementsBackupManager() {}
 
 StreamElementsBackupManager::~StreamElementsBackupManager() {}
+#endif
 
 void StreamElementsBackupManager::CreateLocalBackupPackage(
 	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
@@ -511,6 +513,9 @@ void StreamElementsBackupManager::CreateLocalBackupPackage(
 	if (input->GetType() != VTYPE_DICTIONARY)
 		return;
 
+#ifndef WIN32
+	return;
+#else
 	CefRefPtr<CefDictionaryValue> in = input->GetDictionary();
 
 	std::vector<std::string> requestCollections;
@@ -602,6 +607,7 @@ void StreamElementsBackupManager::CreateLocalBackupPackage(
 				      myconv.from_bytes(backupPackagePath)));
 
 	output->SetDictionary(out);
+#endif
 }
 
 void StreamElementsBackupManager::QueryBackupPackageContent(
@@ -614,6 +620,9 @@ void StreamElementsBackupManager::QueryBackupPackageContent(
 	if (input->GetType() != VTYPE_DICTIONARY)
 		return;
 
+#ifndef WIN32
+	return;
+#else
 	CefRefPtr<CefDictionaryValue> in = input->GetDictionary();
 
 	if (!in->HasKey("url") || in->GetType("url") != VTYPE_STRING)
@@ -693,8 +702,10 @@ void StreamElementsBackupManager::QueryBackupPackageContent(
 	result->SetList("sceneCollections", collectionsList);
 
 	output->SetDictionary(result);
+#endif
 }
 
+#ifdef WIN32
 static bool IsQualifiedFileForRestore(
 	std::string zipPath,
 	std::unordered_map<std::string, bool> &requestProfiles,
@@ -741,6 +752,7 @@ static size_t HandleZipExtract(void *arg, unsigned long long offset,
 
 	return write(context->handle, data, size);
 };
+#endif
 
 void StreamElementsBackupManager::RestoreBackupPackageContent(
 	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
