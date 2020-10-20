@@ -29,6 +29,20 @@
 
 #include "deps/picosha2/picosha2.h"
 
+#ifndef WIN32
+	#ifndef WCHAR
+	typedef wchar_t WCHAR;
+	#endif
+
+	#ifndef DWORD
+	typedef unsigned long DWORD;
+	#endif
+
+	#ifndef HKEY
+	typedef void *HKEY;
+	#endif
+#endif
+
 /* ========================================================= */
 
 static const char *ENV_PRODUCT_NAME = "OBS.Live";
@@ -204,6 +218,7 @@ std::string LoadResourceString(std::string path)
 
 /* ========================================================= */
 
+#ifdef WIN32
 static uint64_t FromFileTime(const FILETIME &ft)
 {
 	ULARGE_INTEGER uli = {0};
@@ -211,6 +226,7 @@ static uint64_t FromFileTime(const FILETIME &ft)
 	uli.HighPart = ft.dwHighDateTime;
 	return uli.QuadPart;
 }
+#endif
 
 void SerializeSystemTimes(CefRefPtr<CefValue> &output)
 {
@@ -218,11 +234,11 @@ void SerializeSystemTimes(CefRefPtr<CefValue> &output)
 
 	output->SetNull();
 
+#ifdef WIN32
 	FILETIME idleTime;
 	FILETIME kernelTime;
 	FILETIME userTime;
 
-#ifdef _WIN32
 	if (::GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
 		CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
 		output->SetDictionary(d);
@@ -314,6 +330,7 @@ static CefString getRegStr(HKEY parent, const WCHAR *subkey, const WCHAR *key)
 {
 	CefString result;
 
+#ifdef WIN32
 	DWORD dataSize = 0;
 
 	if (ERROR_SUCCESS == ::RegGetValueW(parent, subkey, key, RRF_RT_ANY,
@@ -328,6 +345,7 @@ static CefString getRegStr(HKEY parent, const WCHAR *subkey, const WCHAR *key)
 
 		delete[] buffer;
 	}
+#endif
 
 	return result;
 };
@@ -335,10 +353,13 @@ static CefString getRegStr(HKEY parent, const WCHAR *subkey, const WCHAR *key)
 static DWORD getRegDWORD(HKEY parent, const WCHAR *subkey, const WCHAR *key)
 {
 	DWORD result = 0;
+
+#ifdef WIN32
 	DWORD dataSize = sizeof(DWORD);
 
 	::RegGetValueW(parent, subkey, key, RRF_RT_DWORD, NULL, &result,
 		       &dataSize);
+#endif
 
 	return result;
 }
