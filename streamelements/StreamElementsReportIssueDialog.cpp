@@ -260,7 +260,9 @@ void StreamElementsReportIssueDialog::accept()
 				SH_DENYNO,
 				0 /*_S_IREAD | _S_IWRITE*/);
 #else
-			int fd = ::open(localPath.c_str(),
+			std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+
+			int fd = ::open(myconv.to_bytes(localPath).c_str(),
 					 O_RDONLY);
 #endif
 			if (-1 != fd) {
