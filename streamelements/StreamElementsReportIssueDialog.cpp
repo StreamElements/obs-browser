@@ -9,6 +9,8 @@
 
 #include "deps/zip/zip.h"
 
+#include <sys/stat.h>
+
 #include <obs.h>
 #include <obs-module.h>
 #include <obs-frontend-api.h>
@@ -34,6 +36,10 @@
 #endif
 
 #include <QMessageBox>
+
+#ifndef BYTE
+	typedef unsigned char BYTE;
+#endif
 
 static std::string get_newest_file(const char *location)
 {
@@ -88,9 +94,6 @@ static double GetCpuCoreBenchmark(const uint64_t CPU_BENCH_TOTAL, uint64_t& cpu_
 
 	for (uint64_t bench = 0; bench < CPU_BENCH_TOTAL; ++bench) {
 		cpu_bench_accumulator *= cpu_bench_accumulator;
-		//if (dialog.cancelled()) {
-		//	goto cancelled;
-		//}
 	}
 
 	uint64_t cpu_bench_end = os_gettime_ns();
@@ -155,8 +158,8 @@ void StreamElementsReportIssueDialog::accept()
 		std::string descriptionText = wstring_to_utf8(
 			ui->txtIssue->toPlainText().trimmed().toStdWString());
 
-#ifdef WIN32
 		const size_t BUF_LEN = 2048;
+#ifdef WIN32
 		wchar_t pathBuffer[BUF_LEN];
 
 		if (!::GetTempPathW(BUF_LEN, pathBuffer)) {
@@ -253,8 +256,8 @@ void StreamElementsReportIssueDialog::accept()
 #ifdef WIN32
 			int fd = _wsopen(
 				localPath.c_str(),
-				_O_RDONLY | _O_BINARY,
-				_SH_DENYNO,
+				O_RDONLY | O_BINARY,
+				SH_DENYNO,
 				0 /*_S_IREAD | _S_IWRITE*/);
 #else
 			int fd = open(localPath.c_str(),
@@ -289,11 +292,9 @@ void StreamElementsReportIssueDialog::accept()
 			}
 		};
 
+#ifdef WIN32
 		auto addWindowCaptureToZip = [&](const HWND& hWnd, int nBitCount, std::wstring zipPath)
 		{
-#ifndef WIN32
-			return true;
-#else
 			//calculate the number of color indexes in the color table
 			int nColorTableEntries = -1;
 			switch (nBitCount)
@@ -421,8 +422,8 @@ void StreamElementsReportIssueDialog::accept()
 			delete[]lpBitmapInfoHeader;
 
 			return true;
-#endif
 		};
+#endif
 
 		std::string package_manifest = "generator=report_issue\nversion=4\n";
 		addBufferToZip((BYTE*)package_manifest.c_str(), package_manifest.size(), L"manifest.ini");
@@ -430,11 +431,13 @@ void StreamElementsReportIssueDialog::accept()
 		// Add user-provided description
 		addBufferToZip((BYTE*)descriptionText.c_str(), descriptionText.size(), L"description.txt");
 
+#ifdef WIN32
 		// Add window capture
 		addWindowCaptureToZip(
 			(HWND)StreamElementsGlobalStateManager::GetInstance()->mainWindow()->winId(),
 			24,
 			L"obs-main-window.bmp");
+#endif
 
 		std::map<std::wstring, std::wstring> local_to_zip_files_map;
 
@@ -521,7 +524,7 @@ void StreamElementsReportIssueDialog::accept()
 
 		for (auto item : local_to_zip_files_map) {
 			if (dialog.cancelled()) {
-				goto cancelled;
+				break;
 			}
 
 			++count;
@@ -531,145 +534,180 @@ void StreamElementsReportIssueDialog::accept()
 			dialog.setProgress(0, (int)total, (int)count);
 		}
 
-		if (dialog.cancelled()) {
-			goto cancelled;
-		}
-
-		dialog.setMessage(obs_module_text("StreamElements.ReportIssue.Progress.Message.CollectingCpuBenchmark"));
-		qApp->sendPostedEvents();
-
-		/*
-		uint64_t cpu_bench_begin = os_gettime_ns();
-		const uint64_t CPU_BENCH_TOTAL = 10000000;
-		uint64_t cpu_bench_accumulator = 2L;
-
-		for (uint64_t bench = 0; bench < CPU_BENCH_TOTAL; ++bench) {
-			cpu_bench_accumulator *= cpu_bench_accumulator;
-			//if (dialog.cancelled()) {
-			//	goto cancelled;
-			//}
-		}
-
-		uint64_t cpu_bench_end = os_gettime_ns();
-		uint64_t cpu_bench_delta = cpu_bench_end - cpu_bench_begin;
-		double cpu_benchmark = (double)CPU_BENCH_TOTAL / (double)cpu_bench_delta;
-		*/
-
+		double cpu_benchmark = 0;
 		const uint64_t CPU_BENCH_TOTAL = 10000000;
 		uint64_t cpu_bench_delta = 0;
-		double cpu_benchmark = GetCpuCoreBenchmark(CPU_BENCH_TOTAL, cpu_bench_delta);
 
-		if (dialog.cancelled()) {
-			goto cancelled;
+		if (!dialog.cancelled()) {
+			dialog.setMessage(obs_module_text(
+				"StreamElements.ReportIssue.Progress.Message.CollectingCpuBenchmark"));
+			qApp->sendPostedEvents();
+
+			cpu_benchmark = GetCpuCoreBenchmark(
+				CPU_BENCH_TOTAL, cpu_bench_delta);
 		}
 
-		dialog.setMessage(obs_module_text("StreamElements.ReportIssue.Progress.Message.CollectingSysInfo"));
-		qApp->sendPostedEvents();
+		if (!dialog.cancelled()) {
+			dialog.setMessage(obs_module_text(
+				"StreamElements.ReportIssue.Progress.Message.CollectingSysInfo"));
+			qApp->sendPostedEvents();
 
-		{
-			CefRefPtr<CefValue> basicInfo = CefValue::Create();
-			CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
-			basicInfo->SetDictionary(d);
+			{
+				CefRefPtr<CefValue> basicInfo =
+					CefValue::Create();
+				CefRefPtr<CefDictionaryValue> d =
+					CefDictionaryValue::Create();
+				basicInfo->SetDictionary(d);
 
-			std::string bench; bench += (cpu_benchmark);
-			d->SetString("obsVersion", obs_get_version_string());
-			d->SetString("cefVersion", GetCefVersionString());
-			d->SetString("cefApiHash", GetCefPlatformApiHash());
+				std::string bench;
+				bench += (cpu_benchmark);
+				d->SetString("obsVersion",
+					     obs_get_version_string());
+				d->SetString("cefVersion",
+					     GetCefVersionString());
+				d->SetString("cefApiHash",
+					     GetCefPlatformApiHash());
 #ifdef _WIN32
-			d->SetString("platform", "windows");
+				d->SetString("platform", "windows");
 #elif APPLE
-			d->SetString("platform", "macos");
+				d->SetString("platform", "macos");
 #elif LINUX
-			d->SetString("platform", "linux");
+				d->SetString("platform", "linux");
 #else
-			d->SetString("platform", "other");
+				d->SetString("platform", "other");
 #endif
-			d->SetString("streamelementsPluginVersion", GetStreamElementsPluginVersionString());
-			d->SetDouble("cpuCoreBenchmarkScore", (double)cpu_benchmark);
-			d->SetDouble("cpuCoreBenchmarkOpsCount", (double)CPU_BENCH_TOTAL);
-			d->SetDouble("cpuCoreBenchmarkNanoseconds", (double)cpu_bench_delta);
+				d->SetString(
+					"streamelementsPluginVersion",
+					GetStreamElementsPluginVersionString());
+				d->SetDouble("cpuCoreBenchmarkScore",
+					     (double)cpu_benchmark);
+				d->SetDouble("cpuCoreBenchmarkOpsCount",
+					     (double)CPU_BENCH_TOTAL);
+				d->SetDouble("cpuCoreBenchmarkNanoseconds",
+					     (double)cpu_bench_delta);
 #ifdef _WIN64
-			d->SetString("platformArch", "64bit");
+				d->SetString("platformArch", "64bit");
 #else
-			d->SetString("platformArch", "32bit");
+				d->SetString("platformArch", "32bit");
 #endif
-			d->SetString("machineUniqueId", GetComputerSystemUniqueId());
+				d->SetString("machineUniqueId",
+					     GetComputerSystemUniqueId());
 
-			addCefValueToZip(basicInfo, L"system\\basic.json");
-		}
-
-		{
-			CefRefPtr<CefValue> sysHardwareInfo = CefValue::Create();
-
-			SerializeSystemHardwareProperties(sysHardwareInfo);
-
-			addCefValueToZip(sysHardwareInfo, L"system\\hardware.json");
-		}
-
-		{
-			CefRefPtr<CefValue> sysMemoryInfo = CefValue::Create();
-
-			SerializeSystemMemoryUsage(sysMemoryInfo);
-
-			addCefValueToZip(sysMemoryInfo, L"system\\memory.json");
-		}
-
-		{
-			// Histogram CPU & memory usage (past hour, 1 minute intervals)
-
-			auto cpuUsageHistory =
-				StreamElementsGlobalStateManager::GetInstance()->GetPerformanceHistoryTracker()->getCpuUsageSnapshot();
-
-			auto memoryUsageHistory =
-				StreamElementsGlobalStateManager::GetInstance()->GetPerformanceHistoryTracker()->getMemoryUsageSnapshot();
-
-			char lineBuf[512];
-
-			{
-				std::vector<std::string> lines;
-
-				lines.push_back("totalSeconds,busySeconds,idleSeconds");
-				for (auto item : cpuUsageHistory) {
-					sprintf(lineBuf, "%1.2Lf,%1.2Lf,%1.2Lf", item.totalSeconds, item.busySeconds, item.idleSeconds);
-
-					lines.push_back(lineBuf);
-				}
-
-				addLinesBufferToZip(lines, L"system\\usage_history_cpu.csv");
+				addCefValueToZip(basicInfo,
+						 L"system\\basic.json");
 			}
 
 			{
-				std::vector<std::string> lines;
+				CefRefPtr<CefValue> sysHardwareInfo =
+					CefValue::Create();
 
-				lines.push_back("totalSeconds,memoryUsedPercentage");
+				SerializeSystemHardwareProperties(
+					sysHardwareInfo);
 
-				size_t index = 0;
-				for (auto item : memoryUsageHistory) {
-					if (index < cpuUsageHistory.size()) {
-						auto totalSec = cpuUsageHistory[index].totalSeconds;
+				addCefValueToZip(sysHardwareInfo,
+						 L"system\\hardware.json");
+			}
 
-						sprintf(lineBuf, "%1.2Lf,%d",
-							totalSec,
-							item.dwMemoryLoad // % Used
-						);
+			{
+				CefRefPtr<CefValue> sysMemoryInfo =
+					CefValue::Create();
+
+				SerializeSystemMemoryUsage(sysMemoryInfo);
+
+				addCefValueToZip(sysMemoryInfo,
+						 L"system\\memory.json");
+			}
+
+			{
+				// Histogram CPU & memory usage (past hour, 1 minute intervals)
+
+				auto cpuUsageHistory =
+					StreamElementsGlobalStateManager::GetInstance()
+						->GetPerformanceHistoryTracker()
+						->getCpuUsageSnapshot();
+
+				auto memoryUsageHistory =
+					StreamElementsGlobalStateManager::GetInstance()
+						->GetPerformanceHistoryTracker()
+						->getMemoryUsageSnapshot();
+
+				char lineBuf[512];
+
+				{
+					std::vector<std::string> lines;
+
+					lines.push_back(
+						"totalSeconds,busySeconds,idleSeconds");
+					for (auto item : cpuUsageHistory) {
+						sprintf(lineBuf,
+							"%1.2Lf,%1.2Lf,%1.2Lf",
+							item.totalSeconds,
+							item.busySeconds,
+							item.idleSeconds);
+
+						lines.push_back(lineBuf);
 					}
-					else {
-						sprintf(lineBuf, "%1.2Lf,%d",
-							0.0,
-							item.dwMemoryLoad // % Used
-						);
-					}
 
-					lines.push_back(lineBuf);
-
-					++index;
+					addLinesBufferToZip(
+						lines,
+						L"system\\usage_history_cpu.csv");
 				}
 
-				addLinesBufferToZip(lines, L"system\\usage_history_memory.csv");
+				{
+					std::vector<std::string> lines;
+
+					lines.push_back(
+						"totalSeconds,memoryUsedPercentage");
+
+					size_t index = 0;
+					for (auto item : memoryUsageHistory) {
+						if (index <
+						    cpuUsageHistory.size()) {
+							auto totalSec =
+								cpuUsageHistory[index]
+									.totalSeconds;
+
+#ifdef WIN32
+							sprintf(lineBuf,
+								"%1.2Lf,%d",
+								totalSec,
+								item.dwMemoryLoad // % Used
+							);
+#else
+							sprintf(lineBuf,
+								"%1.2Lf,%d",
+								totalSec,
+								item // % Used
+							);
+#endif
+						} else {
+#ifdef WIN32
+							sprintf(lineBuf,
+								"%1.2Lf,%d",
+								0.0,
+								item.dwMemoryLoad // % Used
+							);
+#else
+							sprintf(lineBuf,
+								"%1.2Lf,%d",
+								0.0,
+								item // % Used
+							);
+#endif
+						}
+
+						lines.push_back(lineBuf);
+
+						++index;
+					}
+
+					addLinesBufferToZip(
+						lines,
+						L"system\\usage_history_memory.csv");
+				}
 			}
 		}
 
-cancelled:
 		zip_close(zip);
 
 		if (!dialog.cancelled()) {
