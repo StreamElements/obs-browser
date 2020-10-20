@@ -83,7 +83,7 @@ public:
 #ifdef WIN32
 		m_inputStream.open(to_wide(m_filePath), std::ifstream::binary);
 #else
-		inputStream.open(fileName, std::ifstream::binary);
+		m_inputStream.open(m_filePath, std::ifstream::binary);
 #endif
 
 		if (!m_inputStream.is_open()) {
