@@ -26,6 +26,7 @@ static std::vector<CefRefPtr<CefBrowser>> s_browsers;
 static bool SetWindowIconFromBuffer(cef_window_handle_t windowHandle,
 				    void *buffer, size_t buffer_len)
 {
+#ifdef WIN32
 	size_t offset = ::LookupIconIdFromDirectoryEx((PBYTE)buffer, TRUE, 0, 0,
 						      LR_DEFAULTCOLOR);
 
@@ -46,6 +47,7 @@ static bool SetWindowIconFromBuffer(cef_window_handle_t windowHandle,
 			return true;
 		}
 	}
+#endif
 
 	return false;
 }
@@ -53,6 +55,7 @@ static bool SetWindowIconFromBuffer(cef_window_handle_t windowHandle,
 static bool SetWindowIconFromResource(cef_window_handle_t windowHandle,
 				      QString &resource)
 {
+#ifdef WIN32
 	QFile file(resource);
 
 	if (file.open(QIODevice::ReadOnly)) {
@@ -61,15 +64,20 @@ static bool SetWindowIconFromResource(cef_window_handle_t windowHandle,
 		return SetWindowIconFromBuffer(windowHandle, data.begin(),
 					       data.size());
 	}
+#endif
 
 	return false;
 }
 
 static bool SetWindowDefaultIcon(cef_window_handle_t windowHandle)
 {
+#ifdef WIN32
 	QString icon(":/images/icon.ico");
 
 	return SetWindowIconFromResource(windowHandle, icon);
+#else
+	return false;
+#endif
 }
 
 /* ========================================================================= */
@@ -225,7 +233,7 @@ void StreamElementsCefClient::OnLoadError(CefRefPtr<CefBrowser> browser,
 					std::regex("\\$\\{error.url\\}"),
 					failedUrl.ToString());
 
-	frame->LoadStringW(htmlString, failedUrl);
+	frame->LoadString(htmlString, failedUrl);
 }
 
 void StreamElementsCefClient::OnLoadingStateChange(
@@ -405,6 +413,7 @@ bool StreamElementsCefClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 					    CefEventHandle os_event,
 					    bool *is_keyboard_shortcut)
 {
+#ifdef WIN32
 	UNREFERENCED_PARAMETER(os_event);
 	UNREFERENCED_PARAMETER(is_keyboard_shortcut);
 
@@ -520,6 +529,7 @@ bool StreamElementsCefClient::OnPreKeyEvent(CefRefPtr<CefBrowser> browser,
 	//
 	// Send the keystroke to the hotkey processing queue.
 	obs_hotkey_inject_event(combo, pressed);
+#endif
 
 	return false;
 }
