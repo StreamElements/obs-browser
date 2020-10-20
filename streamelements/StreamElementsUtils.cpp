@@ -1062,6 +1062,7 @@ static std::string ReadEnvironmentConfigString(const char *regValueName,
 {
 	std::string result = "";
 
+#ifdef WIN32
 	std::string REG_KEY_PATH = GetEnvironmentConfigRegKeyPath(productName);
 
 	DWORD bufLen = 16384;
@@ -1076,6 +1077,7 @@ static std::string ReadEnvironmentConfigString(const char *regValueName,
 	}
 
 	delete[] buffer;
+#endif
 
 	return result;
 }
@@ -1085,6 +1087,7 @@ bool WriteEnvironmentConfigString(const char *regValueName,
 {
 	bool result = false;
 
+#ifdef WIN32
 	std::string REG_KEY_PATH = GetEnvironmentConfigRegKeyPath(productName);
 
 	LSTATUS lResult = RegSetKeyValueA(HKEY_LOCAL_MACHINE,
@@ -1098,10 +1101,11 @@ bool WriteEnvironmentConfigString(const char *regValueName,
 	} else {
 		result = true;
 	}
-
+#endif
 	return result;
 }
 
+#ifdef WIN32
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 static std::wstring GetCurrentDllFolderPathW()
@@ -1126,9 +1130,13 @@ static std::wstring GetCurrentDllFolderPathW()
 
 	return result;
 }
+#endif
 
 bool WriteEnvironmentConfigStrings(streamelements_env_update_requests requests)
 {
+#ifndef WIN32
+	return false;
+#else
 	std::vector<std::string> args;
 
 	for (auto req : requests) {
@@ -1167,6 +1175,7 @@ bool WriteEnvironmentConfigStrings(streamelements_env_update_requests requests)
 	BOOL bResult = hInst > (HINSTANCE)32;
 
 	return bResult;
+#endif
 }
 
 std::string ReadProductEnvironmentConfigurationString(const char *key)
@@ -1192,10 +1201,14 @@ bool WriteProductEnvironmentConfigurationStrings(
 
 /* ========================================================= */
 
+#ifndef WIN32
+#include <uuid/uuid.h>
+#endif
+
 std::string CreateGloballyUniqueIdString()
 {
 	std::string result;
-
+#ifdef WIN32
 	const int GUID_STRING_LENGTH = 39;
 
 	GUID guid;
@@ -1206,16 +1219,29 @@ std::string CreateGloballyUniqueIdString()
 
 	guidStr[GUID_STRING_LENGTH - 2] = 0;
 	result = wstring_to_utf8(guidStr + 1);
+#else
+	uuid_t uuid;
+
+	uuid_generate_time(uuid);
+
+	char buf[128];
+	uuid_unparse(uuid, buf);
+
+	result = buf;
+#endif
 
 	return result;
 }
 
+#ifdef WIN32
 #include <bcrypt.h>
 #pragma comment(lib, "bcrypt.lib")
+#endif
 static std::string CreateCryptoSecureRandomNumberString()
 {
 	std::string result = "0";
 
+#ifdef WIN32
 	BCRYPT_ALG_HANDLE hAlgo;
 
 	if (0 == BCryptOpenAlgorithmProvider(&hAlgo, BCRYPT_RNG_ALGORITHM, NULL,
@@ -1234,16 +1260,28 @@ static std::string CreateCryptoSecureRandomNumberString()
 
 		BCryptCloseAlgorithmProvider(hAlgo, 0);
 	}
+#else
+	// TODO: TBD: Implement OpenSSL-based random number generator
+	// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/rand.3.html
+#endif
 
 	return result;
 }
 
+#ifdef WIN32
 #include <wbemidl.h>
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "OleAut32.lib")
 #pragma comment(lib, "Advapi32.lib")
+#endif
 std::string GetComputerSystemUniqueId()
 {
+#ifndef WIN32
+	// TODO: TBD: Get MacOS serial number
+	// https://stackoverflow.com/questions/5868567/unique-identifier-of-a-mac
+	// -framework IOKit -framework Foundation
+	return "GetComputerSystemUniqueId_NOT_IMPLEMENTED";
+#else
 	const char *REG_VALUE_NAME = "MachineUniqueIdentifier";
 
 	std::string result =
@@ -1400,6 +1438,7 @@ std::string GetComputerSystemUniqueId()
 	}
 
 	return result;
+#endif
 }
 
 bool ParseQueryString(std::string input,
@@ -1861,6 +1900,7 @@ const void *GetPointerFromId(const char *id)
 
 bool GetTemporaryFilePath(std::string prefixString, std::string &result)
 {
+#ifdef WIN32
 	const size_t BUF_LEN = 2048;
 	wchar_t *pathBuffer = new wchar_t[BUF_LEN];
 
@@ -1889,6 +1929,24 @@ bool GetTemporaryFilePath(std::string prefixString, std::string &result)
 	delete[] pathBuffer;
 
 	return true;
+#else
+	static int serial = 0;
+
+	++serial;
+
+	result = "/tmp/";
+	char pid_str[32];
+	sprintf(pid_str, "%d", getpid());
+	result += prefixString;
+	result += ".";
+	result += pid_str;
+	result += ".";
+	char serial_str[32];
+	sprintf(serial_str, "%d", serial);
+	result += serial_str;
+
+	return true;
+#endif
 }
 
 std::string GetUniqueFileNameFromPath(std::string path, size_t maxLength)
