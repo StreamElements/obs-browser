@@ -117,6 +117,7 @@ StreamElementsGlobalStateManager::ThemeChangeListener::ThemeChangeListener()
 	: QDockWidget()
 {
 	setVisible(false);
+	setFloating(true);
 }
 
 void StreamElementsGlobalStateManager::ThemeChangeListener::changeEvent(
@@ -319,9 +320,15 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow *obs_main_window)
 				new ApplicationStateListener();
 			context->self->m_themeChangeListener =
 				new ThemeChangeListener();
+#ifdef WIN32
 			context->self->mainWindow()->addDockWidget(
 				Qt::NoDockWidgetArea,
 				context->self->m_themeChangeListener);
+#else
+			context->self->mainWindow()->addDockWidget(
+				Qt::BottomDockWidgetArea,
+				context->self->m_themeChangeListener);
+#endif
 
 			std::string storagePath = GetCEFStoragePath();
 			int os_mkdirs_ret = os_mkdirs(storagePath.c_str());
