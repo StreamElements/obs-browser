@@ -1248,6 +1248,13 @@ void StreamElementsGlobalStateManager::ReportIssue()
 	}
 }
 
+#ifndef WIN32
+void StreamElementsGlobalStateManager::UninstallPlugin()
+{
+	QMessageBox::information(mainWindow(), "Unsupported",
+				 "This function is not currently supported");
+}
+#else
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 void StreamElementsGlobalStateManager::UninstallPlugin()
@@ -1334,3 +1341,4 @@ void StreamElementsGlobalStateManager::UninstallPlugin()
 		}
 	}
 }
+#endif
