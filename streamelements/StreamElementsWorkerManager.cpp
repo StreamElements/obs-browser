@@ -43,18 +43,11 @@ public:
 				return;
 			}
 
-			RECT clientRect;
-			clientRect.top = 0;
-			clientRect.left = 0;
-			clientRect.right = 1920;
-			clientRect.bottom = 1080;
-
 			// CEF window attributes
 			CefWindowInfo windowInfo;
 			windowInfo.width = 1920;
 			windowInfo.height = 1080;
 			windowInfo.windowless_rendering_enabled = true;
-			//windowInfo.SetAsChild(windowHandle, clientRect);
 
 			CefBrowserSettings cefBrowserSettings;
 

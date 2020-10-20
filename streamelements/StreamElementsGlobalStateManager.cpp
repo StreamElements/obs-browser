@@ -1188,7 +1188,11 @@ bool StreamElementsGlobalStateManager::DeserializePopupWindow(
 		QueueCEFTask([this, url, executeJavaScriptOnLoad,
 			      enableHostApi]() {
 			CefWindowInfo windowInfo;
+#ifdef WIN32
 			windowInfo.SetAsPopup(0, ""); // Initial title
+#else
+			// TODO: TBD: Check if special handling is required for MacOS
+#endif
 
 			CefBrowserSettings cefBrowserSettings;
 
