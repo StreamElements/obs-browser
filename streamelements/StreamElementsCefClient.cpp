@@ -140,13 +140,11 @@ void StreamElementsCefClient::OnLoadStart(CefRefPtr<CefBrowser> browser,
 					  CefRefPtr<CefFrame> frame,
 					  TransitionType transition_type)
 {
-	char buf[16];
-
 	blog(LOG_INFO,
-	     "obs-browser[%lu]: start loading %s frame url '%s' (transition_type: %s)",
+	     "obs-browser[%lu]: start loading %s frame url '%s' (transition_type: %lx)",
 	     m_cefClientId, frame->IsMain() ? "main" : "child",
 	     sanitize_url(frame->GetURL().ToString()).c_str(),
-	     ltoa((long)transition_type, buf, 16));
+	     (long)transition_type);
 }
 
 void StreamElementsCefClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
