@@ -733,8 +733,10 @@ std::string GetStreamElementsApiVersionString()
 
 /* ========================================================= */
 
+#ifdef WIN32
 #include <winhttp.h>
 #pragma comment(lib, "Winhttp.lib")
+#endif
 void SetGlobalCURLOptions(CURL *curl, const char *url)
 {
 	std::string proxy =
