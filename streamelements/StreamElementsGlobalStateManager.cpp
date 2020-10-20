@@ -752,7 +752,7 @@ void StreamElementsGlobalStateManager::DeleteCookies()
 }
 
 void StreamElementsGlobalStateManager::SerializeCookies(
-	CefRefPtr<CefValue> &input, CefRefPtr<CefValue> &output)
+	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
 {
 	output->SetNull();
 

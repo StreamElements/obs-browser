@@ -77,7 +77,7 @@ public:
 		output->SetDictionary(d);
 	}
 
-	bool DeserializeForeignPopupWindowsSettings(CefRefPtr<CefValue> &input)
+	bool DeserializeForeignPopupWindowsSettings(CefRefPtr<CefValue> input)
 	{
 		if (input->GetType() != VTYPE_DICTIONARY) {
 			return false;
