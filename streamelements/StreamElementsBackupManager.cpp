@@ -67,8 +67,8 @@ static bool AddFileToZip(zip_t *zip, std::string localPath, std::string zipPath)
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
 
 	int fd = _wsopen(myconv.from_bytes(localPath).c_str(),
-			 _O_RDONLY | _O_BINARY, _SH_DENYNO,
-			 0 /*_S_IREAD | _S_IWRITE*/);
+			 O_RDONLY | O_BINARY, SH_DENYNO,
+			 0 /*S_IREAD | S_IWRITE*/);
 
 	if (-1 != fd) {
 		size_t BUF_LEN = 32768;
@@ -731,7 +731,7 @@ static size_t HandleZipExtract(void *arg, unsigned long long offset,
 {
 	zip_extract_context_t *context = (zip_extract_context_t *)arg;
 
-	return _write(context->handle, data, size);
+	return write(context->handle, data, size);
 };
 
 void StreamElementsBackupManager::RestoreBackupPackageContent(
@@ -741,6 +741,9 @@ void StreamElementsBackupManager::RestoreBackupPackageContent(
 
 	output->SetNull();
 
+#ifndef WIN32
+	output->SetBool(false);
+#else
 	/* Never allow restore during streaming or recording */
 	if (obs_frontend_streaming_active() || obs_frontend_recording_active())
 		return;
@@ -850,9 +853,9 @@ void StreamElementsBackupManager::RestoreBackupPackageContent(
 					context.handle = _wopen(
 						myconv.from_bytes(destFilePath)
 							.c_str(),
-						_O_WRONLY | _O_CREAT |
-							_O_BINARY,
-						_S_IREAD | _S_IWRITE);
+						O_WRONLY | O_CREAT |
+							O_BINARY,
+						S_IREAD | S_IWRITE);
 
 					if (-1 == context.handle) {
 						success = false;
@@ -867,7 +870,7 @@ void StreamElementsBackupManager::RestoreBackupPackageContent(
 							/* Success */
 						}
 
-						_close(context.handle);
+						close(context.handle);
 					}
 				}
 			}
@@ -1069,4 +1072,5 @@ void StreamElementsBackupManager::RestoreBackupPackageContent(
 	}
 
 	output->SetBool(success);
+#endif
 }
