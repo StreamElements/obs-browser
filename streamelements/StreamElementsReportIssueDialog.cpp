@@ -260,7 +260,7 @@ void StreamElementsReportIssueDialog::accept()
 				SH_DENYNO,
 				0 /*_S_IREAD | _S_IWRITE*/);
 #else
-			int fd = open(localPath.c_str(),
+			int fd = ::open(localPath.c_str(),
 					 O_RDONLY);
 #endif
 			if (-1 != fd) {
