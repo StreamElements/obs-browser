@@ -15,6 +15,11 @@
 #include <QPushButton>
 #include <QMessageBox>
 
+#ifndef WIN32
+#include <errno.h>
+#include <string.h>
+#endif
+
 /* ========================================================================= */
 
 void register_cookie_manager(CefRefPtr<CefCookieManager> cm);
@@ -26,6 +31,7 @@ void flush_cookie_managers();
 
 static QString GetLastErrorMsg()
 {
+#ifdef WIN32
 	LPWSTR bufPtr = NULL;
 	DWORD err = GetLastError();
 	FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -37,6 +43,11 @@ static QString GetLastErrorMsg()
 			 : QString("Unknown Error %1").arg(err);
 	LocalFree(bufPtr);
 	return result;
+#else
+	QString result = strerror(errno);
+
+	return result;
+#endif
 }
 
 /* ========================================================================= */
