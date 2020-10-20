@@ -27,6 +27,14 @@
 typedef unsigned char BYTE;
 #endif
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+#ifndef SH_DENYNO
+#define SH_DENYNO 0
+#endif
+
 static bool GetLocalPathFromURL(std::string url, std::string &path)
 {
 	if (VerifySessionSignedAbsolutePathURL(url, path))
