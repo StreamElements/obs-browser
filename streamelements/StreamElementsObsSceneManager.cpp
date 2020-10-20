@@ -1687,8 +1687,9 @@ StreamElementsObsSceneManager::ObsGetUniqueSourceName(std::string name)
 			++sequence;
 
 			char buf[32];
+			sprintf(buf, "%d", sequence);
 			result = name + " ";
-			result += itoa(sequence, buf, 10);
+			result += buf;
 		}
 	}
 
