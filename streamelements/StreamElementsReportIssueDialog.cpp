@@ -15,7 +15,9 @@
 #include <util/platform.h>
 #include "cef-headers.hpp"
 
+#ifdef WIN32
 #include <windows.h>
+#endif
 
 #include <thread>
 #include <iostream>
@@ -153,6 +155,7 @@ void StreamElementsReportIssueDialog::accept()
 		std::string descriptionText = wstring_to_utf8(
 			ui->txtIssue->toPlainText().trimmed().toStdWString());
 
+#ifdef WIN32
 		const size_t BUF_LEN = 2048;
 		wchar_t pathBuffer[BUF_LEN];
 
@@ -182,6 +185,14 @@ void StreamElementsReportIssueDialog::accept()
 		wtempBufPath += L".zip";
 
 		tempBufPath = wstring_to_utf8(wtempBufPath);
+#else
+		char pid_buf[32];
+		sprintf(pid_buf, "%d", getpid());
+
+		tempBufPath = "/tmp/";
+		tempBufPath += pid_buf;
+		tempBufPath += ".zip";
+#endif
 
 		char programDataPathBuf[BUF_LEN];
 		int ret = os_get_config_path(programDataPathBuf, BUF_LEN, "obs-studio");
@@ -239,12 +250,16 @@ void StreamElementsReportIssueDialog::accept()
 
 		auto addFileToZip = [&](std::wstring localPath, std::wstring zipPath)
 		{
+#ifdef WIN32
 			int fd = _wsopen(
 				localPath.c_str(),
 				_O_RDONLY | _O_BINARY,
 				_SH_DENYNO,
 				0 /*_S_IREAD | _S_IWRITE*/);
-
+#else
+			int fd = open(localPath.c_str(),
+					 O_RDONLY);
+#endif
 			if (-1 != fd) {
 				size_t BUF_LEN = 32768;
 
@@ -252,20 +267,20 @@ void StreamElementsReportIssueDialog::accept()
 
 				zip_entry_open(zip, wstring_to_utf8(zipPath).c_str());
 
-				int read = _read(fd, buf, BUF_LEN);
+				int read = ::read(fd, buf, BUF_LEN);
 				while (read > 0) {
 					if (0 != zip_entry_write(zip, buf, read)) {
 						break;
 					}
 
-					read = _read(fd, buf, BUF_LEN);
+					read = ::read(fd, buf, BUF_LEN);
 				}
 
 				zip_entry_close(zip);
 
 				delete[] buf;
 
-				_close(fd);
+				::close(fd);
 			}
 			else {
 				blog(LOG_ERROR,
@@ -276,6 +291,9 @@ void StreamElementsReportIssueDialog::accept()
 
 		auto addWindowCaptureToZip = [&](const HWND& hWnd, int nBitCount, std::wstring zipPath)
 		{
+#ifndef WIN32
+			return true;
+#else
 			//calculate the number of color indexes in the color table
 			int nColorTableEntries = -1;
 			switch (nBitCount)
@@ -403,6 +421,7 @@ void StreamElementsReportIssueDialog::accept()
 			delete[]lpBitmapInfoHeader;
 
 			return true;
+#endif
 		};
 
 		std::string package_manifest = "generator=report_issue\nversion=4\n";
