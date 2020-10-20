@@ -44,6 +44,7 @@ std::string StreamElementsConfig::GetHeapAnalyticsAppId()
 {
 	std::string result = "413792583";
 
+#ifdef WIN32
 	const char* REG_KEY_PATH = "SOFTWARE\\StreamElements";
 	const char* REG_VALUE_NAME = "HeapAnalyticsAppId";
 
@@ -78,6 +79,7 @@ std::string StreamElementsConfig::GetHeapAnalyticsAppId()
 	}
 
 	delete[] buffer;
+#endif
 
 	return result;
 }
