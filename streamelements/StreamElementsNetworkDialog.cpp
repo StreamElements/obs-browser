@@ -2,7 +2,13 @@
 #include "StreamElementsUtils.hpp"
 #include "ui_StreamElementsNetworkDialog.h"
 
+#ifdef WIN32
 #include <io.h>
+#else
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#endif
 #include <fcntl.h>
 
 #include <obs.h>

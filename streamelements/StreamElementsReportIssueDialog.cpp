@@ -23,7 +23,13 @@
 #include <experimental/filesystem>
 #include <stdio.h>
 #include <fcntl.h>
+#ifdef WIN32
 #include <io.h>
+#else
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#endif
 
 #include <QMessageBox>
 
