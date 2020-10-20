@@ -497,11 +497,11 @@ static void ReadListOfIdsFromCefValue(CefRefPtr<CefValue> input,
 		output.push_back(id);
 	}
 }
+#endif
 
 StreamElementsBackupManager::StreamElementsBackupManager() {}
 
 StreamElementsBackupManager::~StreamElementsBackupManager() {}
-#endif
 
 void StreamElementsBackupManager::CreateLocalBackupPackage(
 	CefRefPtr<CefValue> input, CefRefPtr<CefValue> &output)
