@@ -300,8 +300,7 @@ void StreamElementsReportIssueDialog::accept()
 			}
 		};
 
-#ifdef WIN32
-		auto addWindowCaptureToZip = [&](const HWND& hWnd, int nBitCount, std::wstring zipPath)
+		auto addWindowCaptureToZip = [&](const WId& hWnd, int nBitCount, std::wstring zipPath)
 		{
 			QMainWindow* mainWindow =
 				StreamElementsGlobalStateManager::GetInstance()
@@ -459,7 +458,6 @@ void StreamElementsReportIssueDialog::accept()
 
 			return true;
 		};
-#endif
 
 		std::string package_manifest = "generator=report_issue\nversion=4\n";
 		addBufferToZip((BYTE*)package_manifest.c_str(), package_manifest.size(), L"manifest.ini");
@@ -467,13 +465,11 @@ void StreamElementsReportIssueDialog::accept()
 		// Add user-provided description
 		addBufferToZip((BYTE*)descriptionText.c_str(), descriptionText.size(), L"description.txt");
 
-#ifdef WIN32
 		// Add window capture
 		addWindowCaptureToZip(
-			(HWND)StreamElementsGlobalStateManager::GetInstance()->mainWindow()->winId(),
+			StreamElementsGlobalStateManager::GetInstance()->mainWindow()->winId(),
 			24,
 			L"obs-main-window.bmp");
-#endif
 
 		std::map<std::wstring, std::wstring> local_to_zip_files_map;
 
