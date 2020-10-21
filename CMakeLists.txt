@@ -231,6 +231,11 @@ set(obs-browser_SOURCES
 	streamelements/deps/server/NamedPipesServerClientHandler.cpp
 	streamelements/deps/sqlite/sqlite3.c
 	)
+if (APPLE)
+    list(APPEND obs-browser_SOURCES
+        streamelements/StreamElementsUtils.mm
+    )
+endif(APPLE)
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
 	browser-scheme.hpp

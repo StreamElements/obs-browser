@@ -1275,15 +1275,9 @@ static std::string CreateCryptoSecureRandomNumberString()
 #pragma comment(lib, "wbemuuid.lib")
 #pragma comment(lib, "OleAut32.lib")
 #pragma comment(lib, "Advapi32.lib")
-#endif
+// MacOS version implemented in StreamElementsUtils.mm
 std::string GetComputerSystemUniqueId()
 {
-#ifndef WIN32
-	// TODO: TBD: Get MacOS serial number
-	// https://stackoverflow.com/questions/5868567/unique-identifier-of-a-mac
-	// -framework IOKit -framework Foundation
-	return "GetComputerSystemUniqueId_NOT_IMPLEMENTED";
-#else
 	const char *REG_VALUE_NAME = "MachineUniqueIdentifier";
 
 	std::string result =
@@ -1440,8 +1434,8 @@ std::string GetComputerSystemUniqueId()
 	}
 
 	return result;
-#endif
 }
+#endif
 
 bool ParseQueryString(std::string input,
 		      std::map<std::string, std::string> &result)
