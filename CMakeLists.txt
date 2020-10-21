@@ -479,6 +479,7 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "/bin/mkdir" -p
 		"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/Frameworks"
+	)
 
 	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "/bin/cp" -R
