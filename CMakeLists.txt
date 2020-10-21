@@ -466,11 +466,11 @@ endif()
 
 if(APPLE AND NOT BROWSER_DEPLOY)
 	add_custom_command(TARGET obs-browser-page POST_BUILD
-		COMMAND "echo -------------------")
+		COMMAND "/bin/sh -c 'echo -------------------'")
 	add_custom_command(TARGET obs-browser-page POST_BUILD
 		COMMAND "pwd")
 	add_custom_command(TARGET obs-browser-page POST_BUILD
-		COMMAND "echo -------------------")
+		COMMAND "/bin/sh -c 'echo -------------------'")
 
 	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "install_name_tool" -change
