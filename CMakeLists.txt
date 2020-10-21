@@ -121,6 +121,14 @@ endif()
 list(APPEND obs-browser_LIBRARIES
 	${CEF_LIBRARIES})
 
+if (APPLE)
+	list(APPEND obs-browser_LIBRARIES
+		${CEF_LIBRARIES}
+		"-framework IOKit"
+		"-framework Foundation"
+	)
+endif(APPLE)
+
 if(BROWSER_PANEL_SUPPORT_ENABLED OR USE_QT_LOOP)
 	if(DEFINED QTDIR${_lib_suffix})
 		list(APPEND CMAKE_PREFIX_PATH "${QTDIR${_lib_suffix}}")
