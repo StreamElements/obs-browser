@@ -476,7 +476,7 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 		COMMAND "install_name_tool" -change
 		"@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
-		"obs-browser-page")
+		"${CMAKE_BUILD_TYPE}/obs-browser-page")
 endif()
 
 if (UNIX AND NOT APPLE)
