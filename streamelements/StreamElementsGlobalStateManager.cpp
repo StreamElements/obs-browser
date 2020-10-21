@@ -555,6 +555,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 	// Shutdown on the main thread
 	delete m_crashHandler;
 
+#ifdef WIN32
 	QtExecSync(
 		[](void *data) -> void {
 			StreamElementsGlobalStateManager *self =
@@ -584,6 +585,7 @@ void StreamElementsGlobalStateManager::Shutdown()
 			delete self->m_cookieManager;
 		},
 		this);
+#endif
 
 	m_initialized = false;
 }
