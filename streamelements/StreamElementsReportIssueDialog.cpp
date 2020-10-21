@@ -300,7 +300,7 @@ void StreamElementsReportIssueDialog::accept()
 			}
 		};
 
-		auto addWindowCaptureToZip = [&](const WId& hWnd, int nBitCount, std::wstring zipPath)
+		auto addWindowCaptureToZip = [&](std::wstring zipPath)
 		{
 			QMainWindow* mainWindow =
 				StreamElementsGlobalStateManager::GetInstance()
@@ -328,134 +328,6 @@ void StreamElementsReportIssueDialog::accept()
 
 			zip_entry_close(zip);
 
-			/*
-			//calculate the number of color indexes in the color table
-			int nColorTableEntries = -1;
-			switch (nBitCount)
-			{
-			case 1:
-				nColorTableEntries = 2;
-				break;
-			case 4:
-				nColorTableEntries = 16;
-				break;
-			case 8:
-				nColorTableEntries = 256;
-				break;
-			case 16:
-			case 24:
-			case 32:
-				nColorTableEntries = 0;
-				break;
-			default:
-				nColorTableEntries = -1;
-				break;
-			}
-
-			if (nColorTableEntries == -1)
-			{
-				// printf("bad bits-per-pixel argument\n");
-				return false;
-			}
-
-			HDC hDC = GetDC(hWnd);
-			HDC hMemDC = CreateCompatibleDC(hDC);
-
-			int nWidth = 0;
-			int nHeight = 0;
-
-			if (hWnd != HWND_DESKTOP)
-			{
-				RECT rect;
-				GetClientRect(hWnd, &rect);
-				nWidth = rect.right - rect.left;
-				nHeight = rect.bottom - rect.top;
-			}
-			else
-			{
-				nWidth = ::GetSystemMetrics(SM_CXSCREEN);
-				nHeight = ::GetSystemMetrics(SM_CYSCREEN);
-			}
-
-			HBITMAP hBMP = CreateCompatibleBitmap(hDC, nWidth, nHeight);
-			SelectObject(hMemDC, hBMP);
-			BitBlt(hMemDC, 0, 0, nWidth, nHeight, hDC, 0, 0, SRCCOPY);
-
-			int nStructLength = sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * nColorTableEntries;
-			LPBITMAPINFOHEADER lpBitmapInfoHeader = (LPBITMAPINFOHEADER)new char[nStructLength];
-			::ZeroMemory(lpBitmapInfoHeader, nStructLength);
-
-			lpBitmapInfoHeader->biSize = sizeof(BITMAPINFOHEADER);
-			lpBitmapInfoHeader->biWidth = nWidth;
-			lpBitmapInfoHeader->biHeight = nHeight;
-			lpBitmapInfoHeader->biPlanes = 1;
-			lpBitmapInfoHeader->biBitCount = nBitCount;
-			lpBitmapInfoHeader->biCompression = BI_RGB;
-			lpBitmapInfoHeader->biXPelsPerMeter = 0;
-			lpBitmapInfoHeader->biYPelsPerMeter = 0;
-			lpBitmapInfoHeader->biClrUsed = nColorTableEntries;
-			lpBitmapInfoHeader->biClrImportant = nColorTableEntries;
-
-			DWORD dwBytes = ((DWORD)nWidth * nBitCount) / 32;
-			if (((DWORD)nWidth * nBitCount) % 32) {
-				dwBytes++;
-			}
-			dwBytes *= 4;
-
-			DWORD dwSizeImage = dwBytes * nHeight;
-			lpBitmapInfoHeader->biSizeImage = dwSizeImage;
-
-			LPBYTE lpDibBits = 0;
-			HBITMAP hBitmap = ::CreateDIBSection(hMemDC, (LPBITMAPINFO)lpBitmapInfoHeader, DIB_RGB_COLORS, (void**)&lpDibBits, NULL, 0);
-			SelectObject(hMemDC, hBitmap);
-			BitBlt(hMemDC, 0, 0, nWidth, nHeight, hDC, 0, 0, SRCCOPY);
-			ReleaseDC(hWnd, hDC);
-
-			BITMAPFILEHEADER bmfh;
-			bmfh.bfType = 0x4d42;  // 'BM'
-			int nHeaderSize = sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * nColorTableEntries;
-			bmfh.bfSize = 0;
-			bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
-			bmfh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * nColorTableEntries;
-
-			zip_entry_open(zip, wstring_to_utf8(zipPath).c_str());
-
-			DWORD nColorTableSize = 0;
-			if (nBitCount != 24) {
-				nColorTableSize = (1ULL << nBitCount) * sizeof(RGBQUAD);
-			}
-			else {
-				nColorTableSize = 0;
-			}
-
-			zip_entry_write(zip, &bmfh, sizeof(BITMAPFILEHEADER));
-			zip_entry_write(zip, lpBitmapInfoHeader, nHeaderSize);
-
-			if (nBitCount < 16)
-			{
-				//int nBytesWritten = 0;
-				RGBQUAD *rgbTable = new RGBQUAD[nColorTableEntries * sizeof(RGBQUAD)];
-				//fill RGBQUAD table and write it in file
-				for (int i = 0; i < nColorTableEntries; ++i)
-				{
-					rgbTable[i].rgbRed = rgbTable[i].rgbGreen = rgbTable[i].rgbBlue = i;
-					rgbTable[i].rgbReserved = 0;
-
-					zip_entry_write(zip, &rgbTable[i], sizeof(RGBQUAD));
-				}
-
-				delete[] rgbTable;
-			}
-
-			zip_entry_write(zip, lpDibBits, dwSizeImage);
-
-			zip_entry_close(zip);
-
-			::DeleteObject(hBMP);
-			::DeleteObject(hBitmap);
-			delete[]lpBitmapInfoHeader;
-			*/
-
 			return true;
 		};
 
@@ -466,10 +338,7 @@ void StreamElementsReportIssueDialog::accept()
 		addBufferToZip((BYTE*)descriptionText.c_str(), descriptionText.size(), L"description.txt");
 
 		// Add window capture
-		addWindowCaptureToZip(
-			StreamElementsGlobalStateManager::GetInstance()->mainWindow()->winId(),
-			24,
-			L"obs-main-window.bmp");
+		addWindowCaptureToZip(L"obs-main-window.bmp");
 
 		std::map<std::wstring, std::wstring> local_to_zip_files_map;
 
