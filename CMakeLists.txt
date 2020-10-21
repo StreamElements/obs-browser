@@ -477,9 +477,13 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 		"${CMAKE_BUILD_TYPE}/obs-browser-page")
 
 	add_custom_command(TARGET obs-browser POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		COMMAND "/bin/mkdir" -p
+		"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/Frameworks"
+
+	add_custom_command(TARGET obs-browser POST_BUILD
+		COMMAND "/bin/cp" -R
 		"${CEF_ROOT_DIR}/Release/Chromium Embedded Framework.framework"
-		"${OBS_PLUGIN_DESTINATION}/../Frameworks"
+		"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/Frameworks/Chromium Embedded Framework.framework"
 	)
 endif()
 
