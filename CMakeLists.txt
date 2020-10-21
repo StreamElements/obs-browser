@@ -465,12 +465,8 @@ if (WIN32)
 endif()
 
 if(APPLE AND NOT BROWSER_DEPLOY)
-	add_custom_command(TARGET obs-browser-page POST_BUILD
-		COMMAND "/bin/sh -c 'echo -------------------'")
-	add_custom_command(TARGET obs-browser-page POST_BUILD
+	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "pwd")
-	add_custom_command(TARGET obs-browser-page POST_BUILD
-		COMMAND "/bin/sh -c 'echo -------------------'")
 
 	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "install_name_tool" -change
