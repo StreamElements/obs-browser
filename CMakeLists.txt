@@ -466,9 +466,6 @@ endif()
 
 if(APPLE AND NOT BROWSER_DEPLOY)
 	add_custom_command(TARGET obs-browser POST_BUILD
-		COMMAND "pwd")
-
-	add_custom_command(TARGET obs-browser POST_BUILD
 		COMMAND "install_name_tool" -change
 		"@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
@@ -478,6 +475,12 @@ if(APPLE AND NOT BROWSER_DEPLOY)
 		"@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
 		"${CEF_LIBRARY}/Chromium Embedded Framework"
 		"${CMAKE_BUILD_TYPE}/obs-browser-page")
+
+	add_custom_command(TARGET obs-browser POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CEF_ROOT_DIR}/Release/Chromium Embedded Framework.framework"
+		"${OBS_PLUGIN_DESTINATION}/../Frameworks"
+	)
 endif()
 
 if (UNIX AND NOT APPLE)
