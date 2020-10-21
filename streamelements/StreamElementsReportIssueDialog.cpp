@@ -36,6 +36,12 @@
 #endif
 
 #include <QMessageBox>
+#include <QScreen>
+#include <QPixmap>
+#include <QWindow>
+#include <QMainWindow>
+#include <QByteArray>
+#include <QBuffer>
 
 #ifndef BYTE
 	typedef unsigned char BYTE;
@@ -297,6 +303,33 @@ void StreamElementsReportIssueDialog::accept()
 #ifdef WIN32
 		auto addWindowCaptureToZip = [&](const HWND& hWnd, int nBitCount, std::wstring zipPath)
 		{
+			QMainWindow* mainWindow =
+				StreamElementsGlobalStateManager::GetInstance()
+					->mainWindow();
+
+			WId winId = mainWindow->winId();
+
+			QScreen *screen = QGuiApplication::primaryScreen();
+			if (const QWindow *window =
+				    mainWindow->windowHandle()) {
+				screen = window->screen();
+			}
+
+			QPixmap pixmap = screen->grabWindow(winId);
+
+			QByteArray bytes;
+			QBuffer buffer(&bytes);
+			buffer.open(QIODevice::WriteOnly);
+			pixmap.save(&buffer, "BMP");
+
+			zip_entry_open(zip, wstring_to_utf8(zipPath).c_str());
+
+			zip_entry_write(zip, buffer.data().constData(),
+					buffer.size());
+
+			zip_entry_close(zip);
+
+			/*
 			//calculate the number of color indexes in the color table
 			int nColorTableEntries = -1;
 			switch (nBitCount)
@@ -422,6 +455,7 @@ void StreamElementsReportIssueDialog::accept()
 			::DeleteObject(hBMP);
 			::DeleteObject(hBitmap);
 			delete[]lpBitmapInfoHeader;
+			*/
 
 			return true;
 		};
