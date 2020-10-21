@@ -1079,6 +1079,8 @@ static std::string ReadEnvironmentConfigString(const char *regValueName,
 	}
 
 	delete[] buffer;
+#else
+    // TODO: TBD: Implement
 #endif
 
 	return result;
@@ -1137,6 +1139,7 @@ static std::wstring GetCurrentDllFolderPathW()
 bool WriteEnvironmentConfigStrings(streamelements_env_update_requests requests)
 {
 #ifndef WIN32
+    // TODO: TBD: Implement
 	return false;
 #else
 	std::vector<std::string> args;
@@ -1238,12 +1241,10 @@ std::string CreateGloballyUniqueIdString()
 #ifdef WIN32
 #include <bcrypt.h>
 #pragma comment(lib, "bcrypt.lib")
-#endif
-static std::string CreateCryptoSecureRandomNumberString()
+std::string CreateCryptoSecureRandomNumberString()
 {
 	std::string result = "0";
 
-#ifdef WIN32
 	BCRYPT_ALG_HANDLE hAlgo;
 
 	if (0 == BCryptOpenAlgorithmProvider(&hAlgo, BCRYPT_RNG_ALGORITHM, NULL,
@@ -1262,13 +1263,10 @@ static std::string CreateCryptoSecureRandomNumberString()
 
 		BCryptCloseAlgorithmProvider(hAlgo, 0);
 	}
-#else
-	// TODO: TBD: Implement OpenSSL-based random number generator
-	// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/rand.3.html
-#endif
 
 	return result;
 }
+#endif
 
 #ifdef WIN32
 #include <wbemidl.h>

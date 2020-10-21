@@ -5,6 +5,7 @@
 
 #include <unistd.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include <string>
 #include <algorithm>
@@ -56,4 +57,15 @@ std::string GetComputerSystemUniqueId()
     } else {
         return "ERR_NO_PLATFORM_EXPERT";
     }
+}
+
+std::string CreateCryptoSecureRandomNumberString()
+{
+    srandomdev();
+    
+    char buf[64];
+    
+    snprintf(buf, sizeof(buf), "%lX%lX%lX%lX", random(), random(), random(), random());
+
+    return buf;
 }

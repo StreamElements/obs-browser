@@ -117,6 +117,7 @@ bool HttpPostString(const char *url, http_client_headers_t request_headers,
 
 /* ========================================================= */
 
+std::string CreateCryptoSecureRandomNumberString();
 std::string CreateGloballyUniqueIdString();
 std::string GetComputerSystemUniqueId();
 
