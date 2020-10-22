@@ -575,20 +575,32 @@ bool StreamElementsCefClient::OnJSDialog(
 	   const CefString &message_text, const CefString &default_prompt_text,
 	   CefRefPtr<CefJSDialogCallback> callback, bool &suppress_message)
 {
+	WId windowHandle = (WId)browser->GetMainFrame()
+				   ->GetBrowser()
+				   ->GetHost()
+				   ->GetWindowHandle();
+
+#ifdef WIN32
+	windowHandle = (WId)::GetParent((HWND)windowHandle);
+#endif
+
+	QWidget *parentWidget = QWidget::find(windowHandle);
+
 	QString dialogTitle =
 		origin_url.empty() ? "OBS.Live"
 				   : CefFormatUrlForSecurityDisplay(origin_url).ToString().c_str();
 
 	CefString resultBuffer = "";
 
-	QMainWindow* mainWindow = (QMainWindow *)obs_frontend_get_main_window();
+	//QMainWindow* mainWindow = (QMainWindow *)obs_frontend_get_main_window();
+	//QWidget *parentWidget = (QWidget *)mainWindow;
 
 	bool ok = 0;
 	QString text = "";
 
 	switch (dialog_type) {
 	case JSDIALOGTYPE_ALERT:
-		QMessageBox::information((QWidget*)mainWindow, dialogTitle,
+		QMessageBox::information(parentWidget, dialogTitle,
 					 message_text.ToString().c_str());
 
 		callback->Continue(true, resultBuffer);
@@ -596,25 +608,10 @@ bool StreamElementsCefClient::OnJSDialog(
 		return true;
 
 	case JSDIALOGTYPE_CONFIRM:
-		ok = QMessageBox::question(
-				      (QWidget *)mainWindow, dialogTitle,
+		ok = QMessageBox::question(parentWidget, dialogTitle,
 				      message_text.ToString().c_str(),
 				      QMessageBox::Yes,
 				      QMessageBox::No) == QMessageBox::Yes;
-
-		callback->Continue(ok, resultBuffer);
-
-		return true;
-
-	case JSDIALOGTYPE_PROMPT:
-		text = QInputDialog::getText((QWidget *)mainWindow, dialogTitle,
-				      message_text.ToString().c_str(),
-				      QLineEdit::Normal,
-				      default_prompt_text.ToString().c_str(),
-				      &ok);
-		if (ok) {
-			resultBuffer = text.toStdWString();
-		}
 
 		callback->Continue(ok, resultBuffer);
 

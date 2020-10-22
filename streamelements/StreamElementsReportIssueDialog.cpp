@@ -316,6 +316,9 @@ void StreamElementsReportIssueDialog::accept()
 
 			QPixmap pixmap = screen->grabWindow(winId);
 
+			// This won't grab CEF windows' content on Win32
+			// QPixmap pixmap = mainWindow->grab();
+
 			QByteArray bytes;
 			QBuffer buffer(&bytes);
 			buffer.open(QIODevice::WriteOnly);
