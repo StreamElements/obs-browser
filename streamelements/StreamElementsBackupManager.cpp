@@ -1109,7 +1109,9 @@ void StreamElementsBackupManager::RestoreBackupPackageContent(
              * might have, and which appear from time to time. We definitely
              * do NOT want those attributed to Cloud Restore.
              */
+            
             ::exit(0);
+            QApplication::quit();
         }
     }
 #endif
