@@ -308,7 +308,7 @@ void StreamElementsNetworkDialog::DownloadFileAsync(
 			S_IWRITE /*_S_IREAD | _S_IWRITE*/);
 #else
 	int fd = ::open(localPath.c_str(),
-			O_WRONLY);
+			O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
 #endif
 	if (fd < 0) {
 		callback(false, param);
