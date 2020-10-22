@@ -39,6 +39,7 @@ class StreamElementsCefClient : public CefClient,
 				public CefKeyboardHandler,
 				public CefRequestHandler,
 				public CefRenderHandler,
+				public CefJSDialogHandler,
 #if CHROME_VERSION_BUILD >= 3770
 				public CefResourceRequestHandler,
 #endif
@@ -108,6 +109,10 @@ public:
 	}
 
 	/* CefClient */
+	virtual CefRefPtr<CefJSDialogHandler> GetJSDialogHandler() override
+	{
+		return this;
+	}
 	virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override
 	{
 		return this;
@@ -397,6 +402,15 @@ public:
 	{
 		// NOOP
 	}
+
+	/* CefJSDialogHandler */
+	virtual bool OnJSDialog(CefRefPtr<CefBrowser> browser,
+				const CefString &origin_url,
+				CefJSDialogHandler::JSDialogType dialog_type,
+				const CefString &message_text,
+				const CefString &default_prompt_text,
+				CefRefPtr<CefJSDialogCallback> callback,
+				bool &suppress_message);
 
 #if EXPERIMENTAL_SHARED_TEXTURE_SUPPORT_ENABLED
 	virtual void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,

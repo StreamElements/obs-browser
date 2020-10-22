@@ -13,10 +13,13 @@
 #include <sstream>
 #include <algorithm>
 
+#include <QMainWindow>
 #include <QWindow>
 #include <QIcon>
 #include <QWidget>
 #include <QFile>
+#include <QMessageBox>
+#include <QInputDialog>
 
 static std::recursive_mutex s_browsers_mutex;
 static std::vector<CefRefPtr<CefBrowser>> s_browsers;
@@ -564,4 +567,61 @@ StreamElementsCefClient::GetResourceHandler(CefRefPtr<CefBrowser> browser,
 	return StreamElementsGlobalStateManager::GetInstance()
 		->GetLocalWebFilesServer()
 		->GetCefResourceHandler(browser, frame, request);
+}
+
+bool StreamElementsCefClient::OnJSDialog(
+	CefRefPtr<CefBrowser> browser, const CefString &origin_url,
+	   CefJSDialogHandler::JSDialogType dialog_type,
+	   const CefString &message_text, const CefString &default_prompt_text,
+	   CefRefPtr<CefJSDialogCallback> callback, bool &suppress_message)
+{
+	QString dialogTitle =
+		origin_url.empty() ? "OBS.Live"
+				   : CefFormatUrlForSecurityDisplay(origin_url).ToString().c_str();
+
+	CefString resultBuffer = "";
+
+	QMainWindow* mainWindow = (QMainWindow *)obs_frontend_get_main_window();
+
+	bool ok = 0;
+	QString text = "";
+
+	switch (dialog_type) {
+	case JSDIALOGTYPE_ALERT:
+		QMessageBox::information((QWidget*)mainWindow, dialogTitle,
+					 message_text.ToString().c_str());
+
+		callback->Continue(true, resultBuffer);
+
+		return true;
+
+	case JSDIALOGTYPE_CONFIRM:
+		ok = QMessageBox::question(
+				      (QWidget *)mainWindow, dialogTitle,
+				      message_text.ToString().c_str(),
+				      QMessageBox::Ok,
+				      QMessageBox::Cancel) == QMessageBox::Ok;
+
+		callback->Continue(ok, resultBuffer);
+
+		return true;
+
+	case JSDIALOGTYPE_PROMPT:
+		text = QInputDialog::getText((QWidget *)mainWindow, dialogTitle,
+				      message_text.ToString().c_str(),
+				      QLineEdit::Normal,
+				      default_prompt_text.ToString().c_str(),
+				      &ok);
+		if (ok) {
+			resultBuffer = text.toStdWString();
+		}
+
+		callback->Continue(ok, resultBuffer);
+
+		return true;
+
+	default:
+		suppress_message = false;
+		return false;
+	}
 }
