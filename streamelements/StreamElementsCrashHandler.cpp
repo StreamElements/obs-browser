@@ -675,22 +675,24 @@ static inline void AddObsConfigurationFiles()
 		d->SetString("obsVersion", obs_get_version_string());
 		d->SetString("cefVersion", GetCefVersionString());
 		d->SetString("cefApiHash", GetCefPlatformApiHash());
-#ifdef _WIN32
+
+#ifdef WIN32
 		d->SetString("platform", "windows");
-#elif APPLE
+#elif defined(__APPLE__)
 		d->SetString("platform", "macos");
-#elif LINUX
+#elif defined(__linux__)
 		d->SetString("platform", "linux");
-#else
-		d->SetString("platform", "other");
 #endif
+
+		if (sizeof(void*) == 8) {
+			d->SetString("platformArch", "64bit");
+		} else {
+			d->SetString("platformArch", "32bit");
+		}
+
 		d->SetString("streamelementsPluginVersion",
 			     GetStreamElementsPluginVersionString());
-#ifdef _WIN64
-		d->SetString("platformArch", "64bit");
-#else
-		d->SetString("platformArch", "32bit");
-#endif
+
 		d->SetString("machineUniqueId", GetComputerSystemUniqueId());
 
 		addCefValueToZip(basicInfo, L"system\\basic.json");

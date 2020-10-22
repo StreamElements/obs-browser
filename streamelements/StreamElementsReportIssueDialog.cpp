@@ -468,16 +468,21 @@ void StreamElementsReportIssueDialog::accept()
 					     GetCefVersionString());
 				d->SetString("cefApiHash",
 					     GetCefPlatformApiHash());
-#ifdef _WIN32
+#ifdef WIN32
 				d->SetString("platform", "windows");
-#elif APPLE
+#elif defined(__APPLE__)
 				d->SetString("platform", "macos");
-#elif LINUX
+#elif defined(__linux__)
 				d->SetString("platform", "linux");
-#else
-				d->SetString("platform", "other");
 #endif
-				d->SetString(
+
+                if (sizeof(void*) == 8) {
+                    d->SetString("platformArch", "64bit");
+                } else {
+                    d->SetString("platformArch", "32bit");
+                }
+
+                d->SetString(
 					"streamelementsPluginVersion",
 					GetStreamElementsPluginVersionString());
 				d->SetDouble("cpuCoreBenchmarkScore",
@@ -486,12 +491,8 @@ void StreamElementsReportIssueDialog::accept()
 					     (double)CPU_BENCH_TOTAL);
 				d->SetDouble("cpuCoreBenchmarkNanoseconds",
 					     (double)cpu_bench_delta);
-#ifdef _WIN64
-				d->SetString("platformArch", "64bit");
-#else
-				d->SetString("platformArch", "32bit");
-#endif
-				d->SetString("machineUniqueId",
+
+                d->SetString("machineUniqueId",
 					     GetComputerSystemUniqueId());
 
 				addCefValueToZip(basicInfo,
