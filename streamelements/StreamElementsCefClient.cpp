@@ -599,8 +599,8 @@ bool StreamElementsCefClient::OnJSDialog(
 		ok = QMessageBox::question(
 				      (QWidget *)mainWindow, dialogTitle,
 				      message_text.ToString().c_str(),
-				      QMessageBox::Ok,
-				      QMessageBox::Cancel) == QMessageBox::Ok;
+				      QMessageBox::Yes,
+				      QMessageBox::No) == QMessageBox::Yes;
 
 		callback->Continue(ok, resultBuffer);
 
