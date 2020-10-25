@@ -7,6 +7,8 @@
 #include "Version.hpp"
 #include "wide-string.hpp"
 
+#define GLOBAL_ENV_CONFIG_FILE_NAME "obs-studio/streamelements-env.ini"
+
 #if CHROME_VERSION_BUILD >= 3729
 #include <include/cef_api_hash.h>
 #endif
@@ -20,6 +22,8 @@
 #include <curl/curl.h>
 
 #include <obs-frontend-api.h>
+#include <obs-module.h>
+#include <util/config-file.h>
 
 #include <QUrl>
 #include <QFile>
@@ -1080,7 +1084,19 @@ static std::string ReadEnvironmentConfigString(const char *regValueName,
 
 	delete[] buffer;
 #else
-    // TODO: TBD: Implement
+	config_t *config;
+
+	char *filePath = os_get_config_path_ptr(GLOBAL_ENV_CONFIG_FILE_NAME);
+	config_open(&config, configPath, CONFIG_OPEN_ALWAYS);
+	bfree(filePath);
+
+	char* str = config_get_string(config, productName ? productName : "Global", regValueName);
+
+	if (str) {
+		result = str;
+	}
+
+	config_close(&config);
 #endif
 
 	return result;
@@ -1105,6 +1121,22 @@ bool WriteEnvironmentConfigString(const char *regValueName,
 	} else {
 		result = true;
 	}
+#else
+	config_t *config;
+
+	char *filePath = os_get_config_path_ptr(GLOBAL_ENV_CONFIG_FILE_NAME);
+	config_open(&config, configPath, CONFIG_OPEN_ALWAYS);
+	bfree(filePath);
+
+	char *str = config_set_string(config,
+				      productName ? productName : "Global",
+				      regValueName, regValue);
+
+	config_save_safe(config, "tmp", "bak");
+
+	config_close(&config);
+
+	result = true;
 #endif
 	return result;
 }
@@ -1139,8 +1171,14 @@ static std::wstring GetCurrentDllFolderPathW()
 bool WriteEnvironmentConfigStrings(streamelements_env_update_requests requests)
 {
 #ifndef WIN32
-    // TODO: TBD: Implement
-	return false;
+	for (auto req : requests) {
+		if (!WriteEnvironmentConfigString(req.key.c_str(), req.value.c_str(),
+						  req.product.c_str())) {
+			return false;
+		}
+	}
+
+	return true;
 #else
 	std::vector<std::string> args;
 
