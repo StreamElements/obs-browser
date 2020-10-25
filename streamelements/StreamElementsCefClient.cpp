@@ -585,7 +585,7 @@ bool StreamElementsCefClient::OnJSDialog(
 #endif
 
 	QWidget *parentWidget = QWidget::find(windowHandle);
-
+    
 	QString dialogTitle =
 		origin_url.empty() ? "OBS.Live"
 				   : CefFormatUrlForSecurityDisplay(origin_url).ToString().c_str();
@@ -595,26 +595,38 @@ bool StreamElementsCefClient::OnJSDialog(
 	//QMainWindow* mainWindow = (QMainWindow *)obs_frontend_get_main_window();
 	//QWidget *parentWidget = (QWidget *)mainWindow;
 
-	bool ok = 0;
-	QString text = "";
-
 	switch (dialog_type) {
 	case JSDIALOGTYPE_ALERT:
-		QMessageBox::information(parentWidget, dialogTitle,
-					 message_text.ToString().c_str());
+        {
+            QMessageBox msgBox;
+            msgBox.setParent(parentWidget);
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setText(message_text.ToString().c_str());
+            msgBox.setWindowTitle(dialogTitle);
+            
+            SetAlwaysOnTop(&msgBox, true);
+            
+            msgBox.exec();
 
-		callback->Continue(true, resultBuffer);
-
+            callback->Continue(true, resultBuffer);
+        }
 		return true;
 
 	case JSDIALOGTYPE_CONFIRM:
-		ok = QMessageBox::question(parentWidget, dialogTitle,
-				      message_text.ToString().c_str(),
-				      QMessageBox::Yes,
-				      QMessageBox::No) == QMessageBox::Yes;
+        {
+            QMessageBox msgBox;
+            msgBox.setParent(parentWidget);
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setText(message_text.ToString().c_str());
+            msgBox.setWindowTitle(dialogTitle);
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 
-		callback->Continue(ok, resultBuffer);
+            SetAlwaysOnTop(&msgBox, true);
 
+            bool ok = msgBox.exec() == QMessageBox::Yes;
+
+            callback->Continue(ok, resultBuffer);
+        }
 		return true;
 
 	default:

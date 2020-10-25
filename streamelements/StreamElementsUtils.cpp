@@ -1576,6 +1576,8 @@ bool VerifySessionSignedAbsolutePathURL(std::string url, std::string &path)
 
 bool IsAlwaysOnTop(QWidget *window)
 {
+    if (!window) return false;
+    
 #ifdef WIN32
 	DWORD exStyle = GetWindowLong((HWND)window->winId(), GWL_EXSTYLE);
 	return (exStyle & WS_EX_TOPMOST) != 0;
@@ -1586,6 +1588,8 @@ bool IsAlwaysOnTop(QWidget *window)
 
 void SetAlwaysOnTop(QWidget *window, bool enable)
 {
+    if (!window) return;
+
 #ifdef WIN32
 	HWND hwnd = (HWND)window->winId();
 	SetWindowPos(hwnd, enable ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
