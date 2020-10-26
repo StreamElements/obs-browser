@@ -25,7 +25,9 @@ public:
 	#ifdef WIN32
 	typedef MEMORYSTATUSEX memory_usage_t;
 	#else
-	typedef long long memory_usage_t;
+    struct memory_usage_t {
+        unsigned int dwMemoryLoad; // Usage %
+    };
 	#endif
 
 public:

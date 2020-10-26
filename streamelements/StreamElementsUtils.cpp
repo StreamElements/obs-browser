@@ -34,6 +34,17 @@
 #include "deps/picosha2/picosha2.h"
 
 #ifndef WIN32
+#include <mach/mach_types.h>
+#include <mach/mach_init.h>
+#include <mach/mach_host.h>
+#include <mach/host_info.h>
+#include <mach/mach_time.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
+#endif
+
+#ifndef WIN32
 	#define sprintf_s sprintf
 
 	#ifndef WCHAR
@@ -300,12 +311,29 @@ void SerializeSystemTimes(CefRefPtr<CefValue> &output)
 		d->SetDouble("totalSeconds", kernelRat + userRat);
 		d->SetDouble("busySeconds", kernelRat + userRat - idleRat);
 	}
+#else
+    mach_port_t mach_port = mach_host_self();
+    host_cpu_load_info_data_t cpu_load_info;
+
+    mach_msg_type_number_t cpu_load_info_count = HOST_CPU_LOAD_INFO_COUNT;
+    if (host_statistics((host_t)mach_port, HOST_CPU_LOAD_INFO, (host_info_t)&cpu_load_info, &cpu_load_info_count) == KERN_SUCCESS) {
+        CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
+        output->SetDictionary(d);
+
+        d->SetDouble("idleSeconds", (double)(cpu_load_info.cpu_ticks[CPU_STATE_IDLE]) / (double)CLOCKS_PER_SEC);
+        d->SetDouble("kernelSeconds", (double)(cpu_load_info.cpu_ticks[CPU_STATE_SYSTEM]) / (double)CLOCKS_PER_SEC);
+        d->SetDouble("userSeconds", (double)(cpu_load_info.cpu_ticks[CPU_STATE_USER] + cpu_load_info.cpu_ticks[CPU_STATE_NICE]) / (double)CLOCKS_PER_SEC);
+        d->SetDouble("totalSeconds", (double)(cpu_load_info.cpu_ticks[CPU_STATE_SYSTEM] + cpu_load_info.cpu_ticks[CPU_STATE_USER] + cpu_load_info.cpu_ticks[CPU_STATE_IDLE] + cpu_load_info.cpu_ticks[CPU_STATE_NICE]) / (double)CLOCKS_PER_SEC);
+        d->SetDouble("busySeconds", (double)(cpu_load_info.cpu_ticks[CPU_STATE_SYSTEM] + cpu_load_info.cpu_ticks[CPU_STATE_USER] + cpu_load_info.cpu_ticks[CPU_STATE_NICE]) / (double)CLOCKS_PER_SEC);
+    }
 #endif
 }
 
 void SerializeSystemMemoryUsage(CefRefPtr<CefValue> &output)
 {
 	output->SetNull();
+
+    const uint64_t DIV = 1048576;
 
 #ifdef _WIN32
 	MEMORYSTATUSEX mem;
@@ -315,8 +343,6 @@ void SerializeSystemMemoryUsage(CefRefPtr<CefValue> &output)
 	if (GlobalMemoryStatusEx(&mem)) {
 		CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
 		output->SetDictionary(d);
-
-		const DWORDLONG DIV = 1048576;
 
 		d->SetString("units", "MB");
 		d->SetInt("memoryUsedPercentage", mem.dwMemoryLoad);
@@ -329,6 +355,39 @@ void SerializeSystemMemoryUsage(CefRefPtr<CefValue> &output)
 		d->SetInt("totalPageFileSize", mem.ullTotalPageFile / DIV);
 		d->SetInt("freePageFileSize", mem.ullAvailPageFile / DIV);
 	}
+#else
+    mach_port_t mach_port = mach_host_self();
+    vm_statistics_data_t vm_stats;
+
+    mach_msg_type_number_t vm_info_count = HOST_VM_INFO_COUNT;
+    vm_size_t page_size;
+    if (host_statistics((host_t)mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &vm_info_count) == KERN_SUCCESS &&
+        host_page_size(mach_port, &page_size) == KERN_SUCCESS) {
+        int64_t free_memory = (int64_t)vm_stats.free_count * (int64_t)page_size;
+        int64_t used_memory = ((int64_t)vm_stats.active_count + (int64_t)vm_stats.inactive_count + (int64_t)vm_stats.wire_count) * (int64_t)page_size;
+        int64_t total_memory = free_memory + used_memory;
+
+        CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
+        output->SetDictionary(d);
+
+        d->SetString("units", "MB");
+        d->SetInt("memoryUsedPercentage", used_memory * 100L / total_memory);
+        d->SetInt("totalVirtualMemory", total_memory / DIV);
+        d->SetInt("freeVirtualMemory", free_memory / DIV);
+        d->SetInt("freeExtendedVirtualMemory", 0);
+        d->SetInt("totalPageFileSize", 0);
+        d->SetInt("freePageFileSize", 0);
+        
+        {
+            int mib[2] = { CTL_HW, HW_MEMSIZE };
+            int64_t physical_memory;
+            size_t length = sizeof(physical_memory);
+            sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+
+            d->SetInt("totalPhysicalMemory", physical_memory / DIV);
+            d->SetInt("freePhysicalMemory", free_memory / DIV); // inaccurate
+        }
+    }
 #endif
 }
 
@@ -370,13 +429,15 @@ static DWORD getRegDWORD(HKEY parent, const WCHAR *subkey, const WCHAR *key)
 	return result;
 }
 
+#ifdef _WIN32
 void SerializeSystemHardwareProperties(CefRefPtr<CefValue> &output)
 {
 	output->SetNull();
 
-#ifdef _WIN32
 	CefRefPtr<CefDictionaryValue> d = CefDictionaryValue::Create();
 	output->SetDictionary(d);
+
+    d->SetString("platform", "windows");
 
 	SYSTEM_INFO info;
 
@@ -407,33 +468,6 @@ void SerializeSystemHardwareProperties(CefRefPtr<CefValue> &output)
 
 	d->SetInt("cpuCount", info.dwNumberOfProcessors);
 	d->SetInt("cpuLevel", info.wProcessorLevel);
-
-	/*
-	CefRefPtr<CefDictionaryValue> f = CefDictionaryValue::Create();
-
-	f->SetBool("PF_3DNOW_INSTRUCTIONS_AVAILABLE", ::IsProcessorFeaturePresent(PF_3DNOW_INSTRUCTIONS_AVAILABLE));
-	f->SetBool("PF_CHANNELS_ENABLED", ::IsProcessorFeaturePresent(PF_CHANNELS_ENABLED));
-	f->SetBool("PF_COMPARE_EXCHANGE_DOUBLE", ::IsProcessorFeaturePresent(PF_COMPARE_EXCHANGE_DOUBLE));
-	f->SetBool("PF_COMPARE_EXCHANGE128", ::IsProcessorFeaturePresent(PF_COMPARE_EXCHANGE128));
-	f->SetBool("PF_COMPARE64_EXCHANGE128", ::IsProcessorFeaturePresent(PF_COMPARE64_EXCHANGE128));
-	f->SetBool("PF_FASTFAIL_AVAILABLE", ::IsProcessorFeaturePresent(PF_FASTFAIL_AVAILABLE));
-	f->SetBool("PF_FLOATING_POINT_EMULATED", ::IsProcessorFeaturePresent(PF_FLOATING_POINT_EMULATED));
-	f->SetBool("PF_FLOATING_POINT_PRECISION_ERRATA", ::IsProcessorFeaturePresent(PF_FLOATING_POINT_PRECISION_ERRATA));
-	f->SetBool("PF_MMX_INSTRUCTIONS_AVAILABLE", ::IsProcessorFeaturePresent(PF_MMX_INSTRUCTIONS_AVAILABLE));
-	f->SetBool("PF_NX_ENABLED", ::IsProcessorFeaturePresent(PF_NX_ENABLED));
-	f->SetBool("PF_PAE_ENABLED", ::IsProcessorFeaturePresent(PF_PAE_ENABLED));
-	f->SetBool("PF_RDTSC_INSTRUCTION_AVAILABLE", ::IsProcessorFeaturePresent(PF_RDTSC_INSTRUCTION_AVAILABLE));
-	f->SetBool("PF_RDWRFSGSBASE_AVAILABLE", ::IsProcessorFeaturePresent(PF_RDWRFSGSBASE_AVAILABLE));
-	f->SetBool("PF_SECOND_LEVEL_ADDRESS_TRANSLATION", ::IsProcessorFeaturePresent(PF_SECOND_LEVEL_ADDRESS_TRANSLATION));
-	f->SetBool("PF_SSE3_INSTRUCTIONS_AVAILABLE", ::IsProcessorFeaturePresent(PF_SSE3_INSTRUCTIONS_AVAILABLE));
-	f->SetBool("PF_VIRT_FIRMWARE_ENABLED", ::IsProcessorFeaturePresent(PF_VIRT_FIRMWARE_ENABLED));
-	f->SetBool("PF_XMMI_INSTRUCTIONS_AVAILABLE", ::IsProcessorFeaturePresent(PF_XMMI_INSTRUCTIONS_AVAILABLE));
-	f->SetBool("PF_XMMI64_INSTRUCTIONS_AVAILABLE", ::IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE));
-	f->SetBool("PF_XSAVE_ENABLED", ::IsProcessorFeaturePresent(PF_XSAVE_ENABLED));
-
-	CefRefPtr<CefValue> featuresValue = CefValue::Create();
-	featuresValue->SetDictionary(f);
-	d->SetValue("cpuFeatures", featuresValue);*/
 
 	{
 		CefRefPtr<CefListValue> cpuList = CefListValue::Create();
@@ -545,8 +579,10 @@ void SerializeSystemHardwareProperties(CefRefPtr<CefValue> &output)
 
 		d->SetDictionary("bios", bios);
 	}
-#endif
+    
+    d->SetString("os", "Windows");
 }
+#endif
 
 /* ========================================================= */
 
