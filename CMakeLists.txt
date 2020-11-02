@@ -211,7 +211,6 @@ set(obs-browser_SOURCES
 	streamelements/StreamElementsPerformanceHistoryTracker.cpp
 	streamelements/StreamElementsNetworkDialog.cpp
 	streamelements/StreamElementsAnalyticsEventsManager.cpp
-	streamelements/StreamElementsCrashHandler.cpp
 	streamelements/StreamElementsMessageBus.cpp
 	streamelements/StreamElementsBrowserSourceApiMessageHandler.cpp
 	streamelements/StreamElementsControllerServer.cpp
@@ -236,11 +235,18 @@ set(obs-browser_SOURCES
 	streamelements/deps/server/NamedPipesServerClientHandler.cpp
 	streamelements/deps/sqlite/sqlite3.c
 	)
+
 if (APPLE)
     list(APPEND obs-browser_SOURCES
         streamelements/StreamElementsUtils.mm
+        streamelements/StreamElementsCrashHandler.mm
+    )
+else()
+    list(APPEND obs-browser_SOURCES
+        streamelements/StreamElementsCrashHandler.cpp
     )
 endif(APPLE)
+
 set(obs-browser_HEADERS
 	obs-browser-source.hpp
 	browser-scheme.hpp
