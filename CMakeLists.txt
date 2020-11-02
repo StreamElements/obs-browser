@@ -100,6 +100,18 @@ configure_file(
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 include_directories("${CEF_ROOT_DIR}")
 
+if (APPLE)
+	add_custom_command(
+		OUTPUT
+			${CMAKE_CURRENT_SOURCE_DIR}/streamelements/mach_exc.h
+			${CMAKE_CURRENT_SOURCE_DIR}/streamelements/mach_excServer.c
+			${CMAKE_CURRENT_SOURCE_DIR}/streamelements/mach_excUser.c
+		MAIN_DEPENDENCY /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/mach/mach_exc.defs
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/streamelements
+		COMMAND mig -v /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/mach/mach_exc.defs
+	)
+endif(APPLE)
+
 # ----------------------------------------------------------------------------
 
 if (ENABLE_BUGSPLAT)
@@ -131,6 +143,7 @@ if (APPLE)
 		${CEF_LIBRARIES}
 		"-framework IOKit"
 		"-framework Foundation"
+		"-framework System"
 	)
 endif(APPLE)
 
@@ -240,6 +253,8 @@ if (APPLE)
     list(APPEND obs-browser_SOURCES
         streamelements/StreamElementsUtils.mm
         streamelements/StreamElementsCrashHandler.mm
+		streamelements/mach_excServer.c
+		streamelements/mach_excUser.c
     )
 else()
     list(APPEND obs-browser_SOURCES
@@ -315,6 +330,12 @@ set(obs-browser_HEADERS
 	streamelements/deps/sqlite/sqlite3.h
 	streamelements/deps/sqlite/sqlite3ext.h
 	)
+
+if (APPLE)
+    list(APPEND obs-browser_HEADERS
+		streamelements/mach_exc.h
+    )
+endif(APPLE)
 
 # only allow browser panels on win32 for now -- other operating systems
 # need more testing

@@ -552,11 +552,11 @@ void StreamElementsGlobalStateManager::Shutdown()
 	//flush_cookie_manager(GetCookieManager()->GetCefCookieManager());
 	//flush_cookie_managers();
 
-	// Shutdown on the main thread
-	delete m_crashHandler;
-
 #ifdef WIN32
-	QtExecSync(
+    // Shutdown on the main thread
+    delete m_crashHandler;
+
+    QtExecSync(
 		[](void *data) -> void {
 			StreamElementsGlobalStateManager *self =
 				(StreamElementsGlobalStateManager *)data;

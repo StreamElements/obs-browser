@@ -1,235 +1,183 @@
 /*
  * MacOS X Crash Handler.
  *
- * Portions of code are Copyright (c) 2003, Brian Alliet. All rights reserved.
+ * The following code was used as reference when writing this module:
+ * https://github.com/danzimm/mach_fun/blob/master/exceptions.c
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- * 
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- * 
- * 3. Neither the name of the author nor the names of contributors may be used
- * to endorse or promote products derived from this software without specific
- * prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS `AS IS'' AND ANY
- * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * The best description of this code can be obtained here:
+ * https://stackoverflow.com/questions/2824105/handling-mach-exceptions-in-64bit-os-x-application
+ *
+ * To handle mach exceptions, you have to register a mach port for the exceptions you are interested in.
+ * You then wait for a message to arrive on the port in another thread. When a message arrives,
+ * you call exc_server() whose implementation is provided by System.library. exec_server() takes the
+ * message that arrived and calls one of three handlers that you must provide. catch_exception_raise(),
+ * catch_exception_raise_state(), or catch_exception_raise_state_identity() depending on the
+ * arguments you passed to task_set_exception_ports(). This is how it is done for 32 bit apps.
+ *
+ * For 64 bit apps, the 32 bit method still works but the data passed to you in your handler may be
+ * truncated to 32 bits. To get 64 bit data passed to your handlers requires a little extra work that
+ * is not very straight forward and as far as I can tell not very well documented. I stumbled onto the
+ * solution by looking at the sources for GDB.
+ *
+ * Instead of calling exc_server() when a message arrives at the port, you have to call mach_exc_server()
+ * instead. The handlers also have to have different names as well catch_mach_exception_raise(),
+ * catch_mach_exception_raise_state(), and catch_mach_exception_raise_state_identity(). The parameters
+ * for the handlers are the same as their 32 bit counterparts. The problem is that mach_exc_server() is
+ * not provided for you the way exc_server() is. To get the implementation for mach_exc_server() requires
+ * the use of the MIG (Mach Interface Generator) utility. MIG takes an interface definition file and
+ * generates a set of source files that include a server function that dispatches mach messages to handlers
+ * you provide. The 10.5 and 10.6 SDKs include a MIG definition file <mach_exc.defs> for the exception
+ * messages and will generate the mach_exc_server() function. You then include the generated source files
+ * in your project and then you are good to go.
+ *
+ * The nice thing is that if you are targeting 10.6+ (and maybe 10.5) you can use the same exception
+ * handling for both 32 and 64 bit. Just OR the exception behavior with MACH_EXCEPTION_CODES when you set
+ * your exception ports. The exception codes will come through as 64 bit values but you can truncate them
+ * to 32 bits in your 32 bit build.
+ *
+ * I took the mach_exc.defs file and copied it to my source directory, opened a terminal and used the
+ * command mig -v mach_exc.defs. This generated mach_exc.h, mach_excServer.c, and mach_excUser.c. I then
+ * included those files in my project, added the correct declaration for the server function in my source
+ * file and implemented my handlers. I then built my app and was good to go.
  */
 
 #include "StreamElementsCrashHandler.hpp"
+#include "StreamElementsGlobalStateManager.hpp"
 
-#include <sys/types.h>
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <mach/mach.h>
-#include <mach/mach_error.h>
-#include <mach/thread_status.h>
-#include <mach/exception.h>
-#include <mach/task.h>
 #include <pthread.h>
-#include <sys/mman.h>
 
-#include "mach_exc.h"
-     
+#include <mutex>
 
-#define DIE(x) do { fprintf(stderr,"%s failed at %d\n",x,__LINE__); exit(1); } while(0)
-#define ABORT(x) do { fprintf(stderr,"%s at %d\n",x,__LINE__); } while(0)
+//#include "mach_exc.h"
 
-/* this is not specific to mach exception handling, its just here to separate required mach code from YOUR code */
-static int my_handle_exn(char *addr, integer_t code);
+static bool initialized = false;
 
-
-/* These are not defined in any header, although they are documented */
-extern boolean_t mach_exc_server(mach_msg_header_t *,mach_msg_header_t *);
-extern kern_return_t exception_raise(
-    mach_port_t,mach_port_t,mach_port_t,
-    exception_type_t,exception_data_t,mach_msg_type_number_t);
-extern kern_return_t exception_raise_state(
-    mach_port_t,mach_port_t,mach_port_t,
-    exception_type_t,exception_data_t,mach_msg_type_number_t,
-    thread_state_flavor_t*,thread_state_t,mach_msg_type_number_t,
-    thread_state_t,mach_msg_type_number_t*);
-extern kern_return_t exception_raise_state_identity(
-    mach_port_t,mach_port_t,mach_port_t,
-    exception_type_t,exception_data_t,mach_msg_type_number_t,
-    thread_state_flavor_t*,thread_state_t,mach_msg_type_number_t,
-    thread_state_t,mach_msg_type_number_t*);
-
-#define MAX_EXCEPTION_PORTS 16
-
-
-static mach_port_t exception_port;
-
-static void *exc_thread(void *junk) {
-    mach_msg_return_t r;
-    /* These two structures contain some private kernel data. We don't need to
-       access any of it so we don't bother defining a proper struct. The
-       correct definitions are in the xnu source code. */
-    struct {
-        mach_msg_header_t head;
-        char data[256];
-    } reply;
-    struct {
-        mach_msg_header_t head;
-        mach_msg_body_t msgh_body;
-        char data[1024];
-    } msg;
-    
-    for(;;) {
-        r = mach_msg(
-            &msg.head,
-            MACH_RCV_MSG|MACH_RCV_LARGE,
-            0,
-            sizeof(msg),
-            exception_port,
-            MACH_MSG_TIMEOUT_NONE,
-            MACH_PORT_NULL);
-        if(r != MACH_MSG_SUCCESS) DIE("mach_msg");
-        
-        /* Handle the message (calls catch_exception_raise) */
-        if(!mach_exc_server(&msg.head,&reply.head)) DIE("mach_exc_server");
-        
-        /* Send the reply */
-        r = mach_msg(
-            &reply.head,
-            MACH_SEND_MSG,
-            reply.head.msgh_size,
-            0,
-            MACH_PORT_NULL,
-            MACH_MSG_TIMEOUT_NONE,
-            MACH_PORT_NULL);
-        if(r != MACH_MSG_SUCCESS) DIE("mach_msg");
-    }
-    /* not reached */
-}
-
-static void exn_init() {
-    kern_return_t r;
-    mach_port_t me;
-    pthread_t thread;
-    pthread_attr_t attr;
-    exception_mask_t mask;
-    
-    me = mach_task_self();
-    r = mach_port_allocate(me,MACH_PORT_RIGHT_RECEIVE,&exception_port);
-    if(r != MACH_MSG_SUCCESS) DIE("mach_port_allocate");
-    
-    r = mach_port_insert_right(me,exception_port,exception_port,
-      MACH_MSG_TYPE_MAKE_SEND);
-    if(r != MACH_MSG_SUCCESS) DIE("mach_port_insert_right");
-    
-    /* for others see mach/exception_types.h */
-    mask = EXC_MASK_BAD_ACCESS;
-    
-    /* set the new exception ports */
-    r = task_set_exception_ports(me,mask,exception_port,EXCEPTION_DEFAULT,MACHINE_THREAD_STATE);
-    if(r != MACH_MSG_SUCCESS) DIE("task_set_exception_ports");
-    
-    if(pthread_attr_init(&attr) != 0) DIE("pthread_attr_init");
-    if(pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_DETACHED) != 0) 
-        DIE("pthread_attr_setdetachedstate");
-    
-    if(pthread_create(&thread,&attr,exc_thread,NULL) != 0)
-        DIE("pthread_create");
-
-    pthread_attr_destroy(&attr);
-}
-
-kern_return_t catch_mach_exception_raise(mach_port_t exception_port,mach_port_t thread,mach_port_t task,exception_type_t exception,exception_data_t code,mach_msg_type_number_t code_count) {
-    kern_return_t r;
-    char *addr;
-
-    thread_state_flavor_t flavor = x86_EXCEPTION_STATE;
-    mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE_COUNT;
-    x86_exception_state_t exc_state;
-
-    /* we should never get anything that isn't EXC_BAD_ACCESS, but just in case */
-    if(exception != EXC_BAD_ACCESS) {
-        /* We aren't interested, pass it on to the old handler */
-        fprintf(stderr,"Exception: 0x%x Code: 0x%x 0x%x in catch....\n",
-            exception,
-            code_count > 0 ? code[0] : -1,
-            code_count > 1 ? code[1] : -1); 
-        return 1;
-    }
-
-    r = thread_get_state(thread,flavor, (natural_t*)&exc_state,&exc_state_count);
-    if (r != KERN_SUCCESS) DIE("thread_get_state");
-    
-    /* This is the address that caused the fault */
-    addr = (char*) exc_state.ues.es64.__faultvaddr;
-
-    /* you could just as easily put your code in here, I'm just doing this to 
-       point out the required code */
-    if(!my_handle_exn(addr, code[0])) return 1;
-    
-    return KERN_SUCCESS;
-}
-kern_return_t catch_mach_exception_raise_state(mach_port_name_t exception_port,
-    int exception, exception_data_t code, mach_msg_type_number_t codeCnt,
-    int flavor, thread_state_t old_state, int old_stateCnt,
-    thread_state_t new_state, int new_stateCnt)
+static void TrackCrash(const char* caller_reference)
 {
-    ABORT("catch_exception_raise_state");
-    return(KERN_INVALID_ARGUMENT);
-}
-kern_return_t catch_mach_exception_raise_state_identity(
-    mach_port_name_t exception_port, mach_port_t thread, mach_port_t task,
-    int exception, exception_data_t code, mach_msg_type_number_t codeCnt,
-    int flavor, thread_state_t old_state, int old_stateCnt,
-    thread_state_t new_state, int new_stateCnt)
-{
-    ABORT("catch_exception_raise_state_identity");
-    return(KERN_INVALID_ARGUMENT);
+    if (!initialized) return;
+
+    blog(LOG_ERROR, "TrackCrash: %s", caller_reference);
+
+    // This will also report the platform and a bunch of other props
+    StreamElementsGlobalStateManager::GetInstance()
+        ->GetAnalyticsEventsManager()
+    ->trackSynchronousEvent("OBS Studio Crashed", json11::Json::object{
+        { "platformCallerReference", caller_reference }
+    });
+
+    blog(LOG_ERROR, "TrackCrash: AFTER REPORT");
+    
+    initialized = false;
 }
 
-static char *data;
+extern "C" {
+    boolean_t mach_exc_server(mach_msg_header_t *, mach_msg_header_t *);
 
-static int my_handle_exn(char *addr, integer_t code) {
-    if(code == KERN_INVALID_ADDRESS) {
-        fprintf(stderr,"Got KERN_INVALID_ADDRESS at %p\n",addr);
-        exit(1);
-    }
-    if(code == KERN_PROTECTION_FAILURE) {
-        fprintf(stderr,"Got KERN_PROTECTION_FAILURE at %p\n",addr);
-        if(addr == NULL) {
-            fprintf(stderr,"Tried to dereference NULL");
-            exit(1);
-        }
-        if(addr == data) {
-            fprintf(stderr,"Making data (%p) writeable\n",addr);
-            if(mprotect(addr,4096,PROT_READ|PROT_WRITE) < 0) DIE("mprotect");
-            return 1; // we handled it
-        }
-        fprintf(stderr,"Got KERN_PROTECTION_FAILURE at %p\n",addr);
-        return 0; // forward it
+    kern_return_t catch_mach_exception_raise(mach_port_t exception_port, mach_port_t thread, mach_port_t task, exception_type_t type, exception_data_t code, mach_msg_type_number_t code_count) {
+
+        TrackCrash("catch_mach_exception_raise");
+
+        return KERN_INVALID_ADDRESS;
     }
 
-    /* You should filter out anything you don't want in the catch_exception_raise... above
-        and forward it */
-    fprintf(stderr,"Got unknown code %d at %p\n",(int)code,addr);
-    return 0;
+
+    kern_return_t catch_mach_exception_raise_state(mach_port_t exception_port, exception_type_t exception, exception_data_t code, mach_msg_type_number_t code_count, int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count, thread_state_t out_state, mach_msg_type_number_t *out_state_count) {
+
+        TrackCrash("catch_mach_exception_raise_state");
+
+        return KERN_INVALID_ADDRESS;
+    }
+
+    kern_return_t catch_mach_exception_raise_state_identity(mach_port_t exception_port, mach_port_t thread, mach_port_t task, exception_type_t exception, exception_data_t code, mach_msg_type_number_t code_count, int *flavor, thread_state_t in_state, mach_msg_type_number_t in_state_count, thread_state_t out_state, mach_msg_type_number_t *out_state_count) {
+        TrackCrash("catch_mach_exception_raise_state_identity");
+
+        return KERN_INVALID_ADDRESS;
+    }
+
+    // TODO: TBD: Copy message pump from:
+    // https://gist.github.com/0x75/5884457
+    static void *server_thread(void *arg) {
+        mach_port_t exc_port = *(mach_port_t *)arg;
+        kern_return_t kr;
+
+        //blog(LOG_INFO, "exc_port: %d", exc_port);
+        
+        while(initialized) {
+            //MACH_RCV_TIMED_OUT
+            if ((kr = mach_msg_server_once(mach_exc_server, 4096, exc_port, 0)) != KERN_SUCCESS) {
+                blog(LOG_ERROR, "mach_msg_server_once: error %#x\n", kr);
+                break;
+            }
+        }
+        return (NULL);
+    }
+
+    static void exn_init() {
+      kern_return_t kr = 0;
+      static mach_port_t exc_port;
+      mach_port_t task = mach_task_self();
+      pthread_t exception_thread;
+      int err;
+      
+        mach_msg_type_number_t maskCount = 1;
+        exception_mask_t mask;
+        exception_handler_t handler;
+        exception_behavior_t behavior;
+        thread_state_flavor_t flavor;
+
+        if ((kr = mach_port_allocate(task, MACH_PORT_RIGHT_RECEIVE, &exc_port)) != KERN_SUCCESS) {
+            blog(LOG_ERROR, "mach_port_allocate: %#x\n", kr);
+            return;
+        }
+
+        //blog(LOG_INFO, "exc_port: %d", exc_port);
+        
+        if ((kr = mach_port_insert_right(task, exc_port, exc_port, MACH_MSG_TYPE_MAKE_SEND)) != KERN_SUCCESS) {
+            blog(LOG_ERROR, "mach_port_allocate: %#x\n", kr);
+            return;
+        }
+
+        if ((kr = task_get_exception_ports(task, EXC_MASK_ALL, &mask, &maskCount, &handler, &behavior, &flavor)) != KERN_SUCCESS) {
+            blog(LOG_ERROR, "task_get_exception_ports: %#x\n", kr);
+            return;
+        }
+
+        if ((err = pthread_create(&exception_thread, NULL, server_thread, &exc_port)) != 0) {
+            blog(LOG_ERROR, "pthread_create server_thread: %s\n", strerror(err));
+            return;
+        }
+      
+        pthread_detach(exception_thread);
+
+        if ((kr = task_set_exception_ports(task, EXC_MASK_ALL, exc_port, EXCEPTION_DEFAULT | MACH_EXCEPTION_CODES, flavor)) != KERN_SUCCESS) {
+            blog(LOG_ERROR, "task_set_exception_ports: %#x\n", kr);
+            return;
+        }
+        
+        blog(LOG_INFO, "Crash Handler Initialized");
+    }
 }
 
 StreamElementsCrashHandler::StreamElementsCrashHandler()
 {
-  exn_init();
+    static std::mutex mutex;
+
+    std::lock_guard<std::mutex> guard(mutex);
+
+    if (!initialized) {
+        initialized = true;
+        
+        exn_init();
+        
+        //exit(0);
+    }
 }
 
 StreamElementsCrashHandler::~StreamElementsCrashHandler()
 {
-
+    // We never destroy the exception handler
+    initialized = false;
 }

@@ -2094,8 +2094,8 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	API_HANDLER_BEGIN("crashProgram");
 	{
 		// Crash
-		*((int *)nullptr) = 12345; // exception
-
+		*((int *)0x133713337) = 12345; // exception
+        
 		UNUSED_PARAMETER(result);
 	}
 	API_HANDLER_END();

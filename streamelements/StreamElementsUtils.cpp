@@ -781,6 +781,7 @@ std::string GetStreamElementsApiVersionString()
 #endif
 void SetGlobalCURLOptions(CURL *curl, const char *url)
 {
+    // TODO: TBD: MacOS: http://mirror.informatimago.com/next/developer.apple.com/qa/qa2001/qa1234.html
 	std::string proxy =
 		GetCommandLineOptionValue("streamelements-http-proxy");
 
