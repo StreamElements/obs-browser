@@ -33,6 +33,10 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <pwd.h>
+#include <time.h>
 #endif
 
 #include <QMessageBox>
@@ -42,6 +46,9 @@
 #include <QMainWindow>
 #include <QByteArray>
 #include <QBuffer>
+
+#include <string>
+#include <regex>
 
 #ifndef BYTE
 	typedef unsigned char BYTE;
@@ -347,7 +354,9 @@ void StreamElementsReportIssueDialog::accept()
 
 		if (collect_all) {
 			std::vector<std::wstring> blacklist = {
-				L"plugin_config/obs-streamelements/obs-streamelements-update.exe",
+                L"plugin_config/obs-streamelements/obs-streamelements-update.exe",
+                L"plugin_config/obs-streamelements/obs-streamelements-update.pkg",
+                L"plugin_config/obs-streamelements/obs-streamelements-update.dmg",
 				L"plugin_config/obs-browser/cache/",
 				L"plugin_config/obs-browser/blob_storage/",
 				L"plugin_config/obs-browser/code cache/",
@@ -420,6 +429,57 @@ void StreamElementsReportIssueDialog::accept()
 			local_to_zip_files_map[obsDataPath + L"\\plugin_config\\obs-browser\\obs-browser-streamelements.ini"] = L"obs-studio\\plugin_config\\obs-browser\\obs-browser-streamelements.ini";
 			local_to_zip_files_map[obsDataPath + L"\\global.ini"] = L"obs-studio\\global.ini";
 		}
+        
+#ifdef __APPLE__
+        // Add apple crash logs
+
+        {
+            const time_t MAX_SECONDS_OLD = 60 * 60 * 24 * 3;
+
+            struct timespec now;
+            clock_gettime(CLOCK_REALTIME, &now);
+
+            struct passwd* pw = getpwuid(getuid());
+
+            std::string logsPath = pw->pw_dir;
+            logsPath += "/Library/Logs/DiagnosticReports";
+
+            DIR* dir = opendir(logsPath.c_str());
+
+            if (dir) {
+                while (struct dirent* ent = readdir(dir)) {
+                    if (ent->d_type == DT_REG && ent->d_name[0] != '.') {
+                        std::string fileName = ent->d_name;
+
+                        std::smatch match;
+
+                        if (!std::regex_search(fileName, match,
+                                    std::regex("^(.+?)\\.(crash|diag)$")))
+                            continue;
+
+                        std::string filePath = logsPath + "/" + fileName;
+
+                        struct stat entstat;
+
+                        if (lstat(filePath.c_str(), &entstat) != 0) continue;
+
+                        time_t delta = now.tv_sec - entstat.st_mtimespec.tv_sec;
+
+                        if (delta < MAX_SECONDS_OLD) {
+                            std::string zipFilePath = "crashes/" + fileName;
+                            
+                            std::wstring_convert<std::codecvt_utf8<wchar_t>>
+                                myconv;
+
+                            local_to_zip_files_map[myconv.from_bytes(filePath)] = myconv.from_bytes(zipFilePath);
+                        }
+                    }
+                }
+
+                closedir(dir);
+            }
+        }
+#endif
 
 		dialog.setMessage(obs_module_text("StreamElements.ReportIssue.Progress.Message.CollectingFiles"));
 
