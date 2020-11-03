@@ -9,6 +9,7 @@
 #include <Carbon/Carbon.h>
 #include <IOKit/hid/IOHIDDevice.h>
 #include <IOKit/hid/IOHIDManager.h>
+#include <SystemConfiguration/SystemConfiguration.h>
 
 #include <unistd.h>
 #include <limits.h>
@@ -215,5 +216,94 @@ void SerializeSystemHardwareProperties(CefRefPtr<CefValue> &output)
         
         // Kernel version
         d->SetString("osKernelVersion", str_sysctlbyname("kern.osrelease"));
+    }
+}
+
+//
+// Set global CURL options, including system proxy settings
+//
+// http://mirror.informatimago.com/next/developer.apple.com/qa/qa2001/qa1234.html
+//
+void SetGlobalCURLOptions(CURL *curl, const char *url)
+{
+    std::string proxy =
+        GetCommandLineOptionValue("streamelements-http-proxy");
+
+    if (!proxy.size()) {
+        char host[512];
+
+        Boolean             result;
+        CFDictionaryRef     proxyDict;
+        CFNumberRef         enableNum;
+        int                 enable;
+        CFStringRef         hostStr;
+        CFNumberRef         portNum;
+        int                 portInt;
+
+        // Get the dictionary.
+        
+        proxyDict = SCDynamicStoreCopyProxies(NULL);
+        result = (proxyDict != NULL);
+
+        // Get the enable flag.  This isn't a CFBoolean, but a CFNumber.
+        
+        if (result) {
+            enableNum = (CFNumberRef) CFDictionaryGetValue(proxyDict,
+                    kSCPropNetProxiesHTTPSEnable);
+
+            result = (enableNum != NULL)
+                    && (CFGetTypeID(enableNum) == CFNumberGetTypeID());
+        }
+        if (result) {
+            result = CFNumberGetValue(enableNum, kCFNumberIntType,
+                        &enable) && (enable != 0);
+        }
+        
+        // Get the proxy host.  DNS names must be in ASCII.  If you
+        // put a non-ASCII character  in the "Secure Web Proxy"
+        // field in the Network preferences panel, the CFStringGetCString
+        // function will fail and this function will return false.
+        
+        if (result) {
+            hostStr = (CFStringRef) CFDictionaryGetValue(proxyDict,
+                        kSCPropNetProxiesHTTPSProxy);
+
+            result = (hostStr != NULL)
+                && (CFGetTypeID(hostStr) == CFStringGetTypeID());
+        }
+        if (result) {
+            result = CFStringGetCString(hostStr, host,
+                (CFIndex) sizeof(host), kCFStringEncodingASCII);
+        }
+        
+        // Get the proxy port.
+        
+        if (result) {
+            portNum = (CFNumberRef) CFDictionaryGetValue(proxyDict,
+                    kSCPropNetProxiesHTTPSPort);
+
+            result = (portNum != NULL)
+                && (CFGetTypeID(portNum) == CFNumberGetTypeID());
+        }
+        if (result) {
+            result = CFNumberGetValue(portNum, kCFNumberIntType, &portInt);
+        }
+
+        // Clean up.
+        
+        if (proxyDict != NULL) {
+            CFRelease(proxyDict);
+        }
+        
+        if (result) {
+            char buf[520];
+            snprintf(buf, sizeof(buf), "%s:%d", host, portInt);
+            proxy = buf;
+        }
+    }
+    
+    if (proxy.size()) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
     }
 }

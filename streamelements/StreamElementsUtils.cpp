@@ -778,7 +778,6 @@ std::string GetStreamElementsApiVersionString()
 #ifdef WIN32
 #include <winhttp.h>
 #pragma comment(lib, "Winhttp.lib")
-#endif
 void SetGlobalCURLOptions(CURL *curl, const char *url)
 {
     // TODO: TBD: MacOS: http://mirror.informatimago.com/next/developer.apple.com/qa/qa2001/qa1234.html
@@ -786,7 +785,6 @@ void SetGlobalCURLOptions(CURL *curl, const char *url)
 		GetCommandLineOptionValue("streamelements-http-proxy");
 
 	if (!proxy.size()) {
-#ifdef _WIN32
 		WINHTTP_CURRENT_USER_IE_PROXY_CONFIG config;
 
 		if (WinHttpGetIEProxyConfigForCurrentUser(&config)) {
@@ -834,7 +832,6 @@ void SetGlobalCURLOptions(CURL *curl, const char *url)
 				GlobalFree((HGLOBAL)config.lpszAutoConfigUrl);
 			}
 		}
-#endif
 	}
 
 	if (proxy.size()) {
@@ -842,6 +839,7 @@ void SetGlobalCURLOptions(CURL *curl, const char *url)
 		curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
 	}
 }
+#endif
 
 struct http_callback_context {
 	http_client_callback_t callback;

@@ -144,6 +144,7 @@ if (APPLE)
 		"-framework IOKit"
 		"-framework Foundation"
 		"-framework System"
+        "-framework SystemConfiguration"
 	)
 endif(APPLE)
 
