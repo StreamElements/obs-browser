@@ -24,7 +24,7 @@ jobs:
 
             echo "Branch: ${CIRCLE_BRANCH}"
 
-            if [ ${CIRCLE_BRANCH} = master ]; then
+            if [ ${CIRCLE_BRANCH} = macos_build ]; then
               aws s3 cp "build/OBS.app/Contents/PlugIns/obs-browser.so" "s3://obs-builds/obs-browser/latest/macos/obs-browser.so";
               aws s3 sync "build/OBS.app/Contents/Frameworks/Chromium Embedded Framework.framework" "s3://obs-builds/obs-browser/latest/macos/Chromium Embedded Framework.framework" --dryrun;
             else
