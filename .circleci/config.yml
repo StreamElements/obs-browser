@@ -8,6 +8,8 @@ jobs:
       - run:
           name: Build
           command: |
+            printf "Building STREAMELEMENTS_PLUGIN_VERSION %s\n" `date +%Y.%m.%d.${CIRCLE_BUILD_NUM}`
+
             export TERM=xterm-256color
 
             brew install awscli
@@ -19,6 +21,10 @@ jobs:
             mv project obs-studio/plugins/obs-browser
 
             cd obs-studio
+
+            printf "#define STREAMELEMENTS_PLUGIN_VERSION %s%06dL\n" `date +%Y%m%d` ${CIRCLE_BUILD_NUM} >plugins/obs-browser/streamelements/Version.generated.hpp
+
+            cat plugins/obs-browser/streamelements/Version.generated.hpp
 
             ./CI/full-build-macos.sh -b
 
