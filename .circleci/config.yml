@@ -22,9 +22,17 @@ jobs:
 
             cd obs-studio
 
+            ls -l plugins
+            ls -l plugins/obs-browser
+            ls -l plugins/obs-browser/streamelements
+
             printf "#define STREAMELEMENTS_PLUGIN_VERSION %s%06dL\n" `date +%Y%m%d` ${CIRCLE_BUILD_NUM} >plugins/obs-browser/streamelements/Version.generated.hpp
 
+            ls -l plugins/obs-browser/streamelements
+
             cat plugins/obs-browser/streamelements/Version.generated.hpp
+
+            ls -l plugins/obs-browser/streamelements
 
             ./CI/full-build-macos.sh -b
 
