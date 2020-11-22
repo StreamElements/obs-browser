@@ -53,26 +53,38 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
 	if (!!m_nativeCentralWidget) {
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp1");
 		SaveDockWidgetsGeometry();
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp2");
 		QApplication::sendPostedEvents();
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp3");
 		QSize currSize = mainWindow()->centralWidget()->size();
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp4");
 		m_parent->setCentralWidget(m_nativeCentralWidget);
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp5");
 		m_nativeCentralWidget = nullptr;
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp6");
 		mainWindow()->centralWidget()->setMinimumSize(currSize);
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp7");
 		// Drain event queue
 		QApplication::sendPostedEvents();
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp8");
 		mainWindow()->centralWidget()->setMinimumSize(0, 0);
 
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp9");
 		RestoreDockWidgetsGeometry();
+
+		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp10");
 	}
 
-	return nullptr;
+	// No more widgets
+	return false;
 }
 
 bool StreamElementsWidgetManager::HasCentralWidget()
