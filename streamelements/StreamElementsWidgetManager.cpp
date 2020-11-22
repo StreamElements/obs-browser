@@ -8,7 +8,7 @@
 #include <QApplication>
 
 StreamElementsWidgetManager::StreamElementsWidgetManager(QMainWindow *parent)
-	: m_parent(parent), m_nativeCentralWidget(nullptr)
+	: m_parent(parent)//, m_nativeCentralWidget(nullptr)
 {
 	assert(parent);
 }
@@ -35,9 +35,13 @@ void StreamElementsWidgetManager::PushCentralWidget(QWidget *widget)
 
 	if (m_currentCentralWidget) return;
 
+	// This will be additionally enforced by OBS_FRONTEND_EVENT_STUDIO_MODE_ENABLED event
+	// handler in handle_obs_frontend_event defined in StreamElementsGlobalStateManager.cpp
 	obs_frontend_set_preview_program_mode(false);
 
+	// Make sure changes take effect by draining the event queue
 	QApplication::sendPostedEvents();
+
 	//QSize prevSize = mainWindow()->centralWidget()->size();
 
 	//widget->setMinimumSize(prevSize);
@@ -75,8 +79,7 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 
 	preview->setVisible(true);
 
-	return false;
-
+	/*
 	if (!!m_nativeCentralWidget) {
 		SaveDockWidgetsGeometry();
 
@@ -96,6 +99,7 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 
 		RestoreDockWidgetsGeometry();
 	}
+	*/
 
 	// No more widgets
 	return false;
@@ -105,7 +109,8 @@ bool StreamElementsWidgetManager::HasCentralWidget()
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
-	return !!m_nativeCentralWidget;
+	return !!m_currentCentralWidget;
+	//return !!m_nativeCentralWidget;
 }
 
 void StreamElementsWidgetManager::OnObsExit()

@@ -100,8 +100,6 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 		return;
 	}
 
-	blog(LOG_INFO, "InitBrowserAsyncInternal %s", m_url.c_str());
-
 	m_window_handle = (cef_window_handle_t)winId();
 
 	CefUIThreadExecute(
@@ -109,11 +107,9 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 			std::lock_guard<std::mutex> guard(
 				m_create_destroy_mutex);
 
-	blog(LOG_INFO, "InitBrowserAsyncInternal - CEF UI 1: %s", m_url.c_str());
 			if (!!m_cef_browser.get()) {
 				return;
 			}
-	blog(LOG_INFO, "InitBrowserAsyncInternal - CEF UI 2: %s", m_url.c_str());
 
 			StreamElementsBrowserWidget *self = this;
 
@@ -190,7 +186,6 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 						nullptr);
 			}
 
-	blog(LOG_INFO, "InitBrowserAsyncInternal - CEF UI 3: %s", m_url.c_str());
 			m_cef_browser = CefBrowserHost::CreateBrowserSync(
 				windowInfo, cefClient,
 				GetInitialPageURLInternal(), cefBrowserSettings,
@@ -199,9 +194,7 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 #endif
 				cefRequestContext);
 
-	blog(LOG_INFO, "InitBrowserAsyncInternal - CEF UI 4: %s", m_url.c_str());
 			UpdateBrowserSize();
-	blog(LOG_INFO, "InitBrowserAsyncInternal - CEF UI 5: %s", m_url.c_str());
 		},
 		true);
 }
