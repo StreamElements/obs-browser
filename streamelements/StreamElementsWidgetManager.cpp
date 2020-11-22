@@ -29,7 +29,8 @@ StreamElementsWidgetManager::~StreamElementsWidgetManager() {}
 // QApplication::sendPostedEvents().
 // Then we reset the new central widget minimum size to 0x0.
 //
-void StreamElementsWidgetManager::PushCentralWidget(QWidget *widget)
+void StreamElementsWidgetManager::PushCentralWidget(
+	QWidget *widget)
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
@@ -74,8 +75,9 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 	QWidget* preview = m_parent->centralWidget()->findChild<QWidget*>("preview");
 
 	m_currentCentralWidget->setVisible(false);
-	layout->removeWidget(m_currentCentralWidget);
-	m_currentCentralWidget->deleteLater(); 
+	int index = layout->indexOf(m_currentCentralWidget);
+	layout->takeAt(index);
+	m_currentCentralWidget->deleteLater();
 	m_currentCentralWidget = nullptr;
 
 	preview->setVisible(true);

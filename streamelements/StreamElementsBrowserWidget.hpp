@@ -1,6 +1,7 @@
 #pragma once
 
 #include "StreamElementsUtils.hpp"
+#include "StreamElementsBrowserWidget.hpp"
 
 #include <QWidget>
 #include <QHideEvent>
@@ -336,6 +337,7 @@ protected:
 				0L);
 #endif
 
+			//m_cef_browser->GetHost()->WasHidden(true);
 			m_cef_browser->GetHost()->CloseBrowser(true);
 			m_cef_browser = NULL;
 		}
