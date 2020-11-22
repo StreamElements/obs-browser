@@ -33,54 +33,68 @@ void StreamElementsWidgetManager::PushCentralWidget(QWidget *widget)
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
+	if (m_currentCentralWidget) return;
+
+	obs_frontend_set_preview_program_mode(false);
+
 	QApplication::sendPostedEvents();
-	QSize prevSize = mainWindow()->centralWidget()->size();
+	//QSize prevSize = mainWindow()->centralWidget()->size();
 
-	widget->setMinimumSize(prevSize);
+	//widget->setMinimumSize(prevSize);
 
-	m_nativeCentralWidget = m_parent->takeCentralWidget();
+	//m_nativeCentralWidget = m_parent->takeCentralWidget();
 
-	m_parent->setCentralWidget(widget);
+	//m_parent->setCentralWidget(widget);
+
+	QLayout* layout = m_parent->centralWidget()->findChild<QLayout*>("previewLayout");
+	QWidget* preview = m_parent->centralWidget()->findChild<QWidget*>("preview");
+
+	preview->setVisible(false);
+	layout->addWidget(widget);
+
+	m_currentCentralWidget = widget;
 
 	// Drain event queue
-	QApplication::sendPostedEvents();
+	//QApplication::sendPostedEvents();
 
-	widget->setMinimumSize(0, 0);
+	//widget->setMinimumSize(0, 0);
 }
 
 bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 {
 	std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
+	if (!m_currentCentralWidget) return false;
+
+	QLayout* layout = m_parent->centralWidget()->findChild<QLayout*>("previewLayout");
+	QWidget* preview = m_parent->centralWidget()->findChild<QWidget*>("preview");
+
+	m_currentCentralWidget->setVisible(false);
+	layout->removeWidget(m_currentCentralWidget);
+	m_currentCentralWidget = nullptr;
+
+	preview->setVisible(true);
+
+	return false;
+
 	if (!!m_nativeCentralWidget) {
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp1");
 		SaveDockWidgetsGeometry();
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp2");
 		QApplication::sendPostedEvents();
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp3");
 		QSize currSize = mainWindow()->centralWidget()->size();
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp4");
-		m_parent->setCentralWidget(m_nativeCentralWidget);
+//		m_parent->setCentralWidget(m_nativeCentralWidget);
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp5");
 		m_nativeCentralWidget = nullptr;
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp6");
 		mainWindow()->centralWidget()->setMinimumSize(currSize);
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp7");
 		// Drain event queue
 		QApplication::sendPostedEvents();
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp8");
 		mainWindow()->centralWidget()->setMinimumSize(0, 0);
 
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp9");
 		RestoreDockWidgetsGeometry();
-
-		blog(LOG_INFO, "DestroyCurrentCentralWidget: cp10");
 	}
 
 	// No more widgets
