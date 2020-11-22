@@ -51,9 +51,16 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(
 	  m_requestedApiMessageHandler(apiMessageHandler),
 	  m_isIncognito(isIncognito)
 {
+	setAttribute(Qt::WA_PaintOnScreen);
+	setAttribute(Qt::WA_StaticContents);
+	setAttribute(Qt::WA_NoSystemBackground);
+	setAttribute(Qt::WA_OpaquePaintEvent);
+	setAttribute(Qt::WA_DontCreateNativeAncestors);
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);
 	// setAttribute(Qt::WA_QuitOnClose, false);
+
+	setFocusPolicy(Qt::ClickFocus);
 
 	// This influences docking widget width/height
 	//setMinimumWidth(200);
@@ -163,7 +170,7 @@ void StreamElementsBrowserWidget::InitBrowserAsyncInternal()
 					->GetCookieManager()
 					->GetCefRequestContext();
 
-				if (m_isIncognito)
+			if (m_isIncognito)
 			{
 				CefRequestContextSettings
 					cefRequestContextSettings;

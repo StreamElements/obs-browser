@@ -206,6 +206,8 @@ protected:
 		}
 	}
 
+	virtual QPaintEngine* paintEngine() const { return nullptr; }
+
 private:
 	void UpdateBrowserSize()
 	{
@@ -307,6 +309,7 @@ protected:
 				m_cef_browser->GetHost()->GetWindowHandle(),
 				SW_HIDE);
 #endif
+			m_cef_browser->GetHost()->WasHidden(true);
 		}
 	}
 
@@ -318,6 +321,7 @@ protected:
 				m_cef_browser->GetHost()->GetWindowHandle(),
 				SW_SHOW);
 #endif
+			m_cef_browser->GetHost()->WasHidden(false);
 		}
 	}
 
@@ -336,6 +340,7 @@ protected:
 				0L);
 #endif
 
+			m_cef_browser->GetHost()->WasHidden(true);
 			m_cef_browser->GetHost()->CloseBrowser(true);
 			m_cef_browser = NULL;
 		}
