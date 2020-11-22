@@ -75,6 +75,7 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 
 	m_currentCentralWidget->setVisible(false);
 	layout->removeWidget(m_currentCentralWidget);
+	m_currentCentralWidget->deleteLater(); 
 	m_currentCentralWidget = nullptr;
 
 	preview->setVisible(true);
