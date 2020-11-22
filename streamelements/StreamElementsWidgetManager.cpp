@@ -75,13 +75,13 @@ bool StreamElementsWidgetManager::DestroyCurrentCentralWidget()
 	QWidget* preview = m_parent->centralWidget()->findChild<QWidget*>("preview");
 
 	m_currentCentralWidget->setVisible(false);
-	int index = layout->indexOf(m_currentCentralWidget);
-	layout->takeAt(index);
+
+	m_currentCentralWidget->parentWidget()->layout()->removeWidget(m_currentCentralWidget);
 	m_currentCentralWidget->deleteLater();
-	m_currentCentralWidget = nullptr;
 
 	preview->setVisible(true);
 
+	m_currentCentralWidget = nullptr;
 	/*
 	if (!!m_nativeCentralWidget) {
 		SaveDockWidgetsGeometry();

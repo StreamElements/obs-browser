@@ -326,7 +326,7 @@ protected:
 	{
 		std::lock_guard<std::mutex> guard(m_create_destroy_mutex);
 
-		if (m_cef_browser.get() != NULL) {
+		if (!!m_cef_browser.get()) {
 			HideBrowser();
 
 #ifdef WIN32
@@ -335,10 +335,12 @@ protected:
 			::SetParent(
 				m_cef_browser->GetHost()->GetWindowHandle(),
 				0L);
-#endif
 
-			//m_cef_browser->GetHost()->WasHidden(true);
+			// Calling this on MacOS causes quit signal to propagate to the main window
+			// and quit the app
 			m_cef_browser->GetHost()->CloseBrowser(true);
+#endif
+			
 			m_cef_browser = NULL;
 		}
 	}
