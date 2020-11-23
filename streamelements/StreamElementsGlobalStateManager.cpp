@@ -325,16 +325,6 @@ void StreamElementsGlobalStateManager::Initialize(QMainWindow *obs_main_window)
 	context.obs_main_window = obs_main_window;
 
 	QtExecSync([](void *data) -> void {
-#ifdef __APPLE__
-        {
-            // Set application icon from app bundle's Resources/obs.icns
-            const char* iconFilePath = "../Resources/obs.icns";
-            if (os_file_exists(iconFilePath)) {
-                qApp->setWindowIcon(QIcon(iconFilePath));
-            }
-        }
-#endif
-        
 			local_context *context = (local_context *)data;
 
 			// http://doc.qt.io/qt-5/qmainwindow.html#DockOption-enum
