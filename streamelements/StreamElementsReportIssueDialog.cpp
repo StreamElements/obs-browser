@@ -46,6 +46,7 @@
 #include <QMainWindow>
 #include <QByteArray>
 #include <QBuffer>
+#include <QDesktopWidget>
 
 #include <string>
 #include <regex>
@@ -313,18 +314,12 @@ void StreamElementsReportIssueDialog::accept()
 				StreamElementsGlobalStateManager::GetInstance()
 					->mainWindow();
 
-			WId winId = mainWindow->winId();
-
-			QScreen *screen = QGuiApplication::primaryScreen();
-			if (const QWindow *window =
-				    mainWindow->windowHandle()) {
-				screen = window->screen();
-			}
-
-			QPixmap pixmap = screen->grabWindow(winId);
-
-			// This won't grab CEF windows' content on Win32
-			// QPixmap pixmap = mainWindow->grab();
+			QDesktopWidget desktop;
+			QScreen *screen =
+				QGuiApplication::screens().at(desktop.screenNumber(this));
+			QRect screenRect = screen->geometry();
+			QPixmap pixmap = screen->grabWindow(0, screenRect.x(),
+				screenRect.y(), screenRect.width(), screenRect.height());
 
 			QByteArray bytes;
 			QBuffer buffer(&bytes);
