@@ -329,7 +329,7 @@ void StreamElementsReportIssueDialog::accept()
 #else
 			QDesktopWidget desktop;
 			QScreen *screen = QGuiApplication::screens().at(
-				desktop.screenNumber(mainWindow));
+				desktop.screenNumber(this));
 			QRect screenRect = screen->geometry();
 			QPixmap pixmap = screen->grabWindow(0, screenRect.x(),
 				screenRect.y(), screenRect.width(), screenRect.height());
