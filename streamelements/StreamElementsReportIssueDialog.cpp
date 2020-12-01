@@ -310,16 +310,30 @@ void StreamElementsReportIssueDialog::accept()
 
 		auto addWindowCaptureToZip = [&](std::wstring zipPath)
 		{
-			QMainWindow* mainWindow =
+#ifdef WIN32
+			QMainWindow *mainWindow =
 				StreamElementsGlobalStateManager::GetInstance()
 					->mainWindow();
 
+			QScreen *screen = QGuiApplication::primaryScreen();
+			if (const QWindow *window =
+				    mainWindow->windowHandle()) {
+				screen = window->screen();
+			}
+
+			QPixmap pixmap =
+				screen->grabWindow(mainWindow->winId());
+
+			// This won't grab CEF windows' content on Win32
+			// QPixmap pixmap = mainWindow->grab();
+#else
 			QDesktopWidget desktop;
-			QScreen *screen =
-				QGuiApplication::screens().at(desktop.screenNumber(this));
+			QScreen *screen = QGuiApplication::screens().at(
+				desktop.screenNumber(mainWindow));
 			QRect screenRect = screen->geometry();
 			QPixmap pixmap = screen->grabWindow(0, screenRect.x(),
 				screenRect.y(), screenRect.width(), screenRect.height());
+#endif
 
 			QByteArray bytes;
 			QBuffer buffer(&bytes);
