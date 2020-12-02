@@ -667,6 +667,9 @@ void StreamElementsCefClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
 					CefRefPtr<CefContextMenuParams> params,
 					CefRefPtr<CefMenuModel> model)
 {
+#ifdef WIN32
+	model->Clear();
+#else
 	model->SetLabel(MENU_ID_UNDO, obs_module_text("StreamElements.Action.Undo"));
 	model->SetLabel(MENU_ID_REDO, obs_module_text("StreamElements.Action.Redo"));
 	model->SetLabel(MENU_ID_CUT, obs_module_text("StreamElements.Action.Cut"));
@@ -674,6 +677,7 @@ void StreamElementsCefClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
 	model->SetLabel(MENU_ID_PASTE, obs_module_text("StreamElements.Action.Paste"));
 	model->SetLabel(MENU_ID_DELETE, obs_module_text("StreamElements.Action.Delete"));
 	model->SetLabel(MENU_ID_SELECT_ALL, obs_module_text("StreamElements.Action.SelectAll"));
+#endif
 }
 
 bool StreamElementsCefClient::RunContextMenu(CefRefPtr<CefBrowser> browser,
