@@ -667,10 +667,6 @@ void StreamElementsCefClient::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
 					CefRefPtr<CefContextMenuParams> params,
 					CefRefPtr<CefMenuModel> model)
 {
-	blog(LOG_INFO, "OnBeforeContextMenu");
-	// Remove all context menu contributions
-	//model->Clear();
-
 	model->SetLabel(MENU_ID_UNDO, obs_module_text("StreamElements.Action.Undo"));
 	model->SetLabel(MENU_ID_REDO, obs_module_text("StreamElements.Action.Redo"));
 	model->SetLabel(MENU_ID_CUT, obs_module_text("StreamElements.Action.Cut"));
