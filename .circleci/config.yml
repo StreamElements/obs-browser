@@ -18,13 +18,13 @@ jobs:
 
             git clone --recursive https://github.com/obsproject/obs-studio.git
 
-            git checkout 26.0.1
-
             rm -rf obs-studio/plugins/obs-browser
 
             mv project obs-studio/plugins/obs-browser
 
             cd obs-studio
+
+            git checkout 26.0.1
 
             printf "#define STREAMELEMENTS_PLUGIN_VERSION %s%06dL\n" `date +%Y%m%d` ${CIRCLE_BUILD_NUM} >plugins/obs-browser/streamelements/Version.generated.hpp
 
