@@ -506,12 +506,10 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 	//QAction* reloadAction = new QAction(qApp->style()->standardIcon(QStyle::SP_BrowserReload), "");
 	QAction *reloadAction =
 		new QAction(QIcon(QPixmap(":/images/toolbar/reload.png")), "");
-	QAction *floatAction = new QAction(
-		qApp->style()->standardIcon(QStyle::SP_TitleBarNormalButton),
-		"");
-	QAction *closeAction = new QAction(
-		qApp->style()->standardIcon(QStyle::SP_TitleBarCloseButton),
-		"");
+	QAction *floatAction =
+		new QAction(QIcon(QPixmap(":/images/toolbar/dockToggle.png")), "");
+	QAction *closeAction =
+		new QAction(QIcon(QPixmap(":/images/toolbar/close.png")), "");
 
 	QFont font;
 	font.setStyleStrategy(QFont::PreferAntialias);
