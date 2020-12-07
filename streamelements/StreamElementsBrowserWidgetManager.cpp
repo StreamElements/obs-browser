@@ -39,6 +39,22 @@ public:
 		updateStyleSheet();
 	}
 
+	virtual bool event(QEvent *event) override
+	{
+		switch (event->type()) {
+			case QEvent::MouseMove:
+			case QEvent::MouseButtonPress:
+			case QEvent::MouseButtonRelease:
+				event->ignore();
+				break;
+
+			default:
+				break;
+		}
+
+		return QWidget::event(event);
+	}
+
 	virtual void changeEvent(QEvent *event) override
 	{
 		if (event->type() == QEvent::StyleChange) {
@@ -547,6 +563,15 @@ bool StreamElementsBrowserWidgetManager::AddDockBrowserWidget(
 		QDockWidget *dock = GetDockWidget(id);
 
 		if (ENABLE_CUSTOM_DOCK_WIDGET_TITLE_BAR) {
+			dock->connect(dock, &QDockWidget::topLevelChanged, [dock,main](bool topLevel) {
+				// Add margin when floating
+				const int margin = topLevel ? 4 : 0;
+				main->setContentsMargins(margin, margin, margin, margin);
+			});
+			if (dock->isFloating()) {
+				main->setContentsMargins(4, 4, 4, 4);
+			}
+
 			QWidget *titleWidget = new LocalTitleWidget(dock);
 
 			titleWidget->setLayout(new QHBoxLayout());
