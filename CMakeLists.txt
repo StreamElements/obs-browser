@@ -331,6 +331,7 @@ set(obs-browser_HEADERS
 	streamelements/deps/server/NamedPipesServerClientHandler.hpp
 	streamelements/deps/sqlite/sqlite3.h
 	streamelements/deps/sqlite/sqlite3ext.h
+	streamelements/deps/cpp-httplib/httplib.h
 	)
 
 if (APPLE)
