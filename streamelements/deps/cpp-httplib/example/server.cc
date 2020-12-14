@@ -107,7 +107,9 @@ int main(void) {
     printf("%s", log(req, res).c_str());
   });
 
+  printf("before listen\n");
   svr.listen("localhost", 8080);
+  printf("after listen\n");
 
   return 0;
 }
