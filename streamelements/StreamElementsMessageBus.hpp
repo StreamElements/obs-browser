@@ -7,6 +7,7 @@
 #include "cef-headers.hpp"
 
 #include "StreamElementsControllerServer.hpp"
+#include "StreamElementsHttpServerManager.hpp"
 
 // Message bus for exchanging messages between:
 //
@@ -48,6 +49,27 @@ public:
 	void RemoveBrowserListener(CefRefPtr<CefBrowser> browser);
 
 public:
+	void DeserializeBrowserHttpServer(CefRefPtr<CefBrowser> browser,
+					  CefRefPtr<CefValue> input,
+					  CefRefPtr<CefValue> &output);
+
+	void SerializeBrowserHttpServers(CefRefPtr<CefBrowser> browser,
+					  CefRefPtr<CefValue> &output);
+
+	void RemoveBrowserHttpServersByIds(CefRefPtr<CefBrowser> browser,
+					   CefRefPtr<CefValue> input,
+					   CefRefPtr<CefValue> &output);
+
+public:
+	// Deliver event message to specific browser
+	//
+	void NotifyBrowserEventListener(CefRefPtr<CefBrowser> browser,
+					std::string scope,
+					std::string source,
+					std::string sourceAddress,
+					std::string event,
+					CefRefPtr<CefValue> payload);
+
 	// Deliver event message to all local listeners (CEF UI, CEF Dialog, Background Worker)
 	// except Browser Sources.
 	//
@@ -117,6 +139,9 @@ public:
 private:
 	std::recursive_mutex m_browser_list_mutex;
 	std::map<CefRefPtr<CefBrowser>, message_destination_filter_flags_t> m_browser_list;
+	std::map<int,
+		 std::shared_ptr<StreamElementsHttpServerManager>>
+		m_browser_http_servers;
 	StreamElementsControllerServer m_external_controller_server;
 
 private:

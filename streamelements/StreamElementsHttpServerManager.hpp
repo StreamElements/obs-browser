@@ -1,3 +1,5 @@
+#pragma once
+
 #include "deps/server/HttpServer.hpp"
 
 #include <string>

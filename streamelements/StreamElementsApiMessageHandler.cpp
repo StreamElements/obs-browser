@@ -2091,13 +2091,30 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	}
 	API_HANDLER_END();
 
-	API_HANDLER_BEGIN("httpServerStart");
+	API_HANDLER_BEGIN("addBrowserScopedHttpServer");
 	{
+		if (args->GetSize()) {
+			StreamElementsMessageBus::GetInstance()
+				->DeserializeBrowserHttpServer(
+					browser, args->GetValue(0), result);
+		}
 	}
 	API_HANDLER_END();
 
-	API_HANDLER_BEGIN("httpServerStop");
+	API_HANDLER_BEGIN("getAllBrowserScopedHttpServers");
 	{
+		StreamElementsMessageBus::GetInstance()
+			->SerializeBrowserHttpServers(browser, result);
+	}
+	API_HANDLER_END();
+
+	API_HANDLER_BEGIN("removeBrowserScopedHttpServersByIds");
+	{
+		if (args->GetSize()) {
+			StreamElementsMessageBus::GetInstance()
+				->RemoveBrowserHttpServersByIds(
+					browser, args->GetValue(0), result);
+		}
 	}
 	API_HANDLER_END();
 
