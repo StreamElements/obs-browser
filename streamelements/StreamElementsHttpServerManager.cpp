@@ -9,6 +9,7 @@ StreamElementsHttpServerManager::StreamElementsHttpServerManager(
 
 StreamElementsHttpServerManager::~StreamElementsHttpServerManager()
 {
+	m_servers.clear();
 }
 
 void StreamElementsHttpServerManager::DeserializeHttpServer(
@@ -81,7 +82,25 @@ void StreamElementsHttpServerManager::RemoveHttpServersByIds(
 {
 	std::lock_guard<decltype(m_mutex)> guard(m_mutex);
 
-	output->SetBool(false);
+	if (input->GetType() == VTYPE_STRING) {
+		std::string id = input->GetString().ToString();
 
-	// TODO: TBD: Implement
+		if (m_servers.count(id)) {
+			m_servers.erase(id);
+		}
+	} else if (input->GetType() == VTYPE_LIST) {
+		CefRefPtr<CefListValue> list = input->GetList();
+
+		for (size_t index = 0; index < list->GetSize(); ++index) {
+			if (list->GetType(index) == VTYPE_STRING) {
+				std::string id = list->GetString(index);
+
+				if (m_servers.count(id)) {
+					m_servers.erase(id);
+				}
+			}
+		}
+	}
+
+	output->SetBool(true);
 }
