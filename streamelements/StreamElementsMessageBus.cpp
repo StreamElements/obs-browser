@@ -68,15 +68,15 @@ void StreamElementsMessageBus::AddBrowserListener(CefRefPtr<CefBrowser> browser,
 
 		rootDict->SetDictionary("headers", headers);
 
-		// Params
-		CefRefPtr<CefDictionaryValue> params =
+		// Query string params
+		CefRefPtr<CefDictionaryValue> query =
 			CefDictionaryValue::Create();
 
 		for (auto kv : req.params) {
-			params->SetString(kv.first, kv.second);
+			query->SetString(kv.first, kv.second);
 		}
 
-		rootDict->SetDictionary("params", params);
+		rootDict->SetDictionary("query", query);
 
 		root->SetDictionary(rootDict);
 
