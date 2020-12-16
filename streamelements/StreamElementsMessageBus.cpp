@@ -51,6 +51,11 @@ void StreamElementsMessageBus::AddBrowserListener(CefRefPtr<CefBrowser> browser,
 
 		CefRefPtr<CefDictionaryValue> rootDict = CefDictionaryValue::Create();
 
+		std::string requestId = CreateGloballyUniqueIdString();
+
+		// ID
+		rootDict->SetString("id", requestId.c_str());
+
 		// Method, path
 		rootDict->SetString("method", req.method.c_str());
 		rootDict->SetString("url", req.path.c_str());
@@ -80,11 +85,33 @@ void StreamElementsMessageBus::AddBrowserListener(CefRefPtr<CefBrowser> browser,
 
 		root->SetDictionary(rootDict);
 
+		{
+			std::lock_guard<decltype(m_waiting_http_requests_mutex)>
+				guard(m_waiting_http_requests_mutex);
+
+			m_waiting_http_requests[requestId] =
+				std::make_shared<WaitingHttpRequestState>(&req,
+									  &res);
+		}
+
 		NotifyBrowserEventListener(browser, "browser", "http",
 					   "urn:http:server:browser",
 					   "hostMessageReceived", root);
 
-		res.set_content("{ \"success\": true }", "application/json");
+		if (0 !=
+		    os_event_timedwait(
+			    m_waiting_http_requests[requestId]->event, 15000)) {
+			// Nobody handled the request
+			res.status = 404;
+			res.reason = "Request Not Handled";
+		}
+
+		{
+			std::lock_guard<decltype(m_waiting_http_requests_mutex)>
+				guard(m_waiting_http_requests_mutex);
+
+			m_waiting_http_requests.erase(requestId);
+		}
 	};
 
 	m_browser_http_servers[browser->GetIdentifier()] =
@@ -99,6 +126,80 @@ void StreamElementsMessageBus::RemoveBrowserListener(CefRefPtr<CefBrowser> brows
 	m_browser_list.erase(browser);
 
 	m_browser_http_servers.erase(browser->GetIdentifier());
+}
+
+void StreamElementsMessageBus::DeserializeHttpRequestResponse(
+	CefRefPtr<CefValue> idInput, CefRefPtr<CefValue> responseInput,
+	CefRefPtr<CefValue> &output)
+{
+	std::lock_guard<std::recursive_mutex> browser_list_guard(m_browser_list_mutex);
+
+	std::lock_guard<decltype(m_waiting_http_requests_mutex)> waiting_http_requests_guard(
+		m_waiting_http_requests_mutex);
+
+	output->SetBool(false);
+
+	if (idInput->GetType() != VTYPE_STRING)
+		return;
+
+	std::string requestId = idInput->GetString();
+
+	if (!m_waiting_http_requests.count(requestId))
+		return;
+
+	if (responseInput->GetType() != VTYPE_DICTIONARY)
+		return;
+
+	CefRefPtr<CefDictionaryValue> d = responseInput->GetDictionary();
+
+	auto res = m_waiting_http_requests[requestId]->response;
+
+	res->status = 200;
+	res->reason = "OK";
+	res->body = "";
+
+	if (d->HasKey("statusCode") && d->GetType("statusCode") == VTYPE_INT) {
+		res->status = d->GetInt("statusCode");
+	}
+
+	if (d->HasKey("statusText") &&
+	    d->GetType("statusText") == VTYPE_STRING) {
+		res->reason = d->GetString("statusText");
+	}
+
+	if (d->HasKey("body")) {
+		if (d->GetType("body") == VTYPE_STRING) {
+			res->set_content(d->GetString("body").ToString(),
+					 "text/plain");
+		} else {
+			res->set_content(CefWriteJSON(d->GetValue("body"),
+						      JSON_WRITER_DEFAULT)
+						 .ToString(),
+					 "application/json");
+		}
+	}
+
+	if (d->HasKey("headers") && d->GetType("headers") == VTYPE_DICTIONARY) {
+		CefRefPtr<CefDictionaryValue> headers =
+			d->GetDictionary("headers");
+
+		CefDictionaryValue::KeyList keys;
+		if (headers->GetKeys(keys)) {
+			for (auto key : keys) {
+				if (headers->GetType(key) == VTYPE_STRING) {
+					std::string val =
+						headers->GetString(key)
+							.ToString();
+
+					res->set_header(key.ToString().c_str(), val.c_str());
+				}
+			}
+		}
+	}
+
+	os_event_signal(m_waiting_http_requests[requestId]->event);
+
+	output->SetBool(true);
 }
 
 void StreamElementsMessageBus::DeserializeBrowserHttpServer(

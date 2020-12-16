@@ -2118,6 +2118,17 @@ void StreamElementsApiMessageHandler::RegisterIncomingApiCallHandlers()
 	}
 	API_HANDLER_END();
 
+	API_HANDLER_BEGIN("sendHttpRequestResponse");
+	{
+		if (args->GetSize() >= 2) {
+			StreamElementsMessageBus::GetInstance()
+				->DeserializeHttpRequestResponse(
+					args->GetValue(0), args->GetValue(1),
+					result);
+		}
+	}
+	API_HANDLER_END();
+
 	API_HANDLER_BEGIN("crashProgram");
 	{
 		// Crash
