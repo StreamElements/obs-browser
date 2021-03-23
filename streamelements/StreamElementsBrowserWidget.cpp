@@ -12,6 +12,115 @@
 #include <mutex>
 #include <regex>
 
+/* ========================================================================= */
+
+#include <set>
+
+static std::recursive_mutex g_mainWindowFocusTrackerMutex;
+static std::set<QWidget *> g_mainWindowFocusTrackerWidgets;
+
+static void HandleMainWindowFocusTrackerWidgetUnfocus()
+{
+	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
+		g_mainWindowFocusTrackerMutex);
+
+	for (auto &widget : g_mainWindowFocusTrackerWidgets) {
+		if (widget->hasFocus()) {
+			widget->clearFocus();
+		}
+	}
+}
+
+#ifdef _WIN32
+static HHOOK g_mainWindowFocusTrackerHook = NULL;
+
+static LRESULT CALLBACK MainWindowFocusTrackerHook(_In_ int nCode,
+						   _In_ WPARAM wParam,
+						   _In_ LPARAM lParam)
+{
+	CWPSTRUCT *msg = (CWPSTRUCT *)lParam;
+
+	if (msg->message == WM_ACTIVATEAPP) {
+		if (!msg->wParam) {
+			if (QThread::currentThread() == qApp->thread()) {
+				HandleMainWindowFocusTrackerWidgetUnfocus();
+			} else {
+				// We're unlikely to reach here, but just in case
+				QtPostTask([]() {
+					HandleMainWindowFocusTrackerWidgetUnfocus();
+				});
+			}
+		}
+	}
+
+	return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+#endif
+
+static void InitMainWindowFocusTracker()
+{
+#ifdef _WIN32
+	if (g_mainWindowFocusTrackerHook)
+		return;
+
+	g_mainWindowFocusTrackerHook =
+		SetWindowsHookExA(WH_CALLWNDPROC, MainWindowFocusTrackerHook,
+				  NULL, GetCurrentThreadId());
+
+	if (!g_mainWindowFocusTrackerHook) {
+		blog(LOG_ERROR,
+		     "InitMainWindowFocusTracker: SetWindowsHookExA call failed");
+	} else {
+		blog(LOG_INFO,
+		     "InitMainWindowFocusTracker: SetWindowsHookExA succeeded");
+	}
+#endif
+}
+
+static void ShutdownMainWindowFocusTracker()
+{
+#ifdef _WIN32
+	if (!g_mainWindowFocusTrackerHook)
+		return;
+
+	if (UnhookWindowsHookEx(g_mainWindowFocusTrackerHook)) {
+		g_mainWindowFocusTrackerHook = NULL;
+
+		blog(LOG_INFO,
+		     "ShutdownMainWindowFocusTracker: UnhookWindowsHookEx succeeded");
+	} else {
+		blog(LOG_ERROR,
+		     "ShutdownMainWindowFocusTracker: UnhookWindowsHookEx call failed");
+	}
+#endif
+}
+
+static void RegisterMainWindowFocusTrackerWidget(QWidget *widget)
+{
+	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
+		g_mainWindowFocusTrackerMutex);
+
+	g_mainWindowFocusTrackerWidgets.emplace(widget);
+
+	if (g_mainWindowFocusTrackerWidgets.size() == 1) {
+		InitMainWindowFocusTracker();
+	}
+}
+
+static void UnRegisterMainWindowFocusTrackerWidget(QWidget *widget)
+{
+	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
+		g_mainWindowFocusTrackerMutex);
+
+	g_mainWindowFocusTrackerWidgets.erase(widget);
+
+	if (g_mainWindowFocusTrackerWidgets.size() == 0) {
+		ShutdownMainWindowFocusTracker();
+	}
+}
+
+/* ========================================================================= */
+
 class BrowserTask : public CefTask {
 public:
 	std::function<void()> task;
@@ -64,10 +173,14 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(
 	policy.setHorizontalPolicy(QSizePolicy::MinimumExpanding);
 	policy.setVerticalPolicy(QSizePolicy::MinimumExpanding);
 	setSizePolicy(policy);
+
+	RegisterMainWindowFocusTrackerWidget(this);
 }
 
 StreamElementsBrowserWidget::~StreamElementsBrowserWidget()
 {
+	UnRegisterMainWindowFocusTrackerWidget(this);
+
 	DestroyBrowser();
 }
 
