@@ -42,7 +42,8 @@ private:
 
 private:
 	QMainWindow* m_mainWindow;
-	QMenu* m_menu;
+	QMenu *m_menu;
+	QMenu *m_editMenu;
 	CefRefPtr<CefValue> m_auxMenuItems = CefValue::Create();
 	bool m_showBuiltInMenuItems = true;
 };

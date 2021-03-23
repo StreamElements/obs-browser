@@ -21,6 +21,8 @@ StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow *parent)
 	m_menu = new QMenu("St&reamElements");
 
 	mainWindow()->menuBar()->addMenu(m_menu);
+	m_editMenu = mainWindow()->menuBar()->findChild<QMenu *>(
+		"menuBasic_MainMenu_Edit");
 
 	LoadConfig();
 }
