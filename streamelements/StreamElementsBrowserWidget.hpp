@@ -367,19 +367,31 @@ protected:
 		}
 	}
 
-
-
-
 private:
 	std::mutex m_create_destroy_mutex;
 
 signals:
 	void browserStateChanged();
+	void browserFocusedDOMNodeEditableChanged(bool isEditable);
+
+public:
+	bool isBrowserFocusedDOMNodeEditable() { return m_isBrowserFocusedDOMNodeEditable; }
 
 private:
 	void emitBrowserStateChanged()
 	{
 		emit browserStateChanged();
+	}
+
+	bool m_isBrowserFocusedDOMNodeEditable = false;
+	void setBrowserFocusedDOMNodeEditable(bool isEditable)
+	{
+		if (isEditable == m_isBrowserFocusedDOMNodeEditable)
+			return;
+
+		m_isBrowserFocusedDOMNodeEditable = isEditable;
+
+		emit browserFocusedDOMNodeEditableChanged(isEditable);
 	}
 
 	class StreamElementsBrowserWidget_EventHandler :
@@ -413,6 +425,15 @@ private:
 
 				widget->setFocus();
 			}, m_widget);
+		}
+
+		virtual void OnFocusedDOMNodeChanged(CefRefPtr<CefBrowser>,
+						     bool isEditable) override
+		{
+			QtPostTask([this, isEditable]() {
+				m_widget->setBrowserFocusedDOMNodeEditable(
+					isEditable);
+			});
 		}
 
 	private:
