@@ -229,6 +229,13 @@ void StreamElementsMenuManager::UpdateEditMenuInternal()
 
 	m_nativeEditMenuCopySourceAction->setVisible(!editMenuVisible);
 
+	if (editMenuVisible) {
+		m_nativeEditMenuCopySourceAction->setShortcut(QKeySequence());
+	} else {
+		m_nativeEditMenuCopySourceAction->setShortcut(
+			QKeySequence::Copy);
+	}
+
 	RemoveMenuActions();
 
 	if (editMenuVisible) {
