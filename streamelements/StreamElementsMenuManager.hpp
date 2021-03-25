@@ -54,6 +54,7 @@ private:
 	void HandleCefCopy();
 	void HandleCefCut();
 	void HandleCefPaste();
+	void HandleCefSelectAll();
 
 	void AddMenuActions();
 	void RemoveMenuActions();
@@ -67,6 +68,7 @@ private:
 	QAction *m_cefEditMenuActionCopy = nullptr;
 	QAction *m_cefEditMenuActionCut = nullptr;
 	QAction *m_cefEditMenuActionPaste = nullptr;
+	QAction *m_cefEditMenuActionSelectAll = nullptr;
 	QAction *m_nativeEditMenuCopySourceAction = nullptr;
 
 	StreamElementsBrowserWidget *m_focusedBrowserWidget = nullptr;

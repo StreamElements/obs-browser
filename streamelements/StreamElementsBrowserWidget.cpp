@@ -543,3 +543,16 @@ void StreamElementsBrowserWidget::BrowserPaste()
 
 	frame->Paste();
 }
+
+void StreamElementsBrowserWidget::BrowserSelectAll()
+{
+	if (!m_cef_browser.get())
+		return;
+
+	CefRefPtr<CefFrame> frame = m_cef_browser->GetFocusedFrame();
+
+	if (!frame.get())
+		return;
+
+	frame->SelectAll();
+}

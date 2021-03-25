@@ -387,6 +387,7 @@ public:
 	void BrowserCopy();
 	void BrowserCut();
 	void BrowserPaste();
+	void BrowserSelectAll();
 
 	class StreamElementsBrowserWidget_EventHandler :
 		public StreamElementsCefClientEventHandler

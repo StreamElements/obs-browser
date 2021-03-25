@@ -57,16 +57,19 @@ void StreamElementsMenuManager::AddMenuActions()
 	m_cefEditMenuActionCopy = new QAction("Copy");
 	m_cefEditMenuActionCut = new QAction("Cut");
 	m_cefEditMenuActionPaste = new QAction("Paste");
+	m_cefEditMenuActionSelectAll = new QAction("Select All");
 
 	m_cefEditMenuActionCopy->setShortcut(QKeySequence::Copy);
 	m_cefEditMenuActionCut->setShortcut(QKeySequence::Cut);
 	m_cefEditMenuActionPaste->setShortcut(QKeySequence::Paste);
+	m_cefEditMenuActionSelectAll->setShortcut(QKeySequence::SelectAll);
 
-		const bool isEditable =
+	const bool isEditable =
 		m_focusedBrowserWidget->isBrowserFocusedDOMNodeEditable();
 
 	m_cefEditMenuActionCopy->setEnabled(isEditable);
 	m_cefEditMenuActionCut->setEnabled(isEditable);
+	m_cefEditMenuActionSelectAll->setEnabled(isEditable);
 
 	auto mimeData = qApp->clipboard()->mimeData();
 
@@ -77,13 +80,20 @@ void StreamElementsMenuManager::AddMenuActions()
 	m_cefEditMenuActions.push_back(m_cefEditMenuActionCopy);
 	m_cefEditMenuActions.push_back(m_cefEditMenuActionCut);
 	m_cefEditMenuActions.push_back(m_cefEditMenuActionPaste);
+	m_cefEditMenuActions.push_back(m_cefEditMenuActionSelectAll);
 
+	m_cefEditMenuActions.push_back(
+		m_editMenu->insertSeparator(m_editMenu->actions().at(0)));
+	m_editMenu->insertAction(m_editMenu->actions().at(0),
+				 m_cefEditMenuActionSelectAll);
+	m_cefEditMenuActions.push_back(
+		m_editMenu->insertSeparator(m_editMenu->actions().at(0)));
 	m_editMenu->insertAction(m_editMenu->actions().at(0),
 				 m_cefEditMenuActionPaste);
 	m_editMenu->insertAction(m_editMenu->actions().at(0),
-				 m_cefEditMenuActionCut);
-	m_editMenu->insertAction(m_editMenu->actions().at(0),
 				 m_cefEditMenuActionCopy);
+	m_editMenu->insertAction(m_editMenu->actions().at(0),
+				 m_cefEditMenuActionCut);
 
 	QObject::connect(m_cefEditMenuActionCopy, &QAction::triggered, this,
 			 &StreamElementsMenuManager::HandleCefCopy);
@@ -91,6 +101,9 @@ void StreamElementsMenuManager::AddMenuActions()
 			 &StreamElementsMenuManager::HandleCefCut);
 	QObject::connect(m_cefEditMenuActionPaste, &QAction::triggered, this,
 			 &StreamElementsMenuManager::HandleCefPaste);
+	QObject::connect(m_cefEditMenuActionSelectAll, &QAction::triggered,
+			 this,
+			 &StreamElementsMenuManager::HandleCefSelectAll);
 }
 
 void StreamElementsMenuManager::RemoveMenuActions()
@@ -104,6 +117,9 @@ void StreamElementsMenuManager::RemoveMenuActions()
 			    &StreamElementsMenuManager::HandleCefCut);
 	QObject::disconnect(m_cefEditMenuActionPaste, &QAction::triggered, this,
 			    &StreamElementsMenuManager::HandleCefPaste);
+	QObject::disconnect(m_cefEditMenuActionSelectAll, &QAction::triggered,
+			    this,
+			    &StreamElementsMenuManager::HandleCefSelectAll);
 
 	for (auto i : m_cefEditMenuActions) {
 		m_editMenu->removeAction(i);
@@ -171,6 +187,16 @@ void StreamElementsMenuManager::HandleCefPaste()
 		return;
 
 	m_focusedBrowserWidget->BrowserPaste();
+}
+
+void StreamElementsMenuManager::HandleCefSelectAll()
+{
+	// Must be called on QT app thread
+
+	if (!m_focusedBrowserWidget)
+		return;
+
+	m_focusedBrowserWidget->BrowserSelectAll();
 }
 
 void StreamElementsMenuManager::HandleFocusedWidgetDOMNodeEditableChanged(
