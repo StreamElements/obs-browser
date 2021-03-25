@@ -211,19 +211,8 @@ protected:
 		}
 	}
 
-	virtual void focusInEvent(QFocusEvent* event) override
-	{
-		QWidget::focusInEvent(event);
-
-		blog(LOG_INFO, "QWidget::focusInEvent: reason %d: %s", event->reason(), m_url.c_str());
-	}
-
-	virtual void focusOutEvent(QFocusEvent* event) override
-	{
-		QWidget::focusOutEvent(event);
-
-		blog(LOG_INFO, "QWidget::focusOutEvent: %s", m_url.c_str());
-	}
+	virtual void focusInEvent(QFocusEvent *event) override;
+	virtual void focusOutEvent(QFocusEvent *event) override;
 
 private:
 	void UpdateBrowserSize()
@@ -393,6 +382,11 @@ private:
 
 		emit browserFocusedDOMNodeEditableChanged(isEditable);
 	}
+
+public:
+	void BrowserCopy();
+	void BrowserCut();
+	void BrowserPaste();
 
 	class StreamElementsBrowserWidget_EventHandler :
 		public StreamElementsCefClientEventHandler

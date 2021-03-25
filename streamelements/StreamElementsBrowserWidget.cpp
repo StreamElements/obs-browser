@@ -163,6 +163,9 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(
 	// Create native window
 	setAttribute(Qt::WA_NativeWindow);
 
+	// Focus on click
+	setFocusPolicy(Qt::ClickFocus);
+
 	// This influences docking widget width/height
 	//setMinimumWidth(200);
 	//setMinimumHeight(200);
@@ -468,4 +471,75 @@ void StreamElementsBrowserWidget::BrowserLoadInitialPage(const char *const url)
 		m_cef_browser->GetMainFrame()->LoadURL(
 			GetInitialPageURLInternal());
 	}
+}
+
+void StreamElementsBrowserWidget::focusInEvent(QFocusEvent *event)
+{
+	QWidget::focusInEvent(event);
+
+	blog(LOG_INFO, "QWidget::focusInEvent: reason %d: %s", event->reason(),
+	     m_url.c_str());
+
+	StreamElementsGlobalStateManager::GetInstance()
+		->GetMenuManager()
+		->SetFocusedBrowserWidget(this);
+}
+
+void StreamElementsBrowserWidget::focusOutEvent(QFocusEvent *event)
+{
+	QWidget::focusOutEvent(event);
+
+	blog(LOG_INFO, "QWidget::focusOutEvent: %s", m_url.c_str());
+
+	if (event->reason() != Qt::MenuBarFocusReason && event->reason() != Qt::PopupFocusReason) {
+		// QMenuBar & QMenu grab input focus when open.
+		//
+		// Since we want the Edit menu to respect the currently focused browser
+		// widget, we must make certain that focus grabbed due to QMenuBar or
+		// QMenu (popup) grabbing the focus, does not reset currently focused
+		// widget state.
+		//
+		StreamElementsGlobalStateManager::GetInstance()
+			->GetMenuManager()
+			->SetFocusedBrowserWidget(nullptr);
+	}
+}
+
+void StreamElementsBrowserWidget::BrowserCopy()
+{
+	if (!m_cef_browser.get())
+		return;
+
+	CefRefPtr<CefFrame> frame = m_cef_browser->GetFocusedFrame();
+
+	if (!frame.get())
+		return;
+
+	frame->Copy();
+}
+
+void StreamElementsBrowserWidget::BrowserCut()
+{
+	if (!m_cef_browser.get())
+		return;
+
+	CefRefPtr<CefFrame> frame = m_cef_browser->GetFocusedFrame();
+
+	if (!frame.get())
+		return;
+
+	frame->Cut();
+}
+
+void StreamElementsBrowserWidget::BrowserPaste()
+{
+	if (!m_cef_browser.get())
+		return;
+
+	CefRefPtr<CefFrame> frame = m_cef_browser->GetFocusedFrame();
+
+	if (!frame.get())
+		return;
+
+	frame->Paste();
 }

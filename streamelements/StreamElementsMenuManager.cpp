@@ -20,17 +20,147 @@ StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow *parent)
 
 	m_menu = new QMenu("St&reamElements");
 
+	mainWindow()->menuBar()->setFocusPolicy(Qt::NoFocus);
+
 	mainWindow()->menuBar()->addMenu(m_menu);
 	m_editMenu = mainWindow()->menuBar()->findChild<QMenu *>(
 		"menuBasic_MainMenu_Edit");
+
+	m_nativeEditMenuCopySourceAction = m_editMenu->findChild<QAction *>("actionCopySource");
+
+	m_cefEditMenuActionCopy = new QAction("Copy");
+	m_cefEditMenuActionCut = new QAction("Cut");
+	m_cefEditMenuActionPaste = new QAction("Paste");
+
+	m_cefEditMenuActionCopy->setShortcut(QKeySequence::Copy);
+	m_cefEditMenuActionCut->setShortcut(QKeySequence::Cut);
+	m_cefEditMenuActionPaste->setShortcut(QKeySequence::Paste);
+
+	m_cefEditMenuActions.push_back(m_cefEditMenuActionCopy);
+	m_cefEditMenuActions.push_back(m_cefEditMenuActionCut);
+	m_cefEditMenuActions.push_back(m_cefEditMenuActionPaste);
+
+	m_editMenu->insertAction(m_editMenu->actions().at(0),
+				 m_cefEditMenuActionPaste);
+	m_editMenu->insertAction(m_editMenu->actions().at(0),
+				 m_cefEditMenuActionCut);
+	m_editMenu->insertAction(m_editMenu->actions().at(0),
+				 m_cefEditMenuActionCopy);
+
+	QObject::connect(
+		qApp->clipboard(), &QClipboard::dataChanged, this,
+		&StreamElementsMenuManager::HandleClipboardDataChanged);
+
+	QObject::connect(m_cefEditMenuActionCopy, &QAction::triggered, this,
+			 &StreamElementsMenuManager::HandleCefCopy);
+	QObject::connect(m_cefEditMenuActionCut, &QAction::triggered, this,
+			 &StreamElementsMenuManager::HandleCefCut);
+	QObject::connect(m_cefEditMenuActionPaste, &QAction::triggered, this,
+			 &StreamElementsMenuManager::HandleCefPaste);
+
+	UpdateEditMenuInternal();
 
 	LoadConfig();
 }
 
 StreamElementsMenuManager::~StreamElementsMenuManager()
 {
+	QObject::disconnect(m_cefEditMenuActionCopy, &QAction::triggered, this,
+			    &StreamElementsMenuManager::HandleCefCopy);
+	QObject::disconnect(m_cefEditMenuActionCut, &QAction::triggered, this,
+			    &StreamElementsMenuManager::HandleCefCut);
+	QObject::disconnect(m_cefEditMenuActionPaste, &QAction::triggered, this,
+			    &StreamElementsMenuManager::HandleCefPaste);
+
+	QObject::disconnect(
+		qApp->clipboard(), &QClipboard::dataChanged, this,
+		&StreamElementsMenuManager::HandleClipboardDataChanged);
+
+	for (auto i : m_cefEditMenuActions) {
+		m_editMenu->removeAction(i);
+	}
+	m_cefEditMenuActions.clear();
+
+	//mainWindow()->menuBar()->removeAction((QAction *)m_menu->menuAction());
 	m_menu->menuAction()->setVisible(false);
 	m_menu = nullptr;
+}
+
+void StreamElementsMenuManager::SetFocusedBrowserWidget(
+	StreamElementsBrowserWidget *widget)
+{
+	// Must be called on QT app thread
+
+	if (m_focusedBrowserWidget == widget)
+		return;
+
+	if (!widget && !!m_focusedBrowserWidget) {
+		QObject::disconnect(
+			m_focusedBrowserWidget,
+			&StreamElementsBrowserWidget::
+				browserFocusedDOMNodeEditableChanged,
+			this,
+			&StreamElementsMenuManager::
+				HandleFocusedWidgetDOMNodeEditableChanged);
+	}
+
+	m_focusedBrowserWidget = widget;
+
+	if (!!m_focusedBrowserWidget) {
+		QObject::connect(m_focusedBrowserWidget,
+				 &StreamElementsBrowserWidget::
+					 browserFocusedDOMNodeEditableChanged,
+				 this,
+				 &StreamElementsMenuManager::
+					 HandleFocusedWidgetDOMNodeEditableChanged);
+	}
+
+	UpdateEditMenuInternal();
+}
+
+void StreamElementsMenuManager::HandleCefCopy()
+{
+	// Must be called on QT app thread
+
+	if (!m_focusedBrowserWidget)
+		return;
+
+	m_focusedBrowserWidget->BrowserCopy();
+}
+
+void StreamElementsMenuManager::HandleCefCut()
+{
+	// Must be called on QT app thread
+
+	if (!m_focusedBrowserWidget)
+		return;
+
+	m_focusedBrowserWidget->BrowserCut();
+}
+
+void StreamElementsMenuManager::HandleCefPaste()
+{
+	// Must be called on QT app thread
+
+	if (!m_focusedBrowserWidget)
+		return;
+
+	m_focusedBrowserWidget->BrowserPaste();
+}
+
+void StreamElementsMenuManager::HandleFocusedWidgetDOMNodeEditableChanged(
+	bool isEditable)
+{
+	// Must be called on QT app thread
+
+	UpdateEditMenuInternal();
+}
+
+void StreamElementsMenuManager::HandleClipboardDataChanged()
+{
+	// Must be called on QT app thread
+
+	UpdateEditMenuInternal();
 }
 
 void StreamElementsMenuManager::Update()
@@ -38,6 +168,34 @@ void StreamElementsMenuManager::Update()
 	SYNC_ACCESS();
 
 	UpdateInternal();
+}
+
+void StreamElementsMenuManager::UpdateEditMenuInternal()
+{
+	// Must be called on QT app thread
+
+	const bool editMenuVisible = !!m_focusedBrowserWidget;
+
+	for (auto i : m_cefEditMenuActions) {
+		i->setVisible(editMenuVisible);
+	}
+
+	m_nativeEditMenuCopySourceAction->setVisible(!editMenuVisible);
+
+	if (!editMenuVisible)
+		return;
+
+	const bool isEditable =
+		m_focusedBrowserWidget->isBrowserFocusedDOMNodeEditable();
+
+	m_cefEditMenuActionCopy->setEnabled(isEditable);
+	m_cefEditMenuActionCut->setEnabled(isEditable);
+
+	auto mimeData = qApp->clipboard()->mimeData();
+
+	const bool hasTextToPaste = mimeData && mimeData->hasText();
+
+	m_cefEditMenuActionPaste->setEnabled(isEditable && hasTextToPaste);
 }
 
 void StreamElementsMenuManager::UpdateInternal()
