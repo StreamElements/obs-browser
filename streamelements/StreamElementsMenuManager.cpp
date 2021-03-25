@@ -28,6 +28,32 @@ StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow *parent)
 
 	m_nativeEditMenuCopySourceAction = m_editMenu->findChild<QAction *>("actionCopySource");
 
+	QObject::connect(
+		qApp->clipboard(), &QClipboard::dataChanged, this,
+		&StreamElementsMenuManager::HandleClipboardDataChanged);
+
+	UpdateEditMenuInternal();
+
+	LoadConfig();
+}
+
+StreamElementsMenuManager::~StreamElementsMenuManager()
+{
+	RemoveMenuActions();
+
+	QObject::disconnect(
+		qApp->clipboard(), &QClipboard::dataChanged, this,
+		&StreamElementsMenuManager::HandleClipboardDataChanged);
+
+	//mainWindow()->menuBar()->removeAction((QAction *)m_menu->menuAction());
+	m_menu->menuAction()->setVisible(false);
+	m_menu = nullptr;
+}
+
+void StreamElementsMenuManager::AddMenuActions()
+{
+	RemoveMenuActions();
+
 	m_cefEditMenuActionCopy = new QAction("Copy");
 	m_cefEditMenuActionCut = new QAction("Cut");
 	m_cefEditMenuActionPaste = new QAction("Paste");
@@ -35,6 +61,18 @@ StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow *parent)
 	m_cefEditMenuActionCopy->setShortcut(QKeySequence::Copy);
 	m_cefEditMenuActionCut->setShortcut(QKeySequence::Cut);
 	m_cefEditMenuActionPaste->setShortcut(QKeySequence::Paste);
+
+		const bool isEditable =
+		m_focusedBrowserWidget->isBrowserFocusedDOMNodeEditable();
+
+	m_cefEditMenuActionCopy->setEnabled(isEditable);
+	m_cefEditMenuActionCut->setEnabled(isEditable);
+
+	auto mimeData = qApp->clipboard()->mimeData();
+
+	const bool hasTextToPaste = mimeData && mimeData->hasText();
+
+	m_cefEditMenuActionPaste->setEnabled(isEditable && hasTextToPaste);
 
 	m_cefEditMenuActions.push_back(m_cefEditMenuActionCopy);
 	m_cefEditMenuActions.push_back(m_cefEditMenuActionCut);
@@ -47,24 +85,19 @@ StreamElementsMenuManager::StreamElementsMenuManager(QMainWindow *parent)
 	m_editMenu->insertAction(m_editMenu->actions().at(0),
 				 m_cefEditMenuActionCopy);
 
-	QObject::connect(
-		qApp->clipboard(), &QClipboard::dataChanged, this,
-		&StreamElementsMenuManager::HandleClipboardDataChanged);
-
 	QObject::connect(m_cefEditMenuActionCopy, &QAction::triggered, this,
 			 &StreamElementsMenuManager::HandleCefCopy);
 	QObject::connect(m_cefEditMenuActionCut, &QAction::triggered, this,
 			 &StreamElementsMenuManager::HandleCefCut);
 	QObject::connect(m_cefEditMenuActionPaste, &QAction::triggered, this,
 			 &StreamElementsMenuManager::HandleCefPaste);
-
-	UpdateEditMenuInternal();
-
-	LoadConfig();
 }
 
-StreamElementsMenuManager::~StreamElementsMenuManager()
+void StreamElementsMenuManager::RemoveMenuActions()
 {
+	if (!m_cefEditMenuActions.size())
+		return;
+
 	QObject::disconnect(m_cefEditMenuActionCopy, &QAction::triggered, this,
 			    &StreamElementsMenuManager::HandleCefCopy);
 	QObject::disconnect(m_cefEditMenuActionCut, &QAction::triggered, this,
@@ -72,18 +105,10 @@ StreamElementsMenuManager::~StreamElementsMenuManager()
 	QObject::disconnect(m_cefEditMenuActionPaste, &QAction::triggered, this,
 			    &StreamElementsMenuManager::HandleCefPaste);
 
-	QObject::disconnect(
-		qApp->clipboard(), &QClipboard::dataChanged, this,
-		&StreamElementsMenuManager::HandleClipboardDataChanged);
-
 	for (auto i : m_cefEditMenuActions) {
 		m_editMenu->removeAction(i);
 	}
 	m_cefEditMenuActions.clear();
-
-	//mainWindow()->menuBar()->removeAction((QAction *)m_menu->menuAction());
-	m_menu->menuAction()->setVisible(false);
-	m_menu = nullptr;
 }
 
 void StreamElementsMenuManager::SetFocusedBrowserWidget(
@@ -176,26 +201,13 @@ void StreamElementsMenuManager::UpdateEditMenuInternal()
 
 	const bool editMenuVisible = !!m_focusedBrowserWidget;
 
-	for (auto i : m_cefEditMenuActions) {
-		i->setVisible(editMenuVisible);
-	}
-
 	m_nativeEditMenuCopySourceAction->setVisible(!editMenuVisible);
 
-	if (!editMenuVisible)
-		return;
+	RemoveMenuActions();
 
-	const bool isEditable =
-		m_focusedBrowserWidget->isBrowserFocusedDOMNodeEditable();
-
-	m_cefEditMenuActionCopy->setEnabled(isEditable);
-	m_cefEditMenuActionCut->setEnabled(isEditable);
-
-	auto mimeData = qApp->clipboard()->mimeData();
-
-	const bool hasTextToPaste = mimeData && mimeData->hasText();
-
-	m_cefEditMenuActionPaste->setEnabled(isEditable && hasTextToPaste);
+	if (editMenuVisible) {
+		AddMenuActions();
+	}
 }
 
 void StreamElementsMenuManager::UpdateInternal()

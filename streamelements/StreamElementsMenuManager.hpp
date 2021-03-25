@@ -55,6 +55,9 @@ private:
 	void HandleCefCut();
 	void HandleCefPaste();
 
+	void AddMenuActions();
+	void RemoveMenuActions();
+
 private:
 	QMainWindow* m_mainWindow;
 	QMenu *m_menu;
