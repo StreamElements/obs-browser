@@ -361,9 +361,13 @@ private:
 
 signals:
 	void browserStateChanged();
+
+	// Fired when focused DOM node changes in the browser,
+	// indicating whether it is editable.
 	void browserFocusedDOMNodeEditableChanged(bool isEditable);
 
 public:
+	// Is currently focused DOM node in the browser editable?
 	bool isBrowserFocusedDOMNodeEditable() { return m_isBrowserFocusedDOMNodeEditable; }
 
 private:
@@ -389,6 +393,13 @@ public:
 	void BrowserPaste();
 	void BrowserSelectAll();
 
+	//
+	// Receives events from StreamElementsCefClient and translates
+	// them to calls which StreamElementsBrowserWidget understands.
+	//
+	// Calls to StreamElementsBrowserWidget are made on the QT app
+	// thread.
+	//
 	class StreamElementsBrowserWidget_EventHandler :
 		public StreamElementsCefClientEventHandler
 	{
@@ -397,6 +408,7 @@ public:
 		{ }
 
 	public:
+		// CEF loading state was changed
 		virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
 			bool isLoading,
 			bool canGoBack,
@@ -407,21 +419,19 @@ public:
 			UNREFERENCED_PARAMETER(canGoBack);
 			UNREFERENCED_PARAMETER(canGoForward);
 
-			QtPostTask([](void* data) {
-				StreamElementsBrowserWidget* widget = (StreamElementsBrowserWidget*)data;
-
-				widget->emitBrowserStateChanged();
-			}, m_widget);
+			QtPostTask([this]() {
+				m_widget->emitBrowserStateChanged();
+			});
 		}
 
+		// CEF got focus
 		virtual void OnGotFocus(CefRefPtr<CefBrowser>) override {
-			QtPostTask([](void* data) {
-				StreamElementsBrowserWidget* widget = (StreamElementsBrowserWidget*)data;
-
-				widget->setFocus();
-			}, m_widget);
+			QtPostTask([this]() {
+				m_widget->setFocus();
+			});
 		}
 
+		// Focused DOM node in CEF changed
 		virtual void OnFocusedDOMNodeChanged(CefRefPtr<CefBrowser>,
 						     bool isEditable) override
 		{

@@ -46,9 +46,9 @@ protected:
 
 private:
 	void UpdateInternal();
-	void UpdateEditMenuInternal();
+	void UpdateOBSEditMenuInternal();
 
-	void HandleFocusedWidgetDOMNodeEditableChanged(bool isEditable);
+	void HandleFocusedBrowserWidgetDOMNodeEditableChanged(bool isEditable);
 	void HandleClipboardDataChanged();
 
 	void HandleCefCopy();
@@ -56,21 +56,43 @@ private:
 	void HandleCefPaste();
 	void HandleCefSelectAll();
 
-	void AddMenuActions();
-	void RemoveMenuActions();
+	void AddOBSEditMenuActions();
+	void RemoveOBSEditMenuActions();
 
 private:
 	QMainWindow* m_mainWindow;
 	QMenu *m_menu;
 
+	//
+	// OBS-native Edit menu.
+	//
 	QMenu *m_editMenu;
-	std::vector<QAction *> m_cefEditMenuActions;
-	QAction *m_cefEditMenuActionCopy = nullptr;
-	QAction *m_cefEditMenuActionCut = nullptr;
-	QAction *m_cefEditMenuActionPaste = nullptr;
-	QAction *m_cefEditMenuActionSelectAll = nullptr;
-	QAction *m_nativeEditMenuCopySourceAction = nullptr;
 
+	//
+	// Our actions to be added under OBS-native Edit
+	// menu when appropriate (see m_focusedBrowserWidget
+	// below for further details).
+	//
+	std::vector<QAction *> m_cefOBSEditMenuActions;
+	QAction *m_cefOBSEditMenuActionCopy = nullptr;
+	QAction *m_cefOBSEditMenuActionCut = nullptr;
+	QAction *m_cefOBSEditMenuActionPaste = nullptr;
+	QAction *m_cefOBSEditMenuActionSelectAll = nullptr;
+
+	//
+	// OBS-native Edit->Copy menu item.
+	//
+	QAction *m_nativeOBSEditMenuCopySourceAction = nullptr;
+
+	//
+	// Indicates which browser widget is currently in focus.
+	//
+	// When a browser widget is in focus and it's internally
+	// focused DOM node is an editable element, we'll show
+	// Cut/Copy/Paste/Select All items under the OBS native
+	// "Edit" menu. We'll also hide & disable the OBS-native
+	// "Copy" action.
+	//
 	StreamElementsBrowserWidget *m_focusedBrowserWidget = nullptr;
 
 	CefRefPtr<CefValue> m_auxMenuItems = CefValue::Create();

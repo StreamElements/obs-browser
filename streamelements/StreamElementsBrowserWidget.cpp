@@ -14,17 +14,49 @@
 
 /* ========================================================================= */
 
+//
+// This block deals with a Win32-specific bug inherent to Qt 5.15.2:
+// when OBS loses input focus (app is deactivated), the currently
+// focused browser widget does not receive a KillFocus event, although
+// CEF does lose input focus.
+//
+// This makes any operations dependant on correctly tracking browser
+// widgets' focus state unstable.
+//
+// To mitigate this, on Windows, we subscribe to WH_CALLWNDPROC hook
+// for the application. Once the app receives a Windows event indicating
+// that the app was deactivated, we call `clearFocus()` on the currently
+// focused browser widget (if any).
+//
+// This results in the browser widget's focused state correctly reflecting
+// the focused state of the CEF browser it embeds.
+//
+// The Win32 hook approach is specific to Win32.
+//
+// On macOS focusIn() and focusOut() signals emitted by QWidget seem to
+// function properly.
+//
+
 #include <set>
 
-static std::recursive_mutex g_mainWindowFocusTrackerMutex;
-static std::set<QWidget *> g_mainWindowFocusTrackerWidgets;
+//
+// Registry of all browser widgets instances.
+//
+// StreamElementsBrowserWidget registers in it's ctor
+// and deregisters it it's dtor.
+//
+static std::recursive_mutex g_AppActiveTrackerMutex;
+static std::set<QWidget *> g_AppActiveTrackerWidgets;
 
-static void HandleMainWindowFocusTrackerWidgetUnfocus()
+//
+// Called by our hook procedure when app deactivates (loses focus).
+//
+static void HandleAppActiveTrackerWidgetUnfocus()
 {
-	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
-		g_mainWindowFocusTrackerMutex);
+	std::lock_guard<decltype(g_AppActiveTrackerMutex)> guard(
+		g_AppActiveTrackerMutex);
 
-	for (auto &widget : g_mainWindowFocusTrackerWidgets) {
+	for (auto &widget : g_AppActiveTrackerWidgets) {
 		if (widget->hasFocus()) {
 			widget->clearFocus();
 		}
@@ -32,22 +64,27 @@ static void HandleMainWindowFocusTrackerWidgetUnfocus()
 }
 
 #ifdef _WIN32
-static HHOOK g_mainWindowFocusTrackerHook = NULL;
+// Our WH_CALLWNDPROC hook handle
+static HHOOK g_AppActiveTrackerHook = NULL;
 
-static LRESULT CALLBACK MainWindowFocusTrackerHook(_In_ int nCode,
-						   _In_ WPARAM wParam,
-						   _In_ LPARAM lParam)
+// Our WH_CALLWNDPROC hook procedure
+static LRESULT CALLBACK AppActiveTrackerHook(_In_ int nCode, _In_ WPARAM wParam,
+					     _In_ LPARAM lParam)
 {
 	CWPSTRUCT *msg = (CWPSTRUCT *)lParam;
 
 	if (msg->message == WM_ACTIVATEAPP) {
+		// Windows message indicating of app active/inactive state
+
 		if (!msg->wParam) {
+			// App deactivated (lost focus)
+
 			if (QThread::currentThread() == qApp->thread()) {
-				HandleMainWindowFocusTrackerWidgetUnfocus();
+				HandleAppActiveTrackerWidgetUnfocus();
 			} else {
 				// We're unlikely to reach here, but just in case
 				QtPostTask([]() {
-					HandleMainWindowFocusTrackerWidgetUnfocus();
+					HandleAppActiveTrackerWidgetUnfocus();
 				});
 			}
 		}
@@ -57,65 +94,79 @@ static LRESULT CALLBACK MainWindowFocusTrackerHook(_In_ int nCode,
 }
 #endif
 
-static void InitMainWindowFocusTracker()
+//
+// Subscribe to receive notifications re app becoming active/inactive
+//
+static void InitAppActiveTracker()
 {
 #ifdef _WIN32
-	if (g_mainWindowFocusTrackerHook)
+	if (g_AppActiveTrackerHook)
 		return;
 
-	g_mainWindowFocusTrackerHook =
-		SetWindowsHookExA(WH_CALLWNDPROC, MainWindowFocusTrackerHook,
+	g_AppActiveTrackerHook =
+		SetWindowsHookExA(WH_CALLWNDPROC, AppActiveTrackerHook,
 				  NULL, GetCurrentThreadId());
 
-	if (!g_mainWindowFocusTrackerHook) {
+	if (!g_AppActiveTrackerHook) {
 		blog(LOG_ERROR,
-		     "InitMainWindowFocusTracker: SetWindowsHookExA call failed");
+		     "InitAppActiveTracker: SetWindowsHookExA call failed");
 	} else {
 		blog(LOG_INFO,
-		     "InitMainWindowFocusTracker: SetWindowsHookExA succeeded");
+		     "InitAppActiveTracker: SetWindowsHookExA succeeded");
 	}
 #endif
 }
 
-static void ShutdownMainWindowFocusTracker()
+//
+// Unsubscribe from notifications re app becoming active/inactive
+//
+static void ShutdownAppActiveTracker()
 {
 #ifdef _WIN32
-	if (!g_mainWindowFocusTrackerHook)
+	if (!g_AppActiveTrackerHook)
 		return;
 
-	if (UnhookWindowsHookEx(g_mainWindowFocusTrackerHook)) {
-		g_mainWindowFocusTrackerHook = NULL;
+	if (UnhookWindowsHookEx(g_AppActiveTrackerHook)) {
+		g_AppActiveTrackerHook = NULL;
 
 		blog(LOG_INFO,
-		     "ShutdownMainWindowFocusTracker: UnhookWindowsHookEx succeeded");
+		     "ShutdownAppActiveTracker: UnhookWindowsHookEx succeeded");
 	} else {
 		blog(LOG_ERROR,
-		     "ShutdownMainWindowFocusTracker: UnhookWindowsHookEx call failed");
+		     "ShutdownAppActiveTracker: UnhookWindowsHookEx call failed");
 	}
 #endif
 }
 
-static void RegisterMainWindowFocusTrackerWidget(QWidget *widget)
+//
+// Register a QWidget interested in losing focus when app
+// becomes inactive.
+//
+static void RegisterAppActiveTrackerWidget(QWidget *widget)
 {
-	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
-		g_mainWindowFocusTrackerMutex);
+	std::lock_guard<decltype(g_AppActiveTrackerMutex)> guard(
+		g_AppActiveTrackerMutex);
 
-	g_mainWindowFocusTrackerWidgets.emplace(widget);
+	g_AppActiveTrackerWidgets.emplace(widget);
 
-	if (g_mainWindowFocusTrackerWidgets.size() == 1) {
-		InitMainWindowFocusTracker();
+	if (g_AppActiveTrackerWidgets.size() == 1) {
+		InitAppActiveTracker();
 	}
 }
 
-static void UnRegisterMainWindowFocusTrackerWidget(QWidget *widget)
+//
+// Unregister a QWidget no longer interested in losing
+// focus when app becomes inactive.
+//
+static void UnregisterAppActiveTrackerWidget(QWidget *widget)
 {
-	std::lock_guard<decltype(g_mainWindowFocusTrackerMutex)> guard(
-		g_mainWindowFocusTrackerMutex);
+	std::lock_guard<decltype(g_AppActiveTrackerMutex)> guard(
+		g_AppActiveTrackerMutex);
 
-	g_mainWindowFocusTrackerWidgets.erase(widget);
+	g_AppActiveTrackerWidgets.erase(widget);
 
-	if (g_mainWindowFocusTrackerWidgets.size() == 0) {
-		ShutdownMainWindowFocusTracker();
+	if (g_AppActiveTrackerWidgets.size() == 0) {
+		ShutdownAppActiveTracker();
 	}
 }
 
@@ -177,12 +228,12 @@ StreamElementsBrowserWidget::StreamElementsBrowserWidget(
 	policy.setVerticalPolicy(QSizePolicy::MinimumExpanding);
 	setSizePolicy(policy);
 
-	RegisterMainWindowFocusTrackerWidget(this);
+	RegisterAppActiveTrackerWidget(this);
 }
 
 StreamElementsBrowserWidget::~StreamElementsBrowserWidget()
 {
-	UnRegisterMainWindowFocusTrackerWidget(this);
+	UnregisterAppActiveTrackerWidget(this);
 
 	DestroyBrowser();
 }
